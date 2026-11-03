@@ -10,7 +10,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 0.5</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 0.6</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span></div></div>
@@ -28,12 +28,29 @@ const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.3,30000);ca
 function seedHash(str){let h=2166136261;for(let i=0;i<str.length;i++)h=Math.imul(h^str.charCodeAt(i),16777619);return h>>>0}function hash(x,z,s=0){let h=Math.imul(x|0,374761393)+Math.imul(z|0,668265263)+Math.imul((seedNumber+s)|0,1442695041);h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967295}const smooth=t=>t*t*(3-2*t);function noise(x,z,scale,s=0){let a=x/scale,b=z/scale,i=Math.floor(a),j=Math.floor(b),u=smooth(a-i),v=smooth(b-j);let A=hash(i,j,s),B=hash(i+1,j,s),C=hash(i,j+1,s),D=hash(i+1,j+1,s);return ((A+(B-A)*u)*(1-v)+(C+(D-C)*u)*v)*2-1}function fbm(x,z,scale,s=0,oct=4){let n=0,amp=1,total=0;for(let k=0;k<oct;k++){n+=noise(x,z,scale/(1<<k),s+k*97)*amp;total+=amp;amp*=.52}return n/total}function terrain(x,z){const wx=x+fbm(x,z,6800,51,3)*1750,wz=z+fbm(x,z,6900,71,3)*1750;const broad=fbm(wx,wz,13500,11,4);const uplift=Math.max(0,fbm(wx,wz,9400,18,4)*.85+.26);const ridge=1-Math.abs(noise(wx,wz,3000,81));const ridge2=1-Math.abs(noise(wx,z,1300,83));const mountain=Math.pow(ridge,2.9)*uplift*1650+Math.pow(ridge2,3)*uplift*410;const hills=fbm(wx,wz,2200,26,5)*200+fbm(wx,wz,480,32,4)*62;const local=fbm(x,z,110,42,3)*12;return (broad*650+mountain+hills+local-185)*config.heightScale}function climate(x,z,h){const temp=.48+fbm(x,z,16500,100,3)*.35-h*.00031;const moisture=.48+fbm(x,z,9000,120,4)*.4;return {temp,moisture}}function clamp01(v){return Math.max(0,Math.min(1,v))}
 function smoothRange(a,b,v){let t=clamp01((v-a)/(b-a));return t*t*(3-2*t)}
 function slopeAt(x,z){const d=9;return Math.hypot((terrain(x+d,z)-terrain(x-d,z))/(2*d),(terrain(x,z+d)-terrain(x,z-d))/(2*d))}
-function landscapeAt(x,z,h,c=climate(x,z,h)){
- const wet=clamp01((c.moisture-.12)/.65),cold=1-smoothRange(.05,.23,c.temp);
- const foothills=1-smoothRange(480,1030,h),coast=smoothRange(11,30,h);
+// Shared environmental suitability; optional slope keeps distant map/mesh generation inexpensive.
+// Temperature already incorporates elevation through the climate model, so there is no global treeline.
+function landscapeAt(x,z,h,c=climate(x,z,h),slope=0){
+ const moisture=smoothRange(.12,.56,c.moisture);
+ const warmth=smoothRange(.055,.30,c.temp);
+ const coast=smoothRange(8,24,h);
+ const soil=clamp01(1-smoothRange(.42,1.45,slope));
  const patch=.5+.5*noise(x,z,1100,411),gaps=.5+.5*noise(x,z,310,412);
- const forest=clamp01((patch*.8+gaps*.45-.40)*1.65)*wet*foothills*coast*(1-cold);
- return {forest,open:clamp01((1-forest*.75)*wet*foothills*coast),wet};
+ const continuity=clamp01((patch*.8+gaps*.45-.30)*1.65);
+ const suitability=moisture*warmth*soil*coast;
+ const forest=clamp01(continuity*suitability);
+ const woodland=clamp01((.35+.40*continuity)*suitability*(1-forest*.55));
+ const meadow=clamp01(moisture*(.28+.72*warmth)*coast*(1-forest*.65)*(1-smoothRange(.7,1.9,slope)));
+ const shrub=clamp01((woodland*.52+meadow*.38)*(1-smoothRange(1.0,2.0,slope)));
+ const exposed=clamp01(smoothRange(.40,1.35,slope)*.95+(1-warmth)*.20+(1-moisture)*.16);
+ return {forest,woodland,meadow,shrub,exposed,soil,wet:moisture,warmth,patch};
+}
+function treeProbability(x,z,h,c,L){
+ if(h<16)return 0;
+ return clamp01((L.forest*.82+L.woodland*.20)*(1-L.exposed*.70));
+}
+function stoneProbability(h,L,slope){
+ return clamp01((h<15?.18:.018)+L.exposed*.43+smoothRange(.32,1.25,slope)*.28);
 }
 function colorFor(x,z,h){
  const c=climate(x,z,h),L=landscapeAt(x,z,h,c),beach=fbm(x,z,80,188,3)*3.1;
@@ -41,11 +58,13 @@ function colorFor(x,z,h){
  if(h<1.5+beach)rgb=[.40,.47,.45];
  else if(h<7+beach)rgb=[.70,.65,.49];
  else if(h<17+beach)rgb=[.56,.57,.42];
- else if(h>1260||c.temp<-.05)rgb=[.78,.83,.83];
- else if(h>900&&c.temp<.27)rgb=[.58,.60,.58];
- else if(h>720)rgb=[.48,.50,.47];
+ else if(c.temp<-.075)rgb=[.78,.83,.83];
  else if(c.moisture<.21&&c.temp>.39)rgb=[.65,.57,.37];
- else rgb=[.35-L.forest*.14+L.open*.065,.42-L.forest*.13+L.open*.085,.275-L.forest*.09+L.open*.038];
+ else {
+  rgb=[.365-L.forest*.145+L.meadow*.063,.455-L.forest*.145+L.meadow*.09,.29-L.forest*.095+L.meadow*.034];
+  const dryRock=L.exposed*.18;
+  rgb=rgb.map((v,i)=>v*(1-dryRock)+[.45,.46,.43][i]*dryRock);
+ }
  const n=fbm(x,z,220,441,3)*.065+noise(x,z,48,442)*.035+noise(x,z,13,443)*.018;
  return rgb.map(v=>clamp01(v+n));
 }
@@ -61,10 +80,10 @@ return mix(mix(groundHash(i),groundHash(i+vec2(1.,0.)),f.x),mix(groundHash(i+vec
  .replace('#include <color_fragment>',`#include <color_fragment>
 float a=groundNoise(vGroundPosition.xz*.115),b=groundNoise(vGroundPosition.xz*.67),c=groundNoise(vGroundPosition.xz*.023);
 diffuseColor.rgb*=1.0+(a-.5)*.22+(b-.5)*.095+(c-.5)*.18;
-float rock=(1.0-smoothstep(.44,.82,abs(normalize(vGroundNormal).y)))*smoothstep(14.0,85.0,vGroundPosition.y);
+float rock=(1.0-smoothstep(.57,.90,abs(normalize(vGroundNormal).y)));
 diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.43,.44,.405)*(.84+a*.28),rock*.82);`);
 };
-terrainMaterial.customProgramCacheKey=()=> 'horizon-surface-v05';
+terrainMaterial.customProgramCacheKey=()=> 'horizon-surface-v06';
 // Three deterministic tree families: spruce, broadleaf, and tall fir. Shared geometries stay reusable.
 const trunkGeo=new THREE.CylinderGeometry(.95,1.3,8,6);
 const foliageGeos=[new THREE.ConeGeometry(5.2,18,7),new THREE.IcosahedronGeometry(7.2,1),new THREE.ConeGeometry(3.8,24,7)];
@@ -91,20 +110,14 @@ function createGroundCover(tile){
  for(let tx=Math.ceil(x/spacing)*spacing;tx<x+size;tx+=spacing){
   const ix=Math.round(tx/spacing),iz=Math.round(tz/spacing);
   const px=tx+(hash(ix,iz,301)-.5)*spacing*.82,pz=tz+(hash(ix,iz,302)-.5)*spacing*.82;
-  const h=terrain(px,pz);if(h<.5||h>1150)continue;
-  const c=climate(px,pz,h),L=landscapeAt(px,pz,h,c),r=hash(ix,iz,303);
-  const steep=slopeAt(px,pz),rockiness=clamp01((steep-.3)*1.8);
-  const rockyGround=h<14||h>920||c.temp<.08||c.moisture<.16;
-  if(rockyGround||rockiness>.34){
-   if(r<(h<14?.22:.12)+rockiness*.40)rocks.push([px,h,pz,.28+hash(ix,iz,304)*1.6,hash(ix,iz,305)*6.28,Math.floor(hash(ix,iz,306)*rockColors.length)]);
-   if(r<.10&&h>10&&h<940)plants.push([px,h,pz,.55+hash(ix,iz,304)*.55,r*6.28,4]);
-   continue;
-  }
-  if(r<clamp01(.37+L.open*.52+L.forest*.28))
+  const h=terrain(px,pz);if(h<.5)continue;
+  const c=climate(px,pz,h),steep=slopeAt(px,pz),L=landscapeAt(px,pz,h,c,steep),r=hash(ix,iz,303);
+  if(r<stoneProbability(h,L,steep))
+   rocks.push([px,h,pz,.28+hash(ix,iz,304)*1.6,hash(ix,iz,305)*6.28,Math.floor(hash(ix,iz,306)*rockColors.length)]);
+  if(hash(ix,iz,310)<clamp01(.16+L.meadow*.65+L.woodland*.30+L.forest*.15)*(1-L.exposed*.70))
    plants.push([px,h,pz,.48+hash(ix,iz,304)*1.2,hash(ix,iz,305)*6.28,L.forest>.45?(hash(ix,iz,306)>.4?2:5):Math.floor(hash(ix,iz,306)*grassColors.length)]);
-  if(hash(ix,iz,309)<.025+L.forest*.12+L.wet*.035)
+  if(hash(ix,iz,309)<.018+L.shrub*.40)
    shrubs.push([px,h,pz,.52+hash(ix,iz,307)*1.5,hash(ix,iz,305)*6.28,Math.floor(hash(ix,iz,308)*grassColors.length)]);
-  if(r>.965&&steep>.11)rocks.push([px,h,pz,.34+hash(ix,iz,304)*1.1,r*6.28,Math.floor(hash(ix,iz,306)*rockColors.length)]);
  }
  const cover=new THREE.Group();
  function instances(data,geometry,material,colors,heightOffset,flatten=1){
@@ -135,18 +148,17 @@ function refreshGroundCover(){
  }
 }
 function regionName(x,z){
- const h=terrain(x,z),c=climate(x,z,h);
+ const h=terrain(x,z),c=climate(x,z,h),L=landscapeAt(x,z,h,c,slopeAt(x,z));
  if(h<0)return 'Open Water';
- if(h<12)return 'Coast & Shoreline';
- if(h<45)return c.moisture>.5?'Coastal Woodlands':'Coastal Lowlands';
- if(h>1250||c.temp<-.04)return 'Alpine Snowfields';
- if(h>850)return 'Mountain Highlands';
- if(h>430)return c.moisture>.35?'Forested Uplands':'Rocky Uplands';
- if(c.moisture<.23)return 'Dry Grasslands';
- if(c.moisture>.55)return 'Temperate Forest';
- return h>175?'Rolling Hills':'Open Lowlands';
+ if(h<16)return 'Coast & Shoreline';
+ if(c.temp<-.075)return 'Snowfields';
+ if(L.exposed>.65)return 'Rocky Slopes';
+ if(L.forest>.52)return 'Mountain Forest';
+ if(L.forest>.22)return 'Wooded Hills';
+ if(L.woodland>.22)return 'Open Woodland';
+ if(L.meadow>.32)return 'Meadows & Grassland';
+ return c.moisture<.24?'Dry Uplands':'Rolling Hills';
 }
-
 // Match fine tile edge heights to adjacent coarser tiles to avoid visible skirt walls.
 function sampleMatchedEdge(wx,wz,axis,tileSize,neighbor){
  if(!neighbor||neighbor.size<=tileSize)return terrain(wx,wz);
@@ -181,8 +193,8 @@ if(size<=256&&Math.abs(x+size/2-player.x)<1250&&Math.abs(z+size/2-player.z)<1250
  const families=[[],[],[]],spacing=25;
  for(let tz=Math.ceil(z/spacing)*spacing;tz<z+size;tz+=spacing)for(let tx=Math.ceil(x/spacing)*spacing;tx<x+size;tx+=spacing){
   const ix=Math.floor(tx),iz=Math.floor(tz),px=tx+(hash(ix,iz,201)-.5)*spacing*.8,pz=tz+(hash(ix,iz,202)-.5)*spacing*.8;
-  const py=terrain(px,pz),c=climate(px,pz,py),L=landscapeAt(px,pz,py,c);
-  if(py<18||py>1100||c.temp<.13||c.moisture<.25||hash(ix,iz,203)>.05+L.forest*.86)continue;
+  const py=terrain(px,pz),c=climate(px,pz,py),L=landscapeAt(px,pz,py,c,slopeAt(px,pz));
+  if(hash(ix,iz,203)>treeProbability(px,pz,py,c,L))continue;
   const type=(c.temp>.38&&hash(ix,iz,205)>.46)?1:(hash(ix,iz,206)>.58?2:0);
   families[type].push([px,py,pz,.65+hash(ix,iz,204)*.95,hash(ix,iz,207)*6.283]);
  }
@@ -221,8 +233,8 @@ function collidesWithScenery(px,py,pz){
  for(let tx=tx0-2*treeSpacing;tx<=tx0+2*treeSpacing;tx+=treeSpacing){
   const ix=Math.floor(tx),iz=Math.floor(tz);
   const xx=tx+(hash(ix,iz,201)-.5)*treeSpacing*.8,zz=tz+(hash(ix,iz,202)-.5)*treeSpacing*.8;
-  const h=terrain(xx,zz),c=climate(xx,zz,h),L=landscapeAt(xx,zz,h,c);
-  if(h<18||h>1100||c.temp<.13||c.moisture<.25||hash(ix,iz,203)>.05+L.forest*.86)continue;
+  const h=terrain(xx,zz),c=climate(xx,zz,h),L=landscapeAt(xx,zz,h,c,slopeAt(xx,zz));
+  if(hash(ix,iz,203)>treeProbability(xx,zz,h,c,L))continue;
   const type=(c.temp>.38&&hash(ix,iz,205)>.46)?1:(hash(ix,iz,206)>.58?2:0);
   const scale=.65+hash(ix,iz,204)*.95;
   const horizontal=Math.hypot(px-xx,pz-zz);
@@ -235,14 +247,10 @@ function collidesWithScenery(px,py,pz){
  const spacing=9,rx0=Math.floor(px/spacing),rz0=Math.floor(pz/spacing);
  for(let iz=rz0-2;iz<=rz0+2;iz++)for(let ix=rx0-2;ix<=rx0+2;ix++){
   const tx=ix*spacing,tz=iz*spacing,xx=tx+(hash(ix,iz,301)-.5)*spacing*.82,zz=tz+(hash(ix,iz,302)-.5)*spacing*.82;
-  const h=terrain(xx,zz);if(h<.5||h>1150)continue;
-  const c=climate(xx,zz,h),r=hash(ix,iz,303);
-  const steep=slopeAt(xx,zz),rockiness=clamp01((steep-.3)*1.8);
-  const rockyGround=h<14||h>920||c.temp<.08||c.moisture<.16;
+  const h=terrain(xx,zz);if(h<.5)continue;
+  const c=climate(xx,zz,h),steep=slopeAt(xx,zz),L=landscapeAt(xx,zz,h,c,steep),r=hash(ix,iz,303);
   let scale=0;
-  if(rockyGround||rockiness>.34){
-   if(r<(h<14?.22:.12)+rockiness*.40)scale=.28+hash(ix,iz,304)*1.6;
-  }else if(r>.965&&steep>.11)scale=.34+hash(ix,iz,304)*1.1;
+  if(r<stoneProbability(h,L,steep))scale=.28+hash(ix,iz,304)*1.6;
   if(scale>.65&&Math.hypot(px-xx,pz-zz)<radius+scale*.85&&py>h-.4&&py<h+scale*1.5)return true;
  }
  return false;
