@@ -222,7 +222,7 @@ scene.add(group);tiles.set(key,{group,d});}
 // Both layers fade out before reaching their streaming boundaries.
 function makeVegetationTile(job){
  const {x,z,size,layer}=job,base=layer==='base',families=[[],[],[]],spacing=base?100:25;
- for(let tz=z;tz<z+size;tz+=spacing)for(let tx=x;tx<x+size;tx+=spacing){
+ for(let tz=Math.ceil(z/spacing)*spacing;tz<z+size;tz+=spacing)for(let tx=Math.ceil(x/spacing)*spacing;tx<x+size;tx+=spacing){
   const ix=Math.round(tx/25),iz=Math.round(tz/25);
   if(!base&&ix%4===0&&iz%4===0)continue;
   const px=tx+(hash(ix*25,iz*25,201)-.5)*20,pz=tz+(hash(ix*25,iz*25,202)-.5)*20;
