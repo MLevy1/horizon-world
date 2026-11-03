@@ -10,12 +10,12 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 0.3</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 0.4</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span></div></div>
 <div id="toast" class="toast"></div>
-<div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
+<div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Vegetation collisions <output id="collisionOut">On</output></label><input id="collisions" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Trees and rocks block movement, including in flight. Turn off to pass through scenery.</p><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
 <div id="mapbox" class="glass mapbox"><div class="maphead"><b>REGIONAL MAP</b><button id="closeMap" class="chip" style="padding:3px 7px">×</button></div><canvas id="mapCanvas" width="256" height="256"></canvas><div class="mapfoot">20 × 20 km · north is up<br>Click a point to teleport · dotted rings every 2.5 km</div></div>
 <div class="mobile"><div id="joystick" class="touchpad"><div class="stick" id="stick"></div></div><div class="mobbuttons"><button id="upBtn">↑</button><button id="flyBtn">✈</button><button id="downBtn">↓</button></div></div>
 <div class="footnote">Procedural terrain · browser-rendered · no server required</div>
@@ -24,7 +24,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 const $=id=>document.getElementById(id);const renderer=new THREE.WebGLRenderer({canvas:$('view'),antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.65));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
 const scene=new THREE.Scene();scene.background=new THREE.Color('#a9c9d5');scene.fog=new THREE.FogExp2('#b0c9cd',0.000085);scene.add(new THREE.HemisphereLight(0xddeeff,0x777d64,2.15));const sun=new THREE.DirectionalLight(0xffefd5,2.0);sun.position.set(-5000,8500,-3000);scene.add(sun);
-const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.3,30000);camera.rotation.order='YXZ';const player={x:0,y:1000,z:0,yaw:0,pitch:-.13,fly:true,velocity:0};const config={seed:'HORIZON-01',maxDistance:16000,detail:24,speed:65,heightScale:1};let seedNumber=0,terrainCache=new Map(),tiles=new Map(),desired=new Map(),buildQueue=[],lastUpdateX=Infinity,lastUpdateZ=Infinity,lastUpdateAt=0,active=false,keys=new Set(),dragging=false,touchLook=null,touchVector={x:0,y:0},verticalTouch=0,frame=0,mapDirty=true,mapPixels=null,loadingStarted=performance.now();
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.3,30000);camera.rotation.order='YXZ';const player={x:0,y:1000,z:0,yaw:0,pitch:-.13,fly:true,velocity:0};const config={seed:'HORIZON-01',maxDistance:16000,detail:24,speed:65,heightScale:1,collisions:true};let seedNumber=0,terrainCache=new Map(),tiles=new Map(),desired=new Map(),buildQueue=[],lastUpdateX=Infinity,lastUpdateZ=Infinity,lastUpdateAt=0,active=false,keys=new Set(),dragging=false,touchLook=null,touchVector={x:0,y:0},verticalTouch=0,frame=0,mapDirty=true,mapPixels=null,loadingStarted=performance.now();
 function seedHash(str){let h=2166136261;for(let i=0;i<str.length;i++)h=Math.imul(h^str.charCodeAt(i),16777619);return h>>>0}function hash(x,z,s=0){let h=Math.imul(x|0,374761393)+Math.imul(z|0,668265263)+Math.imul((seedNumber+s)|0,1442695041);h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967295}const smooth=t=>t*t*(3-2*t);function noise(x,z,scale,s=0){let a=x/scale,b=z/scale,i=Math.floor(a),j=Math.floor(b),u=smooth(a-i),v=smooth(b-j);let A=hash(i,j,s),B=hash(i+1,j,s),C=hash(i,j+1,s),D=hash(i+1,j+1,s);return ((A+(B-A)*u)*(1-v)+(C+(D-C)*u)*v)*2-1}function fbm(x,z,scale,s=0,oct=4){let n=0,amp=1,total=0;for(let k=0;k<oct;k++){n+=noise(x,z,scale/(1<<k),s+k*97)*amp;total+=amp;amp*=.52}return n/total}function terrain(x,z){const wx=x+fbm(x,z,6800,51,3)*1750,wz=z+fbm(x,z,6900,71,3)*1750;const broad=fbm(wx,wz,13500,11,4);const uplift=Math.max(0,fbm(wx,wz,9400,18,4)*.85+.26);const ridge=1-Math.abs(noise(wx,wz,3000,81));const ridge2=1-Math.abs(noise(wx,z,1300,83));const mountain=Math.pow(ridge,2.9)*uplift*1650+Math.pow(ridge2,3)*uplift*410;const hills=fbm(wx,wz,2200,26,5)*200+fbm(wx,wz,480,32,4)*62;const local=fbm(x,z,110,42,3)*12;return (broad*650+mountain+hills+local-185)*config.heightScale}function climate(x,z,h){const temp=.48+fbm(x,z,16500,100,3)*.35-h*.00031;const moisture=.48+fbm(x,z,9000,120,4)*.4;return {temp,moisture}}function colorFor(x,z,h){
  // A varied coastal transition: wet sand, drier sand, shingle and the first vegetation.
  const beachNoise=fbm(x,z,75,188,3)*2.5;
@@ -106,8 +106,35 @@ function regionName(x,z){
  return h>175?'Rolling Hills':'Open Lowlands';
 }
 
-function buildTile(key,d){const {x,z,size}=d,N=config.detail,step=size/N,vertices=[],colors=[],indices=[];for(let j=0;j<=N;j++)for(let i=0;i<=N;i++){let xx=x+i*step,zz=z+j*step,hh=terrain(xx,zz);vertices.push(xx,hh,zz);colors.push(...colorFor(xx,zz,hh))}for(let j=0;j<N;j++)for(let i=0;i<N;i++){let a=j*(N+1)+i,b=a+1,c=a+N+1,e=c+1;indices.push(a,c,b,b,c,e)}// downward skirts prevent cracks where quadtree levels meet
-const skirt=65;for(const side of [0,1,2,3]){let points=[];for(let k=0;k<=N;k++){const i=side===0?k:side===1?N:side===2?N-k:0,j=side===0?0:side===1?k:side===2?N:N-k;points.push(j*(N+1)+i)}let base=vertices.length/3;for(const v of points){vertices.push(vertices[v*3],vertices[v*3+1]-skirt,vertices[v*3+2]);colors.push(colors[v*3],colors[v*3+1],colors[v*3+2])}for(let k=0;k<N;k++){indices.push(points[k],base+k,points[k+1],points[k+1],base+k,base+k+1)}}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();const mesh=new THREE.Mesh(geometry,terrainMaterial);mesh.frustumCulled=true;const group=new THREE.Group();group.add(mesh);
+// Match fine tile edge heights to adjacent coarser tiles to avoid visible skirt walls.
+function sampleMatchedEdge(wx,wz,axis,tileSize,neighbor){
+ if(!neighbor||neighbor.size<=tileSize)return terrain(wx,wz);
+ const stride=neighbor.size/config.detail;
+ const v=axis==='x'?wz:wx, origin=axis==='x'?neighbor.z:neighbor.x;
+ const a=origin+Math.max(0,Math.min(config.detail-1,Math.floor((v-origin)/stride)))*stride;
+ const b=a+stride,t=Math.max(0,Math.min(1,(v-a)/stride));
+ const ax=axis==='x'?wx:a,az=axis==='x'?a:wz,bx=axis==='x'?wx:b,bz=axis==='x'?b:wz;
+ return terrain(ax,az)*(1-t)+terrain(bx,bz)*t;
+}
+function tileContaining(wx,wz){
+ for(const tile of desired.values())if(wx>=tile.x&&wx<tile.x+tile.size&&wz>=tile.z&&wz<tile.z+tile.size)return tile;
+ return null;
+}
+function buildTile(key,d){const {x,z,size}=d,N=config.detail,step=size/N,vertices=[],colors=[],indices=[];
+ const neighbors=[
+  tileContaining(x+size/2,z-.02),tileContaining(x+size+.02,z+size/2),
+  tileContaining(x+size/2,z+size+.02),tileContaining(x-.02,z+size/2)
+ ];
+ for(let j=0;j<=N;j++)for(let i=0;i<=N;i++){
+  const xx=x+i*step,zz=z+j*step;let hh=terrain(xx,zz);
+  if(j===0&&neighbors[0]?.size>size)hh=sampleMatchedEdge(xx,zz,'z',size,neighbors[0]);
+  if(j===N&&neighbors[2]?.size>size)hh=sampleMatchedEdge(xx,zz,'z',size,neighbors[2]);
+  if(i===0&&neighbors[3]?.size>size)hh=sampleMatchedEdge(xx,zz,'x',size,neighbors[3]);
+  if(i===N&&neighbors[1]?.size>size)hh=sampleMatchedEdge(xx,zz,'x',size,neighbors[1]);
+  vertices.push(xx,hh,zz);colors.push(...colorFor(xx,zz,hh));
+ }
+ for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=j*(N+1)+i,b=a+1,c=a+N+1,e=c+1;indices.push(a,c,b,b,c,e)}
+ const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();const mesh=new THREE.Mesh(geometry,terrainMaterial);mesh.frustumCulled=true;const group=new THREE.Group();group.add(mesh);
 // Vegetation is deliberately sparse at this stage; nearby trees use low-poly geometry.
 if(size<=256&&Math.abs(x+size/2-player.x)<1250&&Math.abs(z+size/2-player.z)<1250){
  const families=[[],[],[]],spacing=25;
@@ -143,13 +170,73 @@ const underwaterBackground=new THREE.Color(0x245568);
 const clock=new THREE.Clock();function updateCamera(){camera.position.set(player.x,player.y,player.z);camera.rotation.y=player.yaw;camera.rotation.x=player.pitch;
 water.position.x=Math.round(player.x/1000)*1000;water.position.z=Math.round(player.z/1000)*1000;
 const underwater=player.y<.2;scene.fog=underwater?underwaterFog:normalFog;scene.background=underwater?underwaterBackground:normalBackground;}
+// Deterministic local collision queries match vegetation placement without a physics engine.
+function collidesWithScenery(px,py,pz){
+ if(!config.collisions)return false;
+ const radius=.8,treeSpacing=25;
+ // Tree positions are deterministic across terrain tiles.
+ const tx0=Math.floor(px/treeSpacing)*treeSpacing,tz0=Math.floor(pz/treeSpacing)*treeSpacing;
+ for(let tz=tz0-2*treeSpacing;tz<=tz0+2*treeSpacing;tz+=treeSpacing)
+ for(let tx=tx0-2*treeSpacing;tx<=tx0+2*treeSpacing;tx+=treeSpacing){
+  const ix=Math.floor(tx),iz=Math.floor(tz);
+  const xx=tx+(hash(ix,iz,201)-.5)*treeSpacing*.8,zz=tz+(hash(ix,iz,202)-.5)*treeSpacing*.8;
+  const h=terrain(xx,zz),c=climate(xx,zz,h);
+  if(h<18||h>1100||c.temp<.13||c.moisture<.25||hash(ix,iz,203)>.37)continue;
+  const type=(c.temp>.38&&hash(ix,iz,205)>.46)?1:(hash(ix,iz,206)>.58?2:0);
+  const scale=.65+hash(ix,iz,204)*.95;
+  const horizontal=Math.hypot(px-xx,pz-zz);
+  // Solid trunk, broad crown approximation; enough for convincing navigation.
+  if(horizontal<radius+1.4*scale&&py>h-.5&&py<h+9*scale)return true;
+  const crownY=h+(type===2?15:12)*scale,crownRadius=(type===1?7.4:type===2?5.6:5.5)*scale;
+  if(Math.hypot(horizontal,py-crownY)<crownRadius+radius)return true;
+ }
+ // Only larger stones receive collisions; grass and small pebbles do not.
+ const spacing=13,rx0=Math.floor(px/spacing),rz0=Math.floor(pz/spacing);
+ for(let iz=rz0-2;iz<=rz0+2;iz++)for(let ix=rx0-2;ix<=rx0+2;ix++){
+  const tx=ix*spacing,tz=iz*spacing,xx=tx+(hash(ix,iz,301)-.5)*spacing*.75,zz=tz+(hash(ix,iz,302)-.5)*spacing*.75;
+  const h=terrain(xx,zz),c=climate(xx,zz,h),r=hash(ix,iz,303);
+  if(h<.5||h>1150)continue;
+  let scale=0;
+  if(h<13){if(r<.13)scale=.25+hash(ix,iz,304)*.9}
+  else if(h>940||c.temp<.06||c.moisture<.15){if(r<.09)scale=.5+hash(ix,iz,304)*1.7}
+  else if(r>.86&&r<.9)scale=.35+hash(ix,iz,304)*.9;
+  if(scale&&Math.hypot(px-xx,pz-zz)<radius+scale*.85&&py>h-.4&&py<h+scale*1.5)return true;
+ }
+ return false;
+}
 function reposition(x,z){player.x=x;player.z=z;player.y=terrain(x,z)+Math.max(22,player.fly?125:2.1);player.velocity=0;planTerrain(true);refreshGroundCover();updateCamera();toast('Moved to '+Math.round(x)+' E · '+Math.round(z)+' N');}
-function toast(m){$('toast').textContent=m;$('toast').classList.add('visible');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('visible'),2100)}function setFly(v){player.fly=v;player.velocity=0;toast(v?'Flight mode':'Walking mode');$('flyBtn').textContent=v?'✈':'♟'}function update(dt){const forward=(keys.has('KeyW')?1:0)-(keys.has('KeyS')?1:0)-touchVector.y,side=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0)+touchVector.x;let f=forward,s=side,length=Math.hypot(f,s);if(length>1){f/=length;s/=length}const fast=keys.has('ControlLeft')?3:1,vel=config.speed/3.6*(player.fly?1:0.36)*fast;player.x+=(-Math.sin(player.yaw)*f+Math.cos(player.yaw)*s)*vel*dt;player.z+=(-Math.cos(player.yaw)*f-Math.sin(player.yaw)*s)*vel*dt;const ground=terrain(player.x,player.z)+2.1;if(player.fly){const v=(keys.has('Space')?1:0)-(keys.has('ShiftLeft')||keys.has('ShiftRight')?1:0)+verticalTouch;player.y+=v*vel*dt;player.y=Math.max(player.y,ground)}else{if(keys.has('Space')&&player.y<=ground+.1)player.velocity=8;player.velocity-=21*dt;player.y=Math.max(ground,player.y+player.velocity*dt);if(player.y===ground)player.velocity=0}updateCamera()}
+function toast(m){$('toast').textContent=m;$('toast').classList.add('visible');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('visible'),2100)}function setFly(v){player.fly=v;player.velocity=0;toast(v?'Flight mode':'Walking mode');$('flyBtn').textContent=v?'✈':'♟'}function update(dt){
+ const forward=(keys.has('KeyW')?1:0)-(keys.has('KeyS')?1:0)-touchVector.y,
+ side=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0)+touchVector.x;
+ let f=forward,st=side,length=Math.hypot(f,st);if(length>1){f/=length;st/=length}
+ const fast=keys.has('ControlLeft')?3:1,vel=config.speed/3.6*(player.fly?1:.36)*fast;
+ const dx=(-Math.sin(player.yaw)*f+Math.cos(player.yaw)*st)*vel*dt;
+ const dz=(-Math.cos(player.yaw)*f-Math.sin(player.yaw)*st)*vel*dt;
+ // Substeps keep fast flight from skipping straight through narrow obstacles.
+ const steps=Math.min(24,Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/1.5)));
+ const dy=player.fly?((keys.has('Space')?1:0)-(keys.has('ShiftLeft')||keys.has('ShiftRight')?1:0)+verticalTouch)*vel*dt:0;
+ for(let i=0;i<steps;i++){
+  const nextX=player.x+dx/steps,nextZ=player.z+dz/steps,nextY=player.y+dy/steps;
+  if(!collidesWithScenery(nextX,player.y,player.z))player.x=nextX;
+  if(!collidesWithScenery(player.x,player.y,nextZ))player.z=nextZ;
+  if(player.fly&&!collidesWithScenery(player.x,nextY,player.z))player.y=nextY;
+ }
+ const ground=terrain(player.x,player.z)+2.1;
+ if(player.fly){player.y=Math.max(player.y,ground)}
+ else{
+  if(keys.has('Space')&&player.y<=ground+.1)player.velocity=8;
+  player.velocity-=21*dt;
+  const y=Math.max(ground,player.y+player.velocity*dt);
+  if(!collidesWithScenery(player.x,y,player.z))player.y=y;
+  if(player.y<=ground+.001)player.velocity=0;
+ }
+ updateCamera();
+}
 function renderMap(){const canvas=$('mapCanvas'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;if(mapDirty){const im=ctx.createImageData(W,H);for(let j=0;j<H;j++)for(let i=0;i<W;i++){const x=(i/W-.5)*20000,z=(.5-j/H)*20000,h=terrain(x,z),c=colorFor(x,z,h);let rgb=h<0?[59,114,149]:c.map(v=>Math.round(Math.pow(v,1/2.2)*255));const n=(j*W+i)*4;im.data[n]=rgb[0];im.data[n+1]=rgb[1];im.data[n+2]=rgb[2];im.data[n+3]=255}mapPixels=im;mapDirty=false}ctx.putImageData(mapPixels,0,0);ctx.strokeStyle='#ffffff45';ctx.lineWidth=.6;for(let r=2500;r<=10000;r+=2500){ctx.beginPath();ctx.arc(W/2,H/2,r/20000*W,0,Math.PI*2);ctx.stroke()}let px=(player.x/20000+.5)*W,py=(.5-player.z/20000)*H;ctx.save();ctx.translate(px,py);ctx.rotate(player.yaw);ctx.fillStyle='#fff';ctx.strokeStyle='#1b3e42';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(-6,7);ctx.lineTo(0,4);ctx.lineTo(6,7);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
 function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.055);if(active)update(dt);let work=0;while(buildQueue.length&&work<2){const [k,d]=buildQueue.shift();if(desired.has(k)&&!tiles.has(k)){buildTile(k,d);work++}}if(active&&++frame%12===0){planTerrain();if(frame%60===0)refreshGroundCover();$('region').textContent=regionName(player.x,player.z);$('coords').textContent=`${Math.round(player.x).toLocaleString()} E · ${Math.round(player.z).toLocaleString()} N · ${Math.round(player.y).toLocaleString()} m elevation`;$('movement').textContent=player.fly?'FLYING':'WALKING';$('speedtext').textContent=config.speed+' km/h';$('chunks').textContent=tiles.size+' terrain tiles · '+buildQueue.length+' queued';if($('mapbox').classList.contains('open'))renderMap()}renderer.render(scene,camera);if(!buildQueue.length&&$('loading').textContent.startsWith('Generating'))$('loading').textContent='World ready · seed '+config.seed;}
 function setSeed(){config.seed=$('seed').value.trim()||'HORIZON-01';seedNumber=seedHash(config.seed);for(const k of [...tiles.keys()])deleteTile(k);lastUpdateX=Infinity;mapDirty=true;reposition(0,0);$('loading').textContent='Generating your landscape…';toast('Seed: '+config.seed)}
 $('start').onclick=()=>{active=true;$('intro').classList.add('hidden');if(matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()};$('helpBtn').onclick=()=>{$('intro').classList.remove('hidden');active=false;document.exitPointerLock?.()};$('settingsBtn').onclick=()=>{$('panel').classList.toggle('open');if($('panel').classList.contains('open'))document.exitPointerLock?.()};$('mapBtn').onclick=()=>{$('mapbox').classList.toggle('open');if($('mapbox').classList.contains('open')){renderMap();document.exitPointerLock?.()}};$('closeMap').onclick=()=>$('mapbox').classList.remove('open');$('view').addEventListener('click',()=>{if(active&&!$('panel').classList.contains('open')&&!$('mapbox').classList.contains('open')&&matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()});document.addEventListener('mousemove',e=>{if(document.pointerLockElement===$('view')){player.yaw-=e.movementX*.002;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-e.movementY*.002))}});document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;keys.add(e.code);if(['Space','ArrowDown','ArrowUp'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='KeyF')setFly(!player.fly);if(e.code==='KeyM')$('mapBtn').click();if(e.code==='KeyG')$('settingsBtn').click();if(e.code==='Escape')document.exitPointerLock?.()});document.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>keys.clear());
-$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{let r=e.target.getBoundingClientRect();reposition(((e.clientX-r.left)/r.width-.5)*20000,(.5-(e.clientY-r.top)/r.height)*20000)};
+$('collisions').onchange=e=>{config.collisions=e.target.checked;$('collisionOut').textContent=config.collisions?'On':'Off';toast(config.collisions?'Scenery collisions enabled':'Scenery collisions disabled')};$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{let r=e.target.getBoundingClientRect();reposition(((e.clientX-r.left)/r.width-.5)*20000,(.5-(e.clientY-r.top)/r.height)*20000)};
 function bindHold(id,value){const el=$(id);el.addEventListener('pointerdown',e=>{e.preventDefault();verticalTouch=value;el.setPointerCapture(e.pointerId)});el.addEventListener('pointerup',()=>verticalTouch=0);el.addEventListener('pointercancel',()=>verticalTouch=0)}bindHold('upBtn',1);bindHold('downBtn',-1);$('flyBtn').onclick=()=>setFly(!player.fly);const joy=$('joystick');function moveJoy(e){const r=joy.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),mag=Math.max(1,Math.hypot(dx,dy)),m=Math.min(mag,42);touchVector.x=dx/mag*m/42;touchVector.y=dy/mag*m/42;$('stick').style.transform=`translate(${touchVector.x*37}px,${touchVector.y*37}px)`}joy.addEventListener('pointerdown',e=>{joy.setPointerCapture(e.pointerId);moveJoy(e)});joy.addEventListener('pointermove',e=>{if(joy.hasPointerCapture(e.pointerId))moveJoy(e)});function releaseJoy(){touchVector.x=touchVector.y=0;$('stick').style.transform=''}joy.addEventListener('pointerup',releaseJoy);joy.addEventListener('pointercancel',releaseJoy);$('view').addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;touchLook={id:e.pointerId,x:e.clientX,y:e.clientY};$('view').setPointerCapture(e.pointerId)});$('view').addEventListener('pointermove',e=>{if(!touchLook||e.pointerId!==touchLook.id)return;player.yaw-=(e.clientX-touchLook.x)*.004;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-(e.clientY-touchLook.y)*.004));touchLook.x=e.clientX;touchLook.y=e.clientY});$('view').addEventListener('pointerup',()=>touchLook=null);window.addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()});
 seedNumber=seedHash(config.seed);player.x=0;player.z=0;player.y=terrain(0,0)+220;updateCamera();planTerrain(true);$('region').textContent=regionName(player.x,player.z);loop();
 </script>
