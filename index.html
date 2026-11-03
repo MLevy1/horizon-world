@@ -10,7 +10,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 0.8</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 0.9</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span></div></div>
@@ -89,6 +89,27 @@ const trunkGeo=new THREE.CylinderGeometry(.95,1.3,8,6);
 const foliageGeos=[new THREE.ConeGeometry(5.2,18,7),new THREE.IcosahedronGeometry(7.2,1),new THREE.ConeGeometry(3.8,24,7)];
 const trunkMat=new THREE.MeshLambertMaterial({color:0x68513b});
 const foliageMats=[new THREE.MeshLambertMaterial({color:0x365d43}),new THREE.MeshLambertMaterial({color:0x548047}),new THREE.MeshLambertMaterial({color:0x294b3f})];
+// Trees gradually dissolve into the already forest-tinted landscape instead of switching
+// instantly from invisible to an opaque low-poly model. Screen-door fade maintains
+// depth-writing and avoids translucent-instanced-mesh ordering problems on iPhone.
+function addDistanceFade(material){
+ material.onBeforeCompile=shader=>{
+  shader.vertexShader=shader.vertexShader
+   .replace('#include <common>','#include <common>\nvarying float vTreeViewDistance;')
+   .replace('#include <project_vertex>','#include <project_vertex>\nvTreeViewDistance=length(mvPosition.xyz);');
+  shader.fragmentShader=shader.fragmentShader
+   .replace('#include <common>','#include <common>\nvarying float vTreeViewDistance;')
+   .replace('#include <color_fragment>',`#include <color_fragment>
+float treeVisibility=1.0-smoothstep(2600.0,6650.0,vTreeViewDistance);
+vec2 q=mod(floor(gl_FragCoord.xy),4.0);
+float threshold=mod(q.x*3.0+q.y*5.0,16.0)/16.0;
+if(treeVisibility<=threshold)discard;
+`);
+ };
+ material.customProgramCacheKey=()=> 'horizon-tree-fade-v09';
+}
+addDistanceFade(trunkMat);
+foliageMats.forEach(addDistanceFade);
 const tempObj=new THREE.Object3D();
 // Groundcover is generated independently from trees, and only close to the player.
 // Two crossed triangular blades make a low-cost grass tuft without alpha sorting.
@@ -198,12 +219,12 @@ function buildTile(key,d){const {x,z,size}=d,N=d.segments||config.detail,step=si
 // Vegetation is deliberately sparse at this stage; nearby trees use low-poly geometry.
 // Coarse forest silhouettes extend beyond the detailed near-field trees.
 const forestRange=Math.hypot(Math.max(0,Math.abs(x+size/2-player.x)-size/2),Math.max(0,Math.abs(z+size/2-player.z)-size/2));
-if(size<=1024&&forestRange<5400){
- const families=[[],[],[]],spacing=size<=256?25:size<=512?58:105;
+if(size<=2048&&forestRange<7200){
+ const families=[[],[],[]],spacing=size<=256?25:size<=512?50:100;
  for(let tz=Math.ceil(z/spacing)*spacing;tz<z+size;tz+=spacing)for(let tx=Math.ceil(x/spacing)*spacing;tx<x+size;tx+=spacing){
   // World-cell indices preserve deterministic distribution within each LOD tier.
   const ix=Math.floor(tx),iz=Math.floor(tz);
-  const px=tx+(hash(ix,iz,201)-.5)*spacing*.8,pz=tz+(hash(ix,iz,202)-.5)*spacing*.8;
+  const px=tx+(hash(ix,iz,201)-.5)*25*.8,pz=tz+(hash(ix,iz,202)-.5)*25*.8;
   const py=terrain(px,pz),c=climate(px,pz,py),L=landscapeAt(px,pz,py,c,slopeAt(px,pz));
   const density=treeProbability(px,pz,py,c,L);
   if(hash(ix,iz,203)>density)continue;
