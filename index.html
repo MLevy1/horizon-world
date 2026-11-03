@@ -10,7 +10,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 0.7</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 0.8</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span></div></div>
@@ -24,7 +24,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 const $=id=>document.getElementById(id);const renderer=new THREE.WebGLRenderer({canvas:$('view'),antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.65));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
 const scene=new THREE.Scene();scene.background=new THREE.Color('#a9c9d5');scene.fog=new THREE.FogExp2('#b0c9cd',0.000085);scene.add(new THREE.HemisphereLight(0xddeeff,0x777d64,2.15));const sun=new THREE.DirectionalLight(0xffefd5,2.0);sun.position.set(-5000,8500,-3000);scene.add(sun);
-const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.3,30000);camera.rotation.order='YXZ';const player={x:0,y:1000,z:0,yaw:0,pitch:-.13,fly:true,velocity:0};const config={seed:'HORIZON-01',maxDistance:16000,detail:24,speed:65,heightScale:1,collisions:true};let seedNumber=0,terrainCache=new Map(),tiles=new Map(),desired=new Map(),buildQueue=[],lastUpdateX=Infinity,lastUpdateZ=Infinity,lastUpdateAt=0,active=false,keys=new Set(),dragging=false,touchLook=null,touchVector={x:0,y:0},verticalTouch=0,frame=0,mapDirty=true,mapPixels=null,loadingStarted=performance.now();
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.3,30000);camera.rotation.order='YXZ';const player={x:0,y:1000,z:0,yaw:0,pitch:-.13,fly:true,velocity:0};const config={seed:'HORIZON-01',maxDistance:16000,detail:24,speed:65,heightScale:1,collisions:true};let seedNumber=0,terrainCache=new Map(),tiles=new Map(),desired=new Map(),buildQueue=[],lastUpdateX=Infinity,lastUpdateZ=Infinity,lastUpdateAt=0,streamDirX=0,streamDirZ=-1,streamSpeed=0,active=false,keys=new Set(),dragging=false,touchLook=null,touchVector={x:0,y:0},verticalTouch=0,frame=0,mapDirty=true,mapPixels=null,loadingStarted=performance.now();
 function seedHash(str){let h=2166136261;for(let i=0;i<str.length;i++)h=Math.imul(h^str.charCodeAt(i),16777619);return h>>>0}function hash(x,z,s=0){let h=Math.imul(x|0,374761393)+Math.imul(z|0,668265263)+Math.imul((seedNumber+s)|0,1442695041);h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967295}const smooth=t=>t*t*(3-2*t);function noise(x,z,scale,s=0){let a=x/scale,b=z/scale,i=Math.floor(a),j=Math.floor(b),u=smooth(a-i),v=smooth(b-j);let A=hash(i,j,s),B=hash(i+1,j,s),C=hash(i,j+1,s),D=hash(i+1,j+1,s);return ((A+(B-A)*u)*(1-v)+(C+(D-C)*u)*v)*2-1}function fbm(x,z,scale,s=0,oct=4){let n=0,amp=1,total=0;for(let k=0;k<oct;k++){n+=noise(x,z,scale/(1<<k),s+k*97)*amp;total+=amp;amp*=.52}return n/total}function terrain(x,z){const wx=x+fbm(x,z,6800,51,3)*1750,wz=z+fbm(x,z,6900,71,3)*1750;const broad=fbm(wx,wz,13500,11,4);const uplift=Math.max(0,fbm(wx,wz,9400,18,4)*.85+.26);const ridge=1-Math.abs(noise(wx,wz,3000,81));const ridge2=1-Math.abs(noise(wx,z,1300,83));const mountain=Math.pow(ridge,2.9)*uplift*1650+Math.pow(ridge2,3)*uplift*410;const hills=fbm(wx,wz,2200,26,5)*200+fbm(wx,wz,480,32,4)*62;const local=fbm(x,z,110,42,3)*12;return (broad*650+mountain+hills+local-185)*config.heightScale}function climate(x,z,h){const temp=.48+fbm(x,z,16500,100,3)*.35-h*.00031;const moisture=.48+fbm(x,z,9000,120,4)*.4;return {temp,moisture}}function clamp01(v){return Math.max(0,Math.min(1,v))}
 function smoothRange(a,b,v){let t=clamp01((v-a)/(b-a));return t*t*(3-2*t)}
 function slopeAt(x,z){const d=9;return Math.hypot((terrain(x+d,z)-terrain(x-d,z))/(2*d),(terrain(x,z+d)-terrain(x,z-d))/(2*d))}
@@ -169,9 +169,9 @@ function regionName(x,z){
 // Match fine tile edge heights to adjacent coarser tiles to avoid visible skirt walls.
 function sampleMatchedEdge(wx,wz,axis,tileSize,neighbor){
  if(!neighbor||neighbor.size<=tileSize)return terrain(wx,wz);
- const stride=neighbor.size/config.detail;
+ const stride=neighbor.size/(neighbor.segments||config.detail);
  const v=axis==='x'?wz:wx, origin=axis==='x'?neighbor.z:neighbor.x;
- const a=origin+Math.max(0,Math.min(config.detail-1,Math.floor((v-origin)/stride)))*stride;
+ const a=origin+Math.max(0,Math.min((neighbor.segments||config.detail)-1,Math.floor((v-origin)/stride)))*stride;
  const b=a+stride,t=Math.max(0,Math.min(1,(v-a)/stride));
  const ax=axis==='x'?wx:a,az=axis==='x'?a:wz,bx=axis==='x'?wx:b,bz=axis==='x'?b:wz;
  return terrain(ax,az)*(1-t)+terrain(bx,bz)*t;
@@ -180,7 +180,7 @@ function tileContaining(wx,wz){
  for(const tile of desired.values())if(wx>=tile.x&&wx<tile.x+tile.size&&wz>=tile.z&&wz<tile.z+tile.size)return tile;
  return null;
 }
-function buildTile(key,d){const {x,z,size}=d,N=config.detail,step=size/N,vertices=[],colors=[],indices=[];
+function buildTile(key,d){const {x,z,size}=d,N=d.segments||config.detail,step=size/N,vertices=[],colors=[],indices=[];
  const neighbors=[
   tileContaining(x+size/2,z-.02),tileContaining(x+size+.02,z+size/2),
   tileContaining(x+size/2,z+size+.02),tileContaining(x-.02,z+size/2)
@@ -245,23 +245,43 @@ function reconcileTiles(){
   if(desired.has(k))t.group.visible=!remainingOld.some(d=>overlaps(d,t.d));
  }
 }
+function tileSegments(size){
+ // Sampling density varies with distance: no need for 40x40 grids 15 km away.
+ return size>=4096?8:size>=2048?10:size>=1024?12:size>=512?16:config.detail;
+}
 function planTerrain(force=false){
- if(!force&&Math.hypot(player.x-lastUpdateX,player.z-lastUpdateZ)<100)return;
- lastUpdateX=player.x;lastUpdateZ=player.z;desired.clear();
- const root=32768;
+ const moved=Math.hypot(player.x-lastUpdateX,player.z-lastUpdateZ);
+ if(!force&&moved<45)return;
+ const now=performance.now(),elapsed=Math.max(.03,(now-lastUpdateAt)/1000);
+ if(Number.isFinite(lastUpdateX)&&Number.isFinite(lastUpdateZ)){
+  const vx=(player.x-lastUpdateX)/elapsed,vz=(player.z-lastUpdateZ)/elapsed,mag=Math.hypot(vx,vz);
+  if(mag>1){streamDirX=vx/mag;streamDirZ=vz/mag;streamSpeed=Math.min(150,mag)}
+ }else{streamDirX=-Math.sin(player.yaw);streamDirZ=-Math.cos(player.yaw);streamSpeed=0}
+ lastUpdateX=player.x;lastUpdateZ=player.z;lastUpdateAt=now;
+ desired.clear();
+ const root=32768,lead=Math.min(3200,Math.max(600,streamSpeed*15));
+ const aheadX=player.x+streamDirX*lead,aheadZ=player.z+streamDirZ*lead;
  function visit(x,z,size){
   const cx=x+size/2,cz=z+size/2;
-  const dx=Math.max(0,Math.abs(player.x-cx)-size/2),dz=Math.max(0,Math.abs(player.z-cz)-size/2),dist=Math.hypot(dx,dz);
-  if(dist>config.maxDistance+size*.35)return;
-  if(size>(config.detail>=40?128:256)&&dist<size*1.75){
+  const dx=Math.max(0,Math.abs(player.x-cx)-size/2),dz=Math.max(0,Math.abs(player.z-cz)-size/2);
+  const dist=Math.hypot(dx,dz);
+  const fx=Math.max(0,Math.abs(aheadX-cx)-size/2),fz=Math.max(0,Math.abs(aheadZ-cz)-size/2);
+  const futureDist=Math.hypot(fx,fz);
+  if(dist>config.maxDistance+size*.35+1200&&futureDist>config.maxDistance+size*.35)return;
+  const lodDist=Math.min(dist,futureDist*.85);
+  if(size>(config.detail>=40?128:256)&&lodDist<size*1.75){
    const half=size/2;visit(x,z,half);visit(x+half,z,half);visit(x,z+half,half);visit(x+half,z+half,half);
   }else{
-   const k=tileKey(x,z,size);desired.set(k,{x,z,size,dist});
+   const k=tileKey(x,z,size);
+   desired.set(k,{x,z,size,dist,futureDist,segments:tileSegments(size)});
   }
  }
  const rx=Math.floor(player.x/root)*root,rz=Math.floor(player.z/root)*root;
  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)visit(rx+i*root,rz+j*root,root);
- buildQueue=[...desired.entries()].filter(([k])=>!tiles.has(k)).sort((a,b)=>a[1].dist-b[1].dist);
+ buildQueue=[...desired.entries()].filter(([k])=>!tiles.has(k)).sort((a,b)=>{
+  function priority(d){return Math.min(d.dist,d.futureDist*.8)+(d.size<=256?350:0)-(d.size>=1024?1400:0)}
+  return priority(a[1])-priority(b[1]);
+ });
  reconcileTiles();
 }
 // Water surface follows player position.
