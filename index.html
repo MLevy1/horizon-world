@@ -124,12 +124,13 @@ function createGroundCover(tile){
  tile.group.add(cover);tile.cover=cover;
 }
 function refreshGroundCover(){
+ let newTiles=0;
  for(const tile of tiles.values()){
   const {x,z,size}=tile.d;
   const dx=Math.max(0,Math.abs(player.x-(x+size/2))-size/2);
   const dz=Math.max(0,Math.abs(player.z-(z+size/2))-size/2);
   const nearby=size<=256&&Math.hypot(dx,dz)<325;
-  if(nearby&&!tile.cover)createGroundCover(tile);
+  if(nearby&&!tile.cover&&newTiles<2){createGroundCover(tile);newTiles++}
   if(!nearby&&tile.cover){tile.group.remove(tile.cover);tile.cover=null}
  }
 }
@@ -230,17 +231,19 @@ function collidesWithScenery(px,py,pz){
   const crownY=h+(type===2?15:12)*scale,crownRadius=(type===1?7.4:type===2?5.6:5.5)*scale;
   if(Math.hypot(horizontal,py-crownY)<crownRadius+radius)return true;
  }
- // Only larger stones receive collisions; grass and small pebbles do not.
- const spacing=13,rx0=Math.floor(px/spacing),rz0=Math.floor(pz/spacing);
+ // Rock collision locations and sizes mirror the rendered instanced stones.
+ const spacing=9,rx0=Math.floor(px/spacing),rz0=Math.floor(pz/spacing);
  for(let iz=rz0-2;iz<=rz0+2;iz++)for(let ix=rx0-2;ix<=rx0+2;ix++){
-  const tx=ix*spacing,tz=iz*spacing,xx=tx+(hash(ix,iz,301)-.5)*spacing*.75,zz=tz+(hash(ix,iz,302)-.5)*spacing*.75;
-  const h=terrain(xx,zz),c=climate(xx,zz,h),r=hash(ix,iz,303);
-  if(h<.5||h>1150)continue;
+  const tx=ix*spacing,tz=iz*spacing,xx=tx+(hash(ix,iz,301)-.5)*spacing*.82,zz=tz+(hash(ix,iz,302)-.5)*spacing*.82;
+  const h=terrain(xx,zz);if(h<.5||h>1150)continue;
+  const c=climate(xx,zz,h),r=hash(ix,iz,303);
+  const steep=slopeAt(xx,zz),rockiness=clamp01((steep-.3)*1.8);
+  const rockyGround=h<14||h>920||c.temp<.08||c.moisture<.16;
   let scale=0;
-  if(h<13){if(r<.13)scale=.25+hash(ix,iz,304)*.9}
-  else if(h>940||c.temp<.06||c.moisture<.15){if(r<.09)scale=.5+hash(ix,iz,304)*1.7}
-  else if(r>.86&&r<.9)scale=.35+hash(ix,iz,304)*.9;
-  if(scale&&Math.hypot(px-xx,pz-zz)<radius+scale*.85&&py>h-.4&&py<h+scale*1.5)return true;
+  if(rockyGround||rockiness>.34){
+   if(r<(h<14?.22:.12)+rockiness*.40)scale=.28+hash(ix,iz,304)*1.6;
+  }else if(r>.965&&steep>.11)scale=.34+hash(ix,iz,304)*1.1;
+  if(scale>.65&&Math.hypot(px-xx,pz-zz)<radius+scale*.85&&py>h-.4&&py<h+scale*1.5)return true;
  }
  return false;
 }
