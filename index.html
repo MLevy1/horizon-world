@@ -10,7 +10,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 1.3</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 1.4</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span></div></div>
@@ -194,6 +194,76 @@ function rockSample(ix,iz){
  const scale=.34+hash(ix,iz,304)*2.0;
  return [px,h,pz,scale,hash(ix,iz,305)*Math.PI*2,Math.floor(hash(ix,iz,306)*rockColors.length)];
 }
+// Read the height of the actual visible triangles, not only the procedural heightfield.
+// A 1km terrain tile can differ noticeably from the analytic surface between vertices.
+function displayedGroundHeight(x,z){
+ for(let size=128;size<=32768;size*=2){
+  const ox=Math.floor(x/size)*size,oz=Math.floor(z/size)*size;
+  const tile=tiles.get(tileKey(ox,oz,size));
+  if(!tile||!tile.group.visible||!tile.group.children.length)continue;
+  const mesh=tile.group.children[0],attr=mesh.geometry?.getAttribute('position');
+  if(!attr)continue;
+  const N=tile.d.segments||config.detail,step=size/N;
+  const gx=Math.max(0,Math.min(N-1,(x-ox)/step));
+  const gz=Math.max(0,Math.min(N-1,(z-oz)/step));
+  const i=Math.floor(gx),j=Math.floor(gz),u=gx-i,v=gz-j;
+  const a=j*(N+1)+i,b=a+1,c=a+N+1,e=c+1;
+  if(u+v<=1)return attr.getY(a)*(1-u-v)+attr.getY(b)*u+attr.getY(c)*v;
+  return attr.getY(b)*(1-v)+attr.getY(c)*(1-u)+attr.getY(e)*(u+v-1);
+ }
+ return terrain(x,z);
+}
+const anchorScratch=new THREE.Matrix4();
+function reanchorRockGroup(entry){
+ const records=entry.group.userData.rockAnchors;
+ if(!records)return;
+ const {mesh,data}=records;
+ data.forEach(([x,,z,scale],i)=>{
+  mesh.getMatrixAt(i,anchorScratch);
+  anchorScratch.setPosition(x,displayedGroundHeight(x,z)+.22*scale,z);
+  mesh.setMatrixAt(i,anchorScratch);
+ });
+ mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();
+}
+function reanchorTreeGroup(entry){
+ const records=entry.group.userData.treeAnchors;
+ if(!records)return;
+ for(const {trunk,leaves,data,type} of records){
+  data.forEach(([x,,z,scale],i)=>{
+   const y=displayedGroundHeight(x,z);
+   trunk.getMatrixAt(i,anchorScratch);
+   anchorScratch.setPosition(x,y+3.7*scale,z);
+   trunk.setMatrixAt(i,anchorScratch);
+   leaves.getMatrixAt(i,anchorScratch);
+   anchorScratch.setPosition(x,y+(type===2?15:12)*scale,z);
+   leaves.setMatrixAt(i,anchorScratch);
+  });
+  trunk.instanceMatrix.needsUpdate=true;leaves.instanceMatrix.needsUpdate=true;
+  trunk.computeBoundingSphere();leaves.computeBoundingSphere();
+ }
+}
+let anchorUpdateFrame=0,anchorPass=0;
+function refreshObjectAnchors(){
+ // Re-anchor only nearby groups; far objects are too small for displacement to matter.
+ // Work is spread across frames so high-speed flight remains responsive on mobile.
+ const jobs=[];
+ for(const entry of rockTiles.values()){
+  const {x,z,size}=entry.job,dist=Math.hypot(player.x-x-size/2,player.z-z-size/2);
+  if(dist<1100&&entry.group.userData.rockAnchors)jobs.push({entry,dist,kind:0});
+ }
+ for(const entry of vegetationTiles.values()){
+  const {x,z,size}=entry.job,dist=Math.hypot(player.x-x-size/2,player.z-z-size/2);
+  if(dist<1700&&entry.group.userData.treeAnchors)jobs.push({entry,dist,kind:1});
+ }
+ jobs.sort((a,b)=>a.dist-b.dist);
+ if(!jobs.length)return;
+ for(let k=0;k<Math.min(4,jobs.length);k++){
+  const job=jobs[(anchorPass+k)%jobs.length];
+  if(job.kind===0)reanchorRockGroup(job.entry);
+  else reanchorTreeGroup(job.entry);
+ }
+ anchorPass=(anchorPass+4)%jobs.length;
+}
 function createRockTile(job){
  const data=[],spacing=18;
  for(let tz=Math.ceil(job.z/spacing)*spacing;tz<job.z+job.size;tz+=spacing)
@@ -205,14 +275,14 @@ function createRockTile(job){
  if(data.length){
   const mesh=new THREE.InstancedMesh(stoneGeo,rockRenderMat,data.length);
   data.forEach(([px,h,pz,scale,angle,index],i)=>{
-   tempObj.position.set(px,h+.22*scale,pz);
+   tempObj.position.set(px,displayedGroundHeight(px,pz)+.22*scale,pz);
    tempObj.rotation.set(0,angle,0);tempObj.scale.set(scale,scale*.52,scale);
    tempObj.updateMatrix();mesh.setMatrixAt(i,tempObj.matrix);
    mesh.setColorAt(i,rockColors[index]);
   });
   mesh.instanceMatrix.needsUpdate=true;
   if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
-  mesh.computeBoundingSphere();group.add(mesh);
+  mesh.computeBoundingSphere();group.add(mesh);group.userData.rockAnchors={mesh,data};
  }
  scene.add(group);rockTiles.set(job.key,{job,group});
 }
@@ -325,18 +395,19 @@ function makeVegetationTile(job){
   families[type].push([px,h,pz,.65+hash(ix*25,iz*25,204)*.95,hash(ix*25,iz*25,207)*6.283]);
  }
  const group=new THREE.Group(),materials=base?baseFoliageMats:detailFoliageMats;
+ group.userData.treeAnchors=[];
  families.forEach((data,type)=>{
   if(!data.length)return;
   const trunk=new THREE.InstancedMesh(trunkGeo,base?baseTrunkMat:detailTrunkMat,data.length);
   const leaves=new THREE.InstancedMesh(foliageGeos[type],materials[type],data.length);
   data.forEach(([px,h,pz,scale,rotation],i)=>{
    tempObj.rotation.set(0,rotation,0);tempObj.scale.set(scale,scale,scale);
-   tempObj.position.set(px,h+3.7*scale,pz);tempObj.updateMatrix();trunk.setMatrixAt(i,tempObj.matrix);
-   tempObj.position.y=h+(type===2?15:12)*scale;tempObj.updateMatrix();leaves.setMatrixAt(i,tempObj.matrix);
+   tempObj.position.set(px,displayedGroundHeight(px,pz)+3.7*scale,pz);tempObj.updateMatrix();trunk.setMatrixAt(i,tempObj.matrix);
+   tempObj.position.y=displayedGroundHeight(px,pz)+(type===2?15:12)*scale;tempObj.updateMatrix();leaves.setMatrixAt(i,tempObj.matrix);
   });
   trunk.instanceMatrix.needsUpdate=true;leaves.instanceMatrix.needsUpdate=true;
   trunk.computeBoundingSphere();leaves.computeBoundingSphere();
-  group.add(trunk,leaves);
+  group.add(trunk,leaves);group.userData.treeAnchors.push({trunk,leaves,data,type});
  });
  scene.add(group);vegetationTiles.set(job.key,{group,job});
 }
@@ -507,6 +578,7 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.
   const job=rockQueue.shift();
   if(job&&!rockTiles.has(job.key))createRockTile(job);
  }
+ if(active&&frame%6===0)refreshObjectAnchors();
  if(active&&++frame%12===0){planTerrain();if(frame%60===0)refreshGroundCover();$('region').textContent=regionName(player.x,player.z);$('coords').textContent=`${Math.round(player.x).toLocaleString()} E · ${Math.round(player.z).toLocaleString()} N · ${Math.round(player.y).toLocaleString()} m elevation`;$('movement').textContent=player.fly?'FLYING':'WALKING';$('speedtext').textContent=config.speed+' km/h';$('chunks').textContent=tiles.size+' terrain tiles · '+buildQueue.length+' queued';if($('mapbox').classList.contains('open'))renderMap()}renderer.render(scene,camera);if(!buildQueue.length&&$('loading').textContent.startsWith('Generating'))$('loading').textContent='World ready · seed '+config.seed;}
 function setSeed(){config.seed=$('seed').value.trim()||'HORIZON-01';seedNumber=seedHash(config.seed);clearVegetation();clearRocks();for(const k of [...tiles.keys()])deleteTile(k);lastUpdateX=Infinity;mapDirty=true;reposition(0,0);$('loading').textContent='Generating your landscape…';toast('Seed: '+config.seed)}
 $('start').onclick=()=>{active=true;$('intro').classList.add('hidden');if(matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()};$('helpBtn').onclick=()=>{$('intro').classList.remove('hidden');active=false;document.exitPointerLock?.()};$('settingsBtn').onclick=()=>{$('panel').classList.toggle('open');if($('panel').classList.contains('open'))document.exitPointerLock?.()};$('mapBtn').onclick=()=>{$('mapbox').classList.toggle('open');if($('mapbox').classList.contains('open')){renderMap();document.exitPointerLock?.()}};$('closeMap').onclick=()=>$('mapbox').classList.remove('open');$('view').addEventListener('click',()=>{if(active&&!$('panel').classList.contains('open')&&!$('mapbox').classList.contains('open')&&matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()});document.addEventListener('mousemove',e=>{if(document.pointerLockElement===$('view')){player.yaw-=e.movementX*.002;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-e.movementY*.002))}});document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;keys.add(e.code);if(['Space','ArrowDown','ArrowUp'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='KeyF')setFly(!player.fly);if(e.code==='KeyM')$('mapBtn').click();if(e.code==='KeyG')$('settingsBtn').click();if(e.code==='Escape')document.exitPointerLock?.()});document.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>keys.clear());
