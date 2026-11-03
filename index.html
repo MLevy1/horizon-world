@@ -10,7 +10,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 1.0</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 1.1</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span></div></div>
@@ -222,10 +222,24 @@ scene.add(group);tiles.set(key,{group,d});}
 // Both layers fade out before reaching their streaming boundaries.
 function makeVegetationTile(job){
  const {x,z,size,layer}=job,base=layer==='base',families=[[],[],[]],spacing=base?100:25;
+ // Both LOD layers draw from precisely the same 25m candidate grid.
+ // For each 100m cell, choose ONE of its sixteen candidates using stable hashes.
+ // This preserves the cheap 1:16 distant density without visible orchard-like rows.
+ function distantCandidate(cx,cz){
+  const ix=cx*4+Math.floor(hash(cx,cz,511)*4);
+  const iz=cz*4+Math.floor(hash(cx,cz,512)*4);
+  return [ix,iz];
+ }
  for(let tz=Math.ceil(z/spacing)*spacing;tz<z+size;tz+=spacing)for(let tx=Math.ceil(x/spacing)*spacing;tx<x+size;tx+=spacing){
-  const ix=Math.round(tx/25),iz=Math.round(tz/25);
-  if(!base&&ix%4===0&&iz%4===0)continue;
-  const px=tx+(hash(ix*25,iz*25,201)-.5)*20,pz=tz+(hash(ix*25,iz*25,202)-.5)*20;
+  let ix,iz;
+  if(base){
+   [ix,iz]=distantCandidate(Math.round(tx/100),Math.round(tz/100));
+  }else{
+   ix=Math.round(tx/25);iz=Math.round(tz/25);
+   const [bx,bz]=distantCandidate(Math.floor(ix/4),Math.floor(iz/4));
+   if(ix===bx&&iz===bz)continue;
+  }
+  const px=ix*25+(hash(ix*25,iz*25,201)-.5)*20,pz=iz*25+(hash(ix*25,iz*25,202)-.5)*20;
   const h=terrain(px,pz),c=climate(px,pz,h),L=landscapeAt(px,pz,h,c,slopeAt(px,pz));
   if(hash(ix*25,iz*25,203)>treeProbability(px,pz,h,c,L))continue;
   const type=(c.temp>.38&&hash(ix*25,iz*25,205)>.46)?1:(hash(ix*25,iz*25,206)>.58?2:0);
