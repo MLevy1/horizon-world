@@ -10,7 +10,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 0.9</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 1.0</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span></div></div>
@@ -24,7 +24,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 const $=id=>document.getElementById(id);const renderer=new THREE.WebGLRenderer({canvas:$('view'),antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.65));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
 const scene=new THREE.Scene();scene.background=new THREE.Color('#a9c9d5');scene.fog=new THREE.FogExp2('#b0c9cd',0.000085);scene.add(new THREE.HemisphereLight(0xddeeff,0x777d64,2.15));const sun=new THREE.DirectionalLight(0xffefd5,2.0);sun.position.set(-5000,8500,-3000);scene.add(sun);
-const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.3,30000);camera.rotation.order='YXZ';const player={x:0,y:1000,z:0,yaw:0,pitch:-.13,fly:true,velocity:0};const config={seed:'HORIZON-01',maxDistance:16000,detail:24,speed:65,heightScale:1,collisions:true};let seedNumber=0,terrainCache=new Map(),tiles=new Map(),desired=new Map(),buildQueue=[],lastUpdateX=Infinity,lastUpdateZ=Infinity,lastUpdateAt=0,streamDirX=0,streamDirZ=-1,streamSpeed=0,active=false,keys=new Set(),dragging=false,touchLook=null,touchVector={x:0,y:0},verticalTouch=0,frame=0,mapDirty=true,mapPixels=null,loadingStarted=performance.now();
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.3,30000);camera.rotation.order='YXZ';const player={x:0,y:1000,z:0,yaw:0,pitch:-.13,fly:true,velocity:0};const config={seed:'HORIZON-01',maxDistance:16000,detail:24,speed:65,heightScale:1,collisions:true};let seedNumber=0,terrainCache=new Map(),tiles=new Map(),desired=new Map(),buildQueue=[],vegetationTiles=new Map(),vegetationQueue=[],lastVegetationX=Infinity,lastVegetationZ=Infinity,lastUpdateX=Infinity,lastUpdateZ=Infinity,lastUpdateAt=0,streamDirX=0,streamDirZ=-1,streamSpeed=0,active=false,keys=new Set(),dragging=false,touchLook=null,touchVector={x:0,y:0},verticalTouch=0,frame=0,mapDirty=true,mapPixels=null,loadingStarted=performance.now();
 function seedHash(str){let h=2166136261;for(let i=0;i<str.length;i++)h=Math.imul(h^str.charCodeAt(i),16777619);return h>>>0}function hash(x,z,s=0){let h=Math.imul(x|0,374761393)+Math.imul(z|0,668265263)+Math.imul((seedNumber+s)|0,1442695041);h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967295}const smooth=t=>t*t*(3-2*t);function noise(x,z,scale,s=0){let a=x/scale,b=z/scale,i=Math.floor(a),j=Math.floor(b),u=smooth(a-i),v=smooth(b-j);let A=hash(i,j,s),B=hash(i+1,j,s),C=hash(i,j+1,s),D=hash(i+1,j+1,s);return ((A+(B-A)*u)*(1-v)+(C+(D-C)*u)*v)*2-1}function fbm(x,z,scale,s=0,oct=4){let n=0,amp=1,total=0;for(let k=0;k<oct;k++){n+=noise(x,z,scale/(1<<k),s+k*97)*amp;total+=amp;amp*=.52}return n/total}function terrain(x,z){const wx=x+fbm(x,z,6800,51,3)*1750,wz=z+fbm(x,z,6900,71,3)*1750;const broad=fbm(wx,wz,13500,11,4);const uplift=Math.max(0,fbm(wx,wz,9400,18,4)*.85+.26);const ridge=1-Math.abs(noise(wx,wz,3000,81));const ridge2=1-Math.abs(noise(wx,z,1300,83));const mountain=Math.pow(ridge,2.9)*uplift*1650+Math.pow(ridge2,3)*uplift*410;const hills=fbm(wx,wz,2200,26,5)*200+fbm(wx,wz,480,32,4)*62;const local=fbm(x,z,110,42,3)*12;return (broad*650+mountain+hills+local-185)*config.heightScale}function climate(x,z,h){const temp=.48+fbm(x,z,16500,100,3)*.35-h*.00031;const moisture=.48+fbm(x,z,9000,120,4)*.4;return {temp,moisture}}function clamp01(v){return Math.max(0,Math.min(1,v))}
 function smoothRange(a,b,v){let t=clamp01((v-a)/(b-a));return t*t*(3-2*t)}
 function slopeAt(x,z){const d=9;return Math.hypot((terrain(x+d,z)-terrain(x-d,z))/(2*d),(terrain(x,z+d)-terrain(x,z-d))/(2*d))}
@@ -89,10 +89,8 @@ const trunkGeo=new THREE.CylinderGeometry(.95,1.3,8,6);
 const foliageGeos=[new THREE.ConeGeometry(5.2,18,7),new THREE.IcosahedronGeometry(7.2,1),new THREE.ConeGeometry(3.8,24,7)];
 const trunkMat=new THREE.MeshLambertMaterial({color:0x68513b});
 const foliageMats=[new THREE.MeshLambertMaterial({color:0x365d43}),new THREE.MeshLambertMaterial({color:0x548047}),new THREE.MeshLambertMaterial({color:0x294b3f})];
-// Trees gradually dissolve into the already forest-tinted landscape instead of switching
-// instantly from invisible to an opaque low-poly model. Screen-door fade maintains
-// depth-writing and avoids translucent-instanced-mesh ordering problems on iPhone.
-function addDistanceFade(material){
+// Two stable vegetation layers have independent, distance-faded geometry.
+function treeFade(material,fadeStart,fadeEnd){
  material.onBeforeCompile=shader=>{
   shader.vertexShader=shader.vertexShader
    .replace('#include <common>','#include <common>\nvarying float vTreeViewDistance;')
@@ -100,16 +98,18 @@ function addDistanceFade(material){
   shader.fragmentShader=shader.fragmentShader
    .replace('#include <common>','#include <common>\nvarying float vTreeViewDistance;')
    .replace('#include <color_fragment>',`#include <color_fragment>
-float treeVisibility=1.0-smoothstep(2600.0,6650.0,vTreeViewDistance);
-vec2 q=mod(floor(gl_FragCoord.xy),4.0);
-float threshold=mod(q.x*3.0+q.y*5.0,16.0)/16.0;
-if(treeVisibility<=threshold)discard;
-`);
+float treeVisibility=1.0-smoothstep(${fadeStart.toFixed(1)},${fadeEnd.toFixed(1)},vTreeViewDistance);
+float threshold=fract(sin(dot(floor(gl_FragCoord.xy),vec2(12.9898,78.233)))*43758.5453);
+if(treeVisibility<=threshold)discard;`);
  };
- material.customProgramCacheKey=()=> 'horizon-tree-fade-v09';
+ material.customProgramCacheKey=()=> 'horizon-veg1-' + fadeStart + '-' + fadeEnd;
 }
-addDistanceFade(trunkMat);
-foliageMats.forEach(addDistanceFade);
+const baseTrunkMat=trunkMat.clone(),detailTrunkMat=trunkMat.clone();
+const baseFoliageMats=foliageMats.map(m=>m.clone()),detailFoliageMats=foliageMats.map(m=>m.clone());
+treeFade(baseTrunkMat,5500,7100);
+treeFade(detailTrunkMat,2000,3200);
+baseFoliageMats.forEach(m=>treeFade(m,5500,7100));
+detailFoliageMats.forEach(m=>treeFade(m,2000,3200));
 const tempObj=new THREE.Object3D();
 // Groundcover is generated independently from trees, and only close to the player.
 // Two crossed triangular blades make a low-cost grass tuft without alpha sorting.
@@ -216,33 +216,62 @@ function buildTile(key,d){const {x,z,size}=d,N=d.segments||config.detail,step=si
  }
  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=j*(N+1)+i,b=a+1,c=a+N+1,e=c+1;indices.push(a,c,b,b,c,e)}
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();const mesh=new THREE.Mesh(geometry,terrainMaterial);mesh.frustumCulled=true;const group=new THREE.Group();group.add(mesh);
-// Vegetation is deliberately sparse at this stage; nearby trees use low-poly geometry.
-// Coarse forest silhouettes extend beyond the detailed near-field trees.
-const forestRange=Math.hypot(Math.max(0,Math.abs(x+size/2-player.x)-size/2),Math.max(0,Math.abs(z+size/2-player.z)-size/2));
-if(size<=2048&&forestRange<7200){
- const families=[[],[],[]],spacing=size<=256?25:size<=512?50:100;
- for(let tz=Math.ceil(z/spacing)*spacing;tz<z+size;tz+=spacing)for(let tx=Math.ceil(x/spacing)*spacing;tx<x+size;tx+=spacing){
-  // World-cell indices preserve deterministic distribution within each LOD tier.
-  const ix=Math.floor(tx),iz=Math.floor(tz);
-  const px=tx+(hash(ix,iz,201)-.5)*25*.8,pz=tz+(hash(ix,iz,202)-.5)*25*.8;
-  const py=terrain(px,pz),c=climate(px,pz,py),L=landscapeAt(px,pz,py,c,slopeAt(px,pz));
-  const density=treeProbability(px,pz,py,c,L);
-  if(hash(ix,iz,203)>density)continue;
-  const type=(c.temp>.38&&hash(ix,iz,205)>.46)?1:(hash(ix,iz,206)>.58?2:0);
-  families[type].push([px,py,pz,.65+hash(ix,iz,204)*.95,hash(ix,iz,207)*6.283]);
+scene.add(group);tiles.set(key,{group,d});}
+// Trees are positioned on a permanent 25m world grid, independent of terrain LOD.
+// The base layer samples every fourth tree candidate; the detail layer fills the rest.
+// Both layers fade out before reaching their streaming boundaries.
+function makeVegetationTile(job){
+ const {x,z,size,layer}=job,base=layer==='base',families=[[],[],[]],spacing=base?100:25;
+ for(let tz=z;tz<z+size;tz+=spacing)for(let tx=x;tx<x+size;tx+=spacing){
+  const ix=Math.round(tx/25),iz=Math.round(tz/25);
+  if(!base&&ix%4===0&&iz%4===0)continue;
+  const px=tx+(hash(ix*25,iz*25,201)-.5)*20,pz=tz+(hash(ix*25,iz*25,202)-.5)*20;
+  const h=terrain(px,pz),c=climate(px,pz,h),L=landscapeAt(px,pz,h,c,slopeAt(px,pz));
+  if(hash(ix*25,iz*25,203)>treeProbability(px,pz,h,c,L))continue;
+  const type=(c.temp>.38&&hash(ix*25,iz*25,205)>.46)?1:(hash(ix*25,iz*25,206)>.58?2:0);
+  families[type].push([px,h,pz,.65+hash(ix*25,iz*25,204)*.95,hash(ix*25,iz*25,207)*6.283]);
  }
- families.forEach((data,type)=>{if(!data.length)return;
-  const trunk=new THREE.InstancedMesh(trunkGeo,trunkMat,data.length),leaves=new THREE.InstancedMesh(foliageGeos[type],foliageMats[type],data.length);
-  data.forEach(([px,py,pz,scale,rotation],i)=>{
+ const group=new THREE.Group(),materials=base?baseFoliageMats:detailFoliageMats;
+ families.forEach((data,type)=>{
+  if(!data.length)return;
+  const trunk=new THREE.InstancedMesh(trunkGeo,base?baseTrunkMat:detailTrunkMat,data.length);
+  const leaves=new THREE.InstancedMesh(foliageGeos[type],materials[type],data.length);
+  data.forEach(([px,h,pz,scale,rotation],i)=>{
    tempObj.rotation.set(0,rotation,0);tempObj.scale.set(scale,scale,scale);
-   tempObj.position.set(px,py+3.7*scale,pz);tempObj.updateMatrix();trunk.setMatrixAt(i,tempObj.matrix);
-   tempObj.position.y=py+(type===1?12: type===2?15:12)*scale;tempObj.updateMatrix();leaves.setMatrixAt(i,tempObj.matrix);
+   tempObj.position.set(px,h+3.7*scale,pz);tempObj.updateMatrix();trunk.setMatrixAt(i,tempObj.matrix);
+   tempObj.position.y=h+(type===2?15:12)*scale;tempObj.updateMatrix();leaves.setMatrixAt(i,tempObj.matrix);
   });
   trunk.instanceMatrix.needsUpdate=true;leaves.instanceMatrix.needsUpdate=true;
-  trunk.frustumCulled=false;leaves.frustumCulled=false;group.add(trunk,leaves);
+  trunk.computeBoundingSphere();leaves.computeBoundingSphere();
+  group.add(trunk,leaves);
  });
+ scene.add(group);vegetationTiles.set(job.key,{group,job});
 }
-scene.add(group);tiles.set(key,{group,d});}
+function planVegetation(force=false){
+ if(!force&&Math.hypot(player.x-lastVegetationX,player.z-lastVegetationZ)<110)return;
+ lastVegetationX=player.x;lastVegetationZ=player.z;
+ const wanted=new Map();
+ // These limits exceed the fade endpoints, so a newly created tile starts invisible.
+ for(const [layer,size,radius] of [['base',1024,7900],['detail',512,3750]]){
+  const minX=Math.floor((player.x-radius)/size),maxX=Math.floor((player.x+radius)/size);
+  const minZ=Math.floor((player.z-radius)/size),maxZ=Math.floor((player.z+radius)/size);
+  for(let ix=minX;ix<=maxX;ix++)for(let iz=minZ;iz<=maxZ;iz++){
+   const x=ix*size,z=iz*size;
+   const dx=Math.max(0,Math.abs(player.x-(x+size/2))-size/2);
+   const dz=Math.max(0,Math.abs(player.z-(z+size/2))-size/2);
+   const dist=Math.hypot(dx,dz);if(dist>radius)continue;
+   const key=layer+':'+x+':'+z;
+   wanted.set(key,{key,x,z,size,layer,dist});
+  }
+ }
+ for(const [k,v] of vegetationTiles)if(!wanted.has(k)){scene.remove(v.group);vegetationTiles.delete(k)}
+ vegetationQueue=[...wanted.values()].filter(v=>!vegetationTiles.has(v.key))
+  .sort((a,b)=>a.dist-b.dist);
+}
+function clearVegetation(){
+ for(const v of vegetationTiles.values())scene.remove(v.group);
+ vegetationTiles.clear();vegetationQueue=[];lastVegetationX=Infinity;
+}
 function deleteTile(k){
  const t=tiles.get(k);if(!t)return;
  scene.remove(t.group);
@@ -304,6 +333,7 @@ function planTerrain(force=false){
   return priority(a[1])-priority(b[1]);
  });
  reconcileTiles();
+ planVegetation(force);
 }
 // Water surface follows player position.
 const waterGeo=new THREE.PlaneGeometry(50000,50000,8,8);
@@ -376,10 +406,16 @@ function toast(m){$('toast').textContent=m;$('toast').classList.add('visible');c
  updateCamera();
 }
 function renderMap(){const canvas=$('mapCanvas'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;if(mapDirty){const im=ctx.createImageData(W,H);for(let j=0;j<H;j++)for(let i=0;i<W;i++){const x=(i/W-.5)*20000,z=(.5-j/H)*20000,h=terrain(x,z),c=colorFor(x,z,h);let rgb=h<0?[59,114,149]:c.map(v=>Math.round(Math.pow(v,1/2.2)*255));const n=(j*W+i)*4;im.data[n]=rgb[0];im.data[n+1]=rgb[1];im.data[n+2]=rgb[2];im.data[n+3]=255}mapPixels=im;mapDirty=false}ctx.putImageData(mapPixels,0,0);ctx.strokeStyle='#ffffff45';ctx.lineWidth=.6;for(let r=2500;r<=10000;r+=2500){ctx.beginPath();ctx.arc(W/2,H/2,r/20000*W,0,Math.PI*2);ctx.stroke()}let px=(player.x/20000+.5)*W,py=(.5-player.z/20000)*H;ctx.save();ctx.translate(px,py);ctx.rotate(player.yaw);ctx.fillStyle='#fff';ctx.strokeStyle='#1b3e42';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(-6,7);ctx.lineTo(0,4);ctx.lineTo(6,7);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
-function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.055);if(active)update(dt);let work=0;while(buildQueue.length&&work<2){const [k,d]=buildQueue.shift();if(desired.has(k)&&!tiles.has(k)){buildTile(k,d);work++}}if(work>0)reconcileTiles();if(active&&++frame%12===0){planTerrain();if(frame%60===0)refreshGroundCover();$('region').textContent=regionName(player.x,player.z);$('coords').textContent=`${Math.round(player.x).toLocaleString()} E · ${Math.round(player.z).toLocaleString()} N · ${Math.round(player.y).toLocaleString()} m elevation`;$('movement').textContent=player.fly?'FLYING':'WALKING';$('speedtext').textContent=config.speed+' km/h';$('chunks').textContent=tiles.size+' terrain tiles · '+buildQueue.length+' queued';if($('mapbox').classList.contains('open'))renderMap()}renderer.render(scene,camera);if(!buildQueue.length&&$('loading').textContent.startsWith('Generating'))$('loading').textContent='World ready · seed '+config.seed;}
-function setSeed(){config.seed=$('seed').value.trim()||'HORIZON-01';seedNumber=seedHash(config.seed);for(const k of [...tiles.keys()])deleteTile(k);lastUpdateX=Infinity;mapDirty=true;reposition(0,0);$('loading').textContent='Generating your landscape…';toast('Seed: '+config.seed)}
+function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.055);if(active)update(dt);let work=0;while(buildQueue.length&&work<2){const [k,d]=buildQueue.shift();if(desired.has(k)&&!tiles.has(k)){buildTile(k,d);work++}}if(work>0)reconcileTiles();
+ // Terrain remains the priority; vegetation has its own stable queue.
+ if(vegetationQueue.length&&buildQueue.length<35){
+  const job=vegetationQueue.shift();
+  if(job&&!vegetationTiles.has(job.key))makeVegetationTile(job);
+ }
+ if(active&&++frame%12===0){planTerrain();if(frame%60===0)refreshGroundCover();$('region').textContent=regionName(player.x,player.z);$('coords').textContent=`${Math.round(player.x).toLocaleString()} E · ${Math.round(player.z).toLocaleString()} N · ${Math.round(player.y).toLocaleString()} m elevation`;$('movement').textContent=player.fly?'FLYING':'WALKING';$('speedtext').textContent=config.speed+' km/h';$('chunks').textContent=tiles.size+' terrain tiles · '+buildQueue.length+' queued';if($('mapbox').classList.contains('open'))renderMap()}renderer.render(scene,camera);if(!buildQueue.length&&$('loading').textContent.startsWith('Generating'))$('loading').textContent='World ready · seed '+config.seed;}
+function setSeed(){config.seed=$('seed').value.trim()||'HORIZON-01';seedNumber=seedHash(config.seed);clearVegetation();for(const k of [...tiles.keys()])deleteTile(k);lastUpdateX=Infinity;mapDirty=true;reposition(0,0);$('loading').textContent='Generating your landscape…';toast('Seed: '+config.seed)}
 $('start').onclick=()=>{active=true;$('intro').classList.add('hidden');if(matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()};$('helpBtn').onclick=()=>{$('intro').classList.remove('hidden');active=false;document.exitPointerLock?.()};$('settingsBtn').onclick=()=>{$('panel').classList.toggle('open');if($('panel').classList.contains('open'))document.exitPointerLock?.()};$('mapBtn').onclick=()=>{$('mapbox').classList.toggle('open');if($('mapbox').classList.contains('open')){renderMap();document.exitPointerLock?.()}};$('closeMap').onclick=()=>$('mapbox').classList.remove('open');$('view').addEventListener('click',()=>{if(active&&!$('panel').classList.contains('open')&&!$('mapbox').classList.contains('open')&&matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()});document.addEventListener('mousemove',e=>{if(document.pointerLockElement===$('view')){player.yaw-=e.movementX*.002;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-e.movementY*.002))}});document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;keys.add(e.code);if(['Space','ArrowDown','ArrowUp'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='KeyF')setFly(!player.fly);if(e.code==='KeyM')$('mapBtn').click();if(e.code==='KeyG')$('settingsBtn').click();if(e.code==='Escape')document.exitPointerLock?.()});document.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>keys.clear());
-$('collisions').onchange=e=>{config.collisions=e.target.checked;$('collisionOut').textContent=config.collisions?'On':'Off';toast(config.collisions?'Scenery collisions enabled':'Scenery collisions disabled')};$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{let r=e.target.getBoundingClientRect();reposition(((e.clientX-r.left)/r.width-.5)*20000,(.5-(e.clientY-r.top)/r.height)*20000)};
+$('collisions').onchange=e=>{config.collisions=e.target.checked;$('collisionOut').textContent=config.collisions?'On':'Off';toast(config.collisions?'Scenery collisions enabled':'Scenery collisions disabled')};$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';clearVegetation();for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{let r=e.target.getBoundingClientRect();reposition(((e.clientX-r.left)/r.width-.5)*20000,(.5-(e.clientY-r.top)/r.height)*20000)};
 function bindHold(id,value){const el=$(id);el.addEventListener('pointerdown',e=>{e.preventDefault();verticalTouch=value;el.setPointerCapture(e.pointerId)});el.addEventListener('pointerup',()=>verticalTouch=0);el.addEventListener('pointercancel',()=>verticalTouch=0)}bindHold('upBtn',1);bindHold('downBtn',-1);$('flyBtn').onclick=()=>setFly(!player.fly);const joy=$('joystick');function moveJoy(e){const r=joy.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),mag=Math.max(1,Math.hypot(dx,dy)),m=Math.min(mag,42);touchVector.x=dx/mag*m/42;touchVector.y=dy/mag*m/42;$('stick').style.transform=`translate(${touchVector.x*37}px,${touchVector.y*37}px)`}joy.addEventListener('pointerdown',e=>{joy.setPointerCapture(e.pointerId);moveJoy(e)});joy.addEventListener('pointermove',e=>{if(joy.hasPointerCapture(e.pointerId))moveJoy(e)});function releaseJoy(){touchVector.x=touchVector.y=0;$('stick').style.transform=''}joy.addEventListener('pointerup',releaseJoy);joy.addEventListener('pointercancel',releaseJoy);$('view').addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;touchLook={id:e.pointerId,x:e.clientX,y:e.clientY};$('view').setPointerCapture(e.pointerId)});$('view').addEventListener('pointermove',e=>{if(!touchLook||e.pointerId!==touchLook.id)return;player.yaw-=(e.clientX-touchLook.x)*.004;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-(e.clientY-touchLook.y)*.004));touchLook.x=e.clientX;touchLook.y=e.clientY});$('view').addEventListener('pointerup',()=>touchLook=null);window.addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()});
 seedNumber=seedHash(config.seed);player.x=0;player.z=0;player.y=terrain(0,0)+220;updateCamera();planTerrain(true);$('region').textContent=regionName(player.x,player.z);loop();
 </script>
