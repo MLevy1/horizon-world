@@ -19,7 +19,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 3.12</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 3.13</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="perfBtn" class="chip">▥ Perf</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div id="perfPanel" class="glass profiler">
 <h2>Live performance <button id="perfClose" class="chip" style="float:right;padding:3px 8px">×</button></h2>
@@ -40,7 +40,7 @@
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span><br><span id="surfaceDebug" style="font-size:10px;opacity:.8">Surface alignment checking…</span><br><span id="treeInspectStatus" style="font-size:10px;color:#fff2a7">Tree inspection: none</span></div></div>
 <div id="toast" class="toast"></div>
 <div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><button id="findStream" class="action" style="width:100%;margin:5px 0 13px">Inspect drainage map</button><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Detailed nearby trees <output id="treeModelsOut">On</output></label><input id="treeModels" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare layered conifers and branched broadleaf silhouettes against the original models. Distant trees use the lightweight originals.</p><label>Richer nearby tree crowns <output id="treeCrownsOut">On</output></label><input id="treeCrowns" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Additional low-poly foliage and branching within about 900 m. Switch off to compare with Alpha 3.1 trees.</p><label>Varied tree silhouettes <output id="treeVarOut">On</output></label><input id="treeVariants" type="checkbox" checked><label>Varied shrubs <output id="shrubVarOut">On</output></label><input id="shrubVariants" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare deterministic shape variants with Alpha 3.0 trees and shrubs. Detailed variants apply nearby; distant trees remain simple.</p><label>Smooth ground-cover transitions <output id="smoothCoverOut">On</output></label><input id="smoothCover" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Prepare vegetation before approaching it, then dither-fade individual plants in and out. Turn off to compare with Alpha 3.10.</p><label>Adaptive visibility detail <output id="visibilityOut">On</output></label><input id="visibilityDetail" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Prioritize terrain ahead of your view and travel direction; adjust small-plant detail for altitude, apparent size and speed. Turn off to compare with Alpha 3.9.</p><label>Dense nearby undergrowth <output id="undergrowthOut">On</output></label><input id="undergrowth" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Add clustered grasses, short plants and fern-like foliage on suitable ground close to the camera. Turn off to compare the Alpha 3.2 ground cover.</p><label>Experimental 3D rivers <output id="streamOut">Off</output></label><input id="streamsVisible" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Off by default: Alpha 3.5 landscape restored. Experimental 3D carving is incomplete and can create unnatural trenches. Use the map's Drainage mode to inspect the network without changing terrain.</p><label>Terrain surface mode</label><select id="surfaceMode" style="width:100%;margin-bottom:9px;padding:9px;background:#1c3439;color:#eef7f2;border:1px solid #668184;border-radius:9px"><option value="multi" selected>Multiscale ground (Alpha 3.5)</option><option value="textured">Textured ground (Alpha 3.4)</option><option value="original">Original ground (Alpha 3.3)</option></select><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare broader, less repetitive terrain texture against Alpha 3.4 and the original terrain. No extra terrain geometry.</p><label>Natural grass and small plants <output id="smallPlantsOut">On</output></label><input id="smallPlants" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Replace triangular ground-cover spikes with thin blades and branched foliage. Turn off for Alpha 3.4 plant shapes.</p><label>Natural terrain colors <output id="naturalOut">On</output></label><input id="naturalColors" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare visibly darker green and warmer earth patches against the original colors. Uses the same working terrain shader.</p><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Vegetation collisions <output id="collisionOut">On</output></label><input id="collisions" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Trees and rocks block movement, including in flight. Turn off to pass through scenery.</p><label>Tree root diagnostic <output id="rootOut">Off</output></label><input id="rootDebug" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Draw magenta poles and yellow root dots through the terrain (X-ray view). If a dot is behind the foreground ridge, its tree can look like it floats even though it is rooted.</p><button id="inspectTree" class="action secondary" style="width:100%;margin-top:8px">Inspect tree near crosshair</button><p style="margin-top:5px;font-size:11px;color:var(--muted)">Center the crosshair directly on the visible foliage. This selects trees by the visible canopy outline rather than unreliable triangle raycasting.</p><label>Show shrubs and ground cover <output id="groundCoverOut">On</output></label><input id="groundCoverVisible" type="checkbox" checked><label>Show scattered rocks <output id="rockVisibleOut">On</output></label><input id="rockVisible" type="checkbox" checked><p style="margin-top:3px;font-size:11px;color:var(--muted)">Hide each category independently to identify which objects appear detached.</p><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
-<div id="mapbox" class="glass mapbox"><div class="maphead"><b id="mapTitle">REGIONAL MAP</b><button id="closeMap" class="chip" style="padding:3px 7px">×</button></div><div style="display:flex;gap:5px;margin-bottom:8px"><button id="mapLandscape" class="chip" style="flex:1">Landscape</button><button id="mapDrainage" class="chip" style="flex:1">Drainage</button><button id="mapWatershed" class="chip" style="flex:1">Watershed</button></div><canvas id="mapCanvas" width="256" height="256"></canvas><div id="drainageNav" style="display:none;gap:5px;align-items:center;justify-content:center;margin-top:7px"><button id="drainWest" class="chip">← W</button><button id="drainNorth" class="chip">↑ N</button><button id="drainSouth" class="chip">↓ S</button><button id="drainEast" class="chip">E →</button></div><div id="mapFoot" class="mapfoot">20 × 20 km · north is up<br>Click a point to teleport · dotted rings every 2.5 km</div><div id="drainageStats" class="mapfoot" style="display:none"></div><div id="watershedLegend" class="mapfoot" style="display:none">Gray: minor runoff · cyan: accumulated channels · green: ocean outlet · orange: unresolved outer outlet. This is drainage potential, not visible 3D water.</div></div>
+<div id="mapbox" class="glass mapbox"><div class="maphead"><b id="mapTitle">REGIONAL MAP</b><button id="closeMap" class="chip" style="padding:3px 7px">×</button></div><div style="display:flex;gap:5px;margin-bottom:8px"><button id="mapLandscape" class="chip" style="flex:1">Landscape</button><button id="mapDrainage" class="chip" style="flex:1">Drainage</button><button id="mapWatershed" class="chip" style="flex:1">Watershed</button></div><canvas id="mapCanvas" width="256" height="256"></canvas><div id="drainageNav" style="display:none;gap:5px;align-items:center;justify-content:center;margin-top:7px"><button id="drainWest" class="chip">← W</button><button id="drainNorth" class="chip">↑ N</button><button id="drainSouth" class="chip">↓ S</button><button id="drainEast" class="chip">E →</button></div><div id="mapFoot" class="mapfoot">20 × 20 km · north is up<br>Click a point to teleport · dotted rings every 2.5 km</div><div id="drainageStats" class="mapfoot" style="display:none"></div><div id="watershedLegend" class="mapfoot" style="display:none">Gray: runoff · turquoise: tributary · blue: trunk · yellow: selected downstream path · green: modeled ocean outlet · orange: unresolved macro outlet/border. Four adjacent views share a single flow graph. No 3D water.</div></div>
 <div class="mobile"><div id="joystick" class="touchpad"><div class="stick" id="stick"></div></div><div class="mobbuttons"><button id="upBtn">↑</button><button id="flyBtn">✈</button><button id="downBtn">↓</button></div></div>
 <div class="footnote">Procedural terrain · browser-rendered · no server required</div>
 <div id="intro" class="intro"><div class="glass introcard"><div class="eyebrow">A WORLD BEYOND THE HORIZON</div><h1>Go somewhere.</h1><p>A seed-generated landscape for exploration. Follow ridgelines, cross valleys, find coastlines, and survey the world before anything has been built.</p><div class="tips"><div class="tip"><b>Move</b><span><span class="kbd">W</span> <span class="kbd">A</span> <span class="kbd">S</span> <span class="kbd">D</span> · mouse to look</span></div><div class="tip"><b>Explore vertically</b><span><span class="kbd">Space</span> up · <span class="kbd">Shift</span> down</span></div><div class="tip"><b>Change mode</b><span><span class="kbd">F</span> flying / walking</span></div><div class="tip"><b>Navigation</b><span><span class="kbd">M</span> map · <span class="kbd">G</span> settings</span></div></div><button id="start" class="start">Enter the world →</button><div class="status" id="loading">Generating your landscape…</div></div></div>
@@ -1756,20 +1756,25 @@ function openDrainageInspection(){
  $('mapbox').classList.add('open');
  renderMap();
 }
-// Alpha 3.12: independent, map-only multi-region watershed experiment.
-// This is deliberately NOT hooked into terrain(), water or vegetation. A
-// 2×2 group is solved as one 64×64 grid, eliminating artificial internal
-// region outlets. Its outer boundary still requires a larger-scale solution.
-const WATERSHED_N=64,WATERSHED_STEP=128,WATERSHED_SIZE=WATERSHED_N*WATERSHED_STEP;
+// Alpha 3.13 geography experiment. A fixed 16.4km macro-watershed
+// underlies four navigable 8.2km map pages. Flow and accumulation are solved
+// on ONE shared grid, so all four pages show identical border connections.
+// Macro-boundary exits remain provisional: this is NOT global hydrology.
+// This code is map-only. It never touches terrain(), vegetation or 3D water.
+const WATERSHED_N=128,WATERSHED_STEP=128,WATERSHED_SIZE=8192;
+const MACRO_SIZE=WATERSHED_N*WATERSHED_STEP;
 const watershedCache=new Map();
+let watershedSelection=null;
 function watershedKey(ix,iz){return ix+':'+iz}
-function watershedAt(ix,iz){
+function watershedAt(pageX,pageZ){
+ const ix=Math.floor(pageX/2),iz=Math.floor(pageZ/2);
  const key=watershedKey(ix,iz);
  if(watershedCache.has(key))return watershedCache.get(key);
  const N=WATERSHED_N,S=WATERSHED_STEP,C=N*N;
- const ox=ix*WATERSHED_SIZE,oz=iz*WATERSHED_SIZE;
+ const ox=ix*MACRO_SIZE,oz=iz*MACRO_SIZE;
  const base=new Float32Array(C),level=new Float32Array(C),seen=new Uint8Array(C);
- const parent=new Int32Array(C),acc=new Float32Array(C),order=[],heap=[];
+ const parent=new Int32Array(C),acc=new Float32Array(C),root=new Int32Array(C);
+ const order=[],heap=[];
  parent.fill(-1);acc.fill(1);
  for(let z=0;z<N;z++)for(let x=0;x<N;x++)
   base[z*N+x]=baseTerrain(ox+(x+.5)*S,oz+(z+.5)*S);
@@ -1791,11 +1796,11 @@ function watershedAt(ix,iz){
   }
   return first;
  }
- // Actual ocean cells are valid terminal outlets. Cells on the outer
- // boundary are provisional outlets, distinctly flagged in the display.
+ // Ocean cells are true modeled sea terminals. Land on the OUTER border
+ // is only a provisional outlet; no edge inside the macro can be an outlet.
  for(let z=0;z<N;z++)for(let x=0;x<N;x++){
-  const id=z*N+x,boundary=x===0||z===0||x===N-1||z===N-1;
-  if(boundary||base[id]<=0){
+  const id=z*N+x;
+  if(x===0||z===0||x===N-1||z===N-1||base[id]<=0){
    seen[id]=1;level[id]=base[id]<=0?0:base[id];push(id,level[id]);
   }
  }
@@ -1810,28 +1815,41 @@ function watershedAt(ix,iz){
    push(next,level[next]);
   }
  }
+ // Process upstream in reverse priority-flood ordering; each cell's
+ // contributing area sums over every upstream cell inside this macro.
  for(let k=order.length-1;k>=0;k--){
   const id=order[k],to=parent[id];if(to>=0)acc[to]+=acc[id];
  }
- const outlets=[],stats={landOutlets:0,seaOutlets:0,minor:0,channels:0,internalEnds:0,uphill:0};
- // Only terminal cells reached by channel-scale accumulated runoff count
- // as mapped outlets. Adjacent visible lines are not separate rivers.
- for(let id=0;id<C;id++){
+ // Order is downstream -> upstream: root[] is known when a child is read.
+ const ocean=new Uint8Array(C),landBoundary=new Uint8Array(C);
+ for(const id of order){
   const to=parent[id];
+  root[id]=to<0?id:root[to];
+  const r=root[id];
+  ocean[id]=base[r]<=0?1:0;
+  landBoundary[id]=base[r]>0?1:0;
+ }
+ const outlets=[],stats={landOutlets:0,seaOutlets:0,minor:0,tributaries:0,trunks:0,uphill:0,internalEnds:0};
+ for(let id=0;id<C;id++){
+  const to=parent[id],x=id%N,z=Math.floor(id/N);
   if(to>=0){
-   if(acc[id]>=24)stats.channels++;
+   if(acc[id]>=180)stats.trunks++;
+   else if(acc[id]>=32)stats.tributaries++;
    else if(acc[id]>=5)stats.minor++;
    if(level[id]+.001<level[to])stats.uphill++;
-  }else if(acc[id]>=24){
-   const x=id%N,z=Math.floor(id/N);
-   const sea=base[id]<=0;
-   outlets.push({x,z,sea,acc:acc[id]});
-   if(sea)stats.seaOutlets++;else stats.landOutlets++;
+  }else{
+   if(x!==0&&x!==N-1&&z!==0&&z!==N-1&&base[id]>0)stats.internalEnds++;
+   if(acc[id]>=32){
+    const sea=base[id]<=0;
+    outlets.push({x,z,sea,acc:acc[id],id});
+    if(sea)stats.seaOutlets++;else stats.landOutlets++;
+   }
   }
  }
- const data={ix,iz,ox,oz,N,S,C,base,level,parent,acc,outlets,stats};
- // Diagnostic cache only; avoid retaining multi-megabyte regions indefinitely.
- if(watershedCache.size>=4)watershedCache.clear();
+ const data={ix,iz,ox,oz,N,S,C,base,level,parent,acc,root,ocean,landBoundary,outlets,stats};
+ // Two macro-watersheds maximum; navigation across their borders is
+ // explicitly marked unresolved until a world-wide routing layer exists.
+ if(watershedCache.size>=2)watershedCache.clear();
  watershedCache.set(key,data);
  return data;
 }
@@ -1839,61 +1857,111 @@ function openWatershedInspection(){
  mapMode='watershed';
  drainInspectX=Math.floor(player.x/WATERSHED_SIZE);
  drainInspectZ=Math.floor(player.z/WATERSHED_SIZE);
- drainSelectedSegment=null;
+ watershedSelection=null;
  $('panel').classList.remove('open');
  $('mapbox').classList.add('open');
  renderMap();
 }
+function watershedFlowTrace(w,id){
+ if(id<0||id>=w.C)return null;
+ const ids=[],start=id,seen=new Set();
+ let distance=0,drop=0;
+ for(let n=0;n<w.C&&id>=0&&!seen.has(id);n++){
+  ids.push(id);seen.add(id);
+  const to=w.parent[id];if(to<0)break;
+  const dx=(id%w.N)-(to%w.N),dz=Math.floor(id/w.N)-Math.floor(to/w.N);
+  distance+=Math.hypot(dx,dz)*w.S;
+  drop+=Math.max(0,w.level[id]-w.level[to]);
+  id=to;
+ }
+ const end=ids[ids.length-1],outlet=w.base[end]<=0?'ocean':'unresolved macro boundary';
+ return {start,ids,distance,drop,outlet,area:w.acc[start],macroKey:watershedKey(w.ix,w.iz)};
+}
 function drawWatershedMap(){
  const canvas=$('mapCanvas'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
  const w=watershedAt(drainInspectX,drainInspectZ),N=w.N;
- const px=x=>x/N*W,py=z=>H-z/N*H;
+ const offsetX=(drainInspectX-w.ix*2)*64,offsetZ=(drainInspectZ-w.iz*2)*64;
+ const px=x=>(x-offsetX)/64*W,py=z=>H-(z-offsetZ)/64*H;
  const img=ctx.createImageData(W,H);
- // Coarse preview and precise flow overlays. Only one watershed is built
- // per user navigation, never in Horizon's 3D animation loop.
- for(let j=0;j<H;j+=4)for(let i=0;i<W;i+=4){
-  const ix=Math.min(N-1,Math.floor(i/W*N)),iz=Math.min(N-1,Math.floor((H-j-1)/H*N));
-  const h=w.base[iz*N+ix];
+ const counts={runoff:0,tributary:0,trunk:0,sea:0,unresolved:0,crossings:0};
+ // A page is exactly 64x64 cells; each cell is rendered as a 4px block.
+ for(let z=0;z<64;z++)for(let x=0;x<64;x++){
+  const id=(offsetZ+z)*N+offsetX+x,h=w.base[id];
   const color=h<=0?[35,99,129]:h<150?[83,119,92]:h<600?[102,122,91]:[122,126,116];
+  if(w.parent[id]>=0&&w.base[id]>0){
+   if(w.acc[id]>=180)counts.trunk++;
+   else if(w.acc[id]>=32)counts.tributary++;
+   else if(w.acc[id]>=5)counts.runoff++;
+   if(w.acc[id]>=32){
+    if(w.ocean[id])counts.sea++;else counts.unresolved++;
+    const pxTo=w.parent[id]%N,pzTo=Math.floor(w.parent[id]/N);
+    if(pxTo<offsetX||pxTo>=offsetX+64||pzTo<offsetZ||pzTo>=offsetZ+64)counts.crossings++;
+   }
+  }
+  const j=(63-z)*4,i=x*4;
   for(let yy=0;yy<4;yy++)for(let xx=0;xx<4;xx++){
    const p=((j+yy)*W+i+xx)*4;
    img.data[p]=color[0];img.data[p+1]=color[1];img.data[p+2]=color[2];img.data[p+3]=255;
   }
  }
  ctx.putImageData(img,0,0);
- for(let id=0;id<w.C;id++){
-  const next=w.parent[id];if(next<0||w.acc[id]<5||w.base[id]<=0)continue;
-  const x=id%N,z=Math.floor(id/N),tx=next%N,tz=Math.floor(next/N);
-  const major=w.acc[id]>=24;
+ // Draw one shared graph, clipped to current map page. Links on opposite
+ // sides of page boundaries are mathematically the very same edges.
+ for(let z=Math.max(0,offsetZ-1);z<Math.min(N,offsetZ+65);z++)
+ for(let x=Math.max(0,offsetX-1);x<Math.min(N,offsetX+65);x++){
+  const id=z*N+x,to=w.parent[id];if(to<0||w.acc[id]<5||w.base[id]<=0)continue;
+  const tx=to%N,tz=Math.floor(to/N),a=w.acc[id];
   ctx.beginPath();ctx.moveTo(px(x+.5),py(z+.5));ctx.lineTo(px(tx+.5),py(tz+.5));
-  ctx.strokeStyle=major?'#72dded':'#a9b3ae';
-  ctx.lineWidth=major?Math.min(3,1+Math.sqrt(w.acc[id])/11):.65;ctx.stroke();
+  ctx.strokeStyle=a>=180?'#57c3ff':a>=32?'#72e0e1':'#b0b8aa';
+  ctx.lineWidth=a>=180?Math.min(4,1.5+Math.sqrt(a)/13):a>=32?1.4:.6;ctx.stroke();
  }
  for(const o of w.outlets){
-  ctx.beginPath();ctx.arc(px(o.x+.5),py(o.z+.5),3.8,0,Math.PI*2);
+  if(o.x<offsetX||o.x>=offsetX+64||o.z<offsetZ||o.z>=offsetZ+64)continue;
+  ctx.beginPath();ctx.arc(px(o.x+.5),py(o.z+.5),3.6,0,Math.PI*2);
   ctx.fillStyle=o.sea?'#61e2aa':'#ffad68';ctx.fill();
   ctx.strokeStyle='#1c3032';ctx.lineWidth=1;ctx.stroke();
  }
- // Dashed internal boundaries show the four former independently solved
- // regions, but flow links are solved continuously across them.
- ctx.setLineDash([3,4]);ctx.strokeStyle='#ffffff9a';ctx.lineWidth=1;
- ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();ctx.setLineDash([]);
- ctx.strokeStyle='#ffffffaa';ctx.lineWidth=1.5;ctx.strokeRect(1,1,W-2,H-2);
- const playerX=(player.x-w.ox)/WATERSHED_SIZE*W;
- const playerY=H-(player.z-w.oz)/WATERSHED_SIZE*H;
+ const selected=watershedSelection?.macroKey===watershedKey(w.ix,w.iz)?watershedSelection:null;
+ if(selected){
+  ctx.beginPath();
+  let prev=false;
+  for(const id of selected.ids){
+   const x=id%N+.5,z=Math.floor(id/N)+.5;
+   if(!prev){ctx.moveTo(px(x),py(z));prev=true}else ctx.lineTo(px(x),py(z));
+  }
+  ctx.strokeStyle='#ffe38a';ctx.lineWidth=2.5;ctx.stroke();
+  const x=selected.start%N+.5,z=Math.floor(selected.start/N)+.5;
+  ctx.fillStyle='#fff3ab';ctx.beginPath();ctx.arc(px(x),py(z),3.5,0,Math.PI*2);ctx.fill();
+ }
+ // Four continuous pages within a macro; colored borders explicitly show
+ // where the still-unresolved macro-wide routing problem starts.
+ ctx.lineWidth=2;ctx.strokeStyle='#ffffff99';ctx.strokeRect(1,1,W-2,H-2);
+ const leftEdge=offsetX===0,rightEdge=offsetX+64===N,bottomEdge=offsetZ===0,topEdge=offsetZ+64===N;
+ ctx.strokeStyle='#ffad68';ctx.lineWidth=2.5;ctx.beginPath();
+ if(leftEdge){ctx.moveTo(1,0);ctx.lineTo(1,H)}
+ if(rightEdge){ctx.moveTo(W-1,0);ctx.lineTo(W-1,H)}
+ if(topEdge){ctx.moveTo(0,1);ctx.lineTo(W,1)}
+ if(bottomEdge){ctx.moveTo(0,H-1);ctx.lineTo(W,H-1)}
+ ctx.stroke();
+ const playerX=(player.x-(drainInspectX*WATERSHED_SIZE))/WATERSHED_SIZE*W;
+ const playerY=H-(player.z-(drainInspectZ*WATERSHED_SIZE))/WATERSHED_SIZE*H;
  if(playerX>=0&&playerX<=W&&playerY>=0&&playerY<=H){
   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(playerX,playerY,3,0,Math.PI*2);ctx.fill();
  }
- $('mapTitle').textContent='WATERSHED EXPERIMENT';
+ $('mapTitle').textContent='CONNECTED WATERSHEDS';
  $('drainageNav').style.display='flex';
  $('watershedLegend').style.display='block';
  $('drainageStats').style.display='block';
- $('mapFoot').textContent='8.2 × 8.2 km · 2×2 old drainage regions · '+drainInspectX+', '+drainInspectZ;
+ $('mapFoot').textContent='8.2km view · shared 16.4km basin '+w.ix+','+w.iz+
+  ' · tile '+drainInspectX+','+drainInspectZ;
  $('drainageStats').textContent=
-  w.stats.channels+' larger flow links · '+w.stats.minor+' small runoff links · '+
-  w.stats.landOutlets+' unresolved outer exits · '+w.stats.seaOutlets+' ocean outlets · '+
-  w.stats.uphill+' uphill links. No artificial exits at the dashed internal boundaries. '+
-  'Neither flow magnitude nor water permanence is calibrated.';
+  counts.trunk+' trunk links · '+counts.tributary+' tributary links · '+
+  counts.runoff+' runoff links · '+counts.crossings+' page-crossing links. '+
+  counts.sea+' channel links to modeled ocean · '+counts.unresolved+
+  ' ending at unresolved macro boundary. '+
+  (selected?'Selected flow: '+Math.round(selected.distance/100)/10+'km downstream to '+selected.outlet+
+   ' · contributing cells '+Math.round(selected.area)+'.':
+   'Tap a flow line to trace downstream. No physical water rendered.');
 }
 function regionDiagnostics(region){
  if(!region)return {segmentCount:0,lakeCount:0,landExit:0,seaExit:0,uphill:0,issues:[],outlets:[]};
@@ -2116,7 +2184,7 @@ function loop(){
  }else renderer.render(scene,camera);
  if(!buildQueue.length&&$('loading').textContent.startsWith('Generating'))$('loading').textContent='World ready · seed '+config.seed;
 }
-function setSeed(){watershedCache.clear();config.seed=$('seed').value.trim()||'HORIZON-01';seedNumber=seedHash(config.seed);clearVegetation();clearRocks();clearStreams();for(const k of [...tiles.keys()])deleteTile(k);lastUpdateX=Infinity;mapDirty=true;reposition(0,0);$('loading').textContent='Generating your landscape…';toast('Seed: '+config.seed)}
+function setSeed(){watershedCache.clear();watershedSelection=null;config.seed=$('seed').value.trim()||'HORIZON-01';seedNumber=seedHash(config.seed);clearVegetation();clearRocks();clearStreams();for(const k of [...tiles.keys()])deleteTile(k);lastUpdateX=Infinity;mapDirty=true;reposition(0,0);$('loading').textContent='Generating your landscape…';toast('Seed: '+config.seed)}
 $('start').onclick=()=>{active=true;$('intro').classList.add('hidden');if(matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()};$('helpBtn').onclick=()=>{$('intro').classList.remove('hidden');active=false;document.exitPointerLock?.()};$('settingsBtn').onclick=()=>{$('panel').classList.toggle('open');if($('panel').classList.contains('open'))document.exitPointerLock?.()};$('mapBtn').onclick=()=>{$('mapbox').classList.toggle('open');if($('mapbox').classList.contains('open')){renderMap();document.exitPointerLock?.()}};$('closeMap').onclick=()=>$('mapbox').classList.remove('open');$('view').addEventListener('click',()=>{if(active&&!$('panel').classList.contains('open')&&!$('mapbox').classList.contains('open')&&matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()});document.addEventListener('mousemove',e=>{if(document.pointerLockElement===$('view')){player.yaw-=e.movementX*.002;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-e.movementY*.002))}});document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;keys.add(e.code);if(['Space','ArrowDown','ArrowUp'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='KeyF')setFly(!player.fly);if(e.code==='KeyM')$('mapBtn').click();if(e.code==='KeyG')$('settingsBtn').click();if(e.code==='Escape')document.exitPointerLock?.()});document.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>keys.clear());
 $('perfResolution').oninput=e=>{renderResolutionScale=(+e.target.value)/100;$('perfResolutionOut').textContent=e.target.value+'%';updateRenderResolution();resetPerfStats()};$('smoothCover').onchange=e=>{
  smoothGroundCover=e.target.checked;$('smoothCoverOut').textContent=e.target.checked?'On':'Off';
@@ -2135,7 +2203,20 @@ $('visibilityDetail').onchange=e=>{adaptiveVisibility=e.target.checked;$('visibi
    if(d<best){best=d;drainSelectedSegment=seg}
   }
   renderMap();return;
- }if(mapMode==='watershed')return;let r=e.target.getBoundingClientRect();reposition(((e.clientX-r.left)/r.width-.5)*20000,(.5-(e.clientY-r.top)/r.height)*20000)};$('mapLandscape').onclick=()=>{mapMode='landscape';renderMap()};$('mapDrainage').onclick=openDrainageInspection;$('mapWatershed').onclick=openWatershedInspection;$('drainNorth').onclick=()=>{drainInspectZ++;drainSelectedSegment=null;renderMap()};$('drainSouth').onclick=()=>{drainInspectZ--;drainSelectedSegment=null;renderMap()};$('drainEast').onclick=()=>{drainInspectX++;drainSelectedSegment=null;renderMap()};$('drainWest').onclick=()=>{drainInspectX--;drainSelectedSegment=null;renderMap()};
+ }if(mapMode==='watershed'){
+  const rect=e.target.getBoundingClientRect(),u=Math.max(0,Math.min(.9999,(e.clientX-rect.left)/rect.width)),
+        v=Math.max(0,Math.min(.9999,(e.clientY-rect.top)/rect.height));
+  const w=watershedAt(drainInspectX,drainInspectZ),ox=(drainInspectX-w.ix*2)*64,oz=(drainInspectZ-w.iz*2)*64;
+  const cx=ox+Math.floor(u*64),cz=oz+63-Math.floor(v*64),id=cz*w.N+cx;
+  let chosen=-1,best=5;
+  for(let dz=-2;dz<=2;dz++)for(let dx=-2;dx<=2;dx++){
+   const x=cx+dx,z=cz+dz;if(x<0||z<0||x>=w.N||z>=w.N)continue;
+   const k=z*w.N+x;if(w.acc[k]<5||w.parent[k]<0)continue;
+   const d=Math.hypot(dx,dz);if(d<best){best=d;chosen=k}
+  }
+  watershedSelection=chosen<0?null:watershedFlowTrace(w,chosen);
+  renderMap();return;
+ }let r=e.target.getBoundingClientRect();reposition(((e.clientX-r.left)/r.width-.5)*20000,(.5-(e.clientY-r.top)/r.height)*20000)};$('mapLandscape').onclick=()=>{mapMode='landscape';renderMap()};$('mapDrainage').onclick=openDrainageInspection;$('mapWatershed').onclick=openWatershedInspection;$('drainNorth').onclick=()=>{drainInspectZ++;drainSelectedSegment=null;renderMap()};$('drainSouth').onclick=()=>{drainInspectZ--;drainSelectedSegment=null;renderMap()};$('drainEast').onclick=()=>{drainInspectX++;drainSelectedSegment=null;renderMap()};$('drainWest').onclick=()=>{drainInspectX--;drainSelectedSegment=null;renderMap()};
 function bindHold(id,value){const el=$(id);el.addEventListener('pointerdown',e=>{e.preventDefault();verticalTouch=value;el.setPointerCapture(e.pointerId)});el.addEventListener('pointerup',()=>verticalTouch=0);el.addEventListener('pointercancel',()=>verticalTouch=0)}bindHold('upBtn',1);bindHold('downBtn',-1);$('flyBtn').onclick=()=>setFly(!player.fly);const joy=$('joystick');function moveJoy(e){const r=joy.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),mag=Math.max(1,Math.hypot(dx,dy)),m=Math.min(mag,42);touchVector.x=dx/mag*m/42;touchVector.y=dy/mag*m/42;$('stick').style.transform=`translate(${touchVector.x*37}px,${touchVector.y*37}px)`}joy.addEventListener('pointerdown',e=>{joy.setPointerCapture(e.pointerId);moveJoy(e)});joy.addEventListener('pointermove',e=>{if(joy.hasPointerCapture(e.pointerId))moveJoy(e)});function releaseJoy(){touchVector.x=touchVector.y=0;$('stick').style.transform=''}joy.addEventListener('pointerup',releaseJoy);joy.addEventListener('pointercancel',releaseJoy);$('view').addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;touchLook={id:e.pointerId,x:e.clientX,y:e.clientY};$('view').setPointerCapture(e.pointerId)});$('view').addEventListener('pointermove',e=>{if(!touchLook||e.pointerId!==touchLook.id)return;player.yaw-=(e.clientX-touchLook.x)*.004;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-(e.clientY-touchLook.y)*.004));touchLook.x=e.clientX;touchLook.y=e.clientY});$('view').addEventListener('pointerup',()=>touchLook=null);window.addEventListener('resize',()=>{updateRenderResolution();camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()});
 seedNumber=seedHash(config.seed);player.x=0;player.z=0;player.y=terrain(0,0)+220;updateCamera();planTerrain(true);$('region').textContent=regionName(player.x,player.z);loop();
 </script>
