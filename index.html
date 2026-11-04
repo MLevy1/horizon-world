@@ -215,7 +215,7 @@ function waterElevationAt(x,z){
  if(!riversEnabled)return null;
  if(baseTerrain(x,z)<0)return 0;
  const channel=drainageAt(x,z);
- if(channel&&channel.distance<=channel.width*.67)return channel.water+.70;
+ if(channel&&channel.distance<=channel.width*.67)return channel.water+1.10;
  return pondElevationAt(x,z);
 }
 function tileHasDrainage(d){
@@ -1438,7 +1438,7 @@ function makeDrainageRibbon(seg){
  const dx=(seg.x1-seg.x0)/length,dz=(seg.z1-seg.z0)/length;
  for(let j=0;j<=steps;j++){
   const t=j/steps,cx=seg.x0+(seg.x1-seg.x0)*t,cz=seg.z0+(seg.z1-seg.z0)*t;
-  const y=seg.h0+(seg.h1-seg.h0)*t+.70;
+  const y=seg.h0+(seg.h1-seg.h0)*t+1.10;
   const width=seg.width*.72;
   for(const side of [-1,1])p.push(cx+side*(-dz)*width,y,cz+side*dx*width);
   if(j){const k=j*2;indices.push(k-2,k,k-1,k-1,k,k+1)}
