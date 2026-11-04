@@ -1866,7 +1866,7 @@ function watershedAt(pageX,pageZ){
 }
 // Alpha 3.14: inspect one complete macro-watershed at a time. Navigation
 // between macros is explicit: outer boundaries are not hydrologically stitched.
-let explorerZoom=1,explorerCX=64,explorerCZ=64,explorerDrag=null;
+let explorerZoom=1,explorerCX=64,explorerCZ=64,explorerDrag=null,explorerSkipClick=false;
 function explorerMacro(){return watershedAt(drainInspectX,drainInspectZ)}
 function explorerClamp(){
  const half=64/explorerZoom;
@@ -1905,7 +1905,7 @@ function openWatershedInspection(){
  drainInspectX=Math.floor(player.x/MACRO_SIZE)*2;
  drainInspectZ=Math.floor(player.z/MACRO_SIZE)*2;
  const w=explorerMacro();
- explorerZoom=1;explorerCX=64;explorerCZ=64;
+ explorerZoom=1;explorerCX=64;explorerCZ=64;explorerSkipClick=false;
  watershedSelection=null;
  $('panel').classList.remove('open');
  $('mapbox').classList.add('open');
@@ -2281,7 +2281,7 @@ $('visibilityDetail').onchange=e=>{adaptiveVisibility=e.target.checked;$('visibi
   }
   renderMap();return;
  }if(mapMode==='watershed'){
-  if(explorerDrag?.moved)return;
+  if(explorerSkipClick){explorerSkipClick=false;return}
   const rect=e.target.getBoundingClientRect();
   explorerSelectAt(Math.max(0,Math.min(.9999,(e.clientX-rect.left)/rect.width)),
                    Math.max(0,Math.min(.9999,(e.clientY-rect.top)/rect.height)));
@@ -2291,7 +2291,7 @@ $('watershedOut').onclick=()=>explorerSetZoom(explorerZoom/2);
 $('watershedReset').onclick=()=>explorerSetZoom(1,64,64);
 $('mapCanvas').addEventListener('pointerdown',e=>{
  if(mapMode!=='watershed')return;
- explorerDrag={x:e.clientX,y:e.clientY,cx:explorerCX,cz:explorerCZ,moved:false};
+ explorerSkipClick=false;explorerDrag={x:e.clientX,y:e.clientY,cx:explorerCX,cz:explorerCZ,moved:false};
  e.target.setPointerCapture(e.pointerId);
 });
 $('mapCanvas').addEventListener('pointermove',e=>{
@@ -2304,7 +2304,7 @@ $('mapCanvas').addEventListener('pointermove',e=>{
  explorerCX=explorerDrag.cx-dx;explorerCZ=explorerDrag.cz+dz;
  explorerClamp();renderMap();
 });
-$('mapCanvas').addEventListener('pointerup',()=>{if(explorerDrag?.moved){const drag=explorerDrag;explorerDrag=null;return}explorerDrag=null});
+$('mapCanvas').addEventListener('pointerup',()=>{if(explorerDrag?.moved)explorerSkipClick=true;explorerDrag=null});
 $('mapCanvas').addEventListener('pointercancel',()=>{explorerDrag=null});$('drainNorth').onclick=()=>{drainInspectZ+=mapMode==='watershed'?2:1;watershedSelection=null;drainSelectedSegment=null;renderMap()};$('drainSouth').onclick=()=>{drainInspectZ-=mapMode==='watershed'?2:1;watershedSelection=null;drainSelectedSegment=null;renderMap()};$('drainEast').onclick=()=>{drainInspectX+=mapMode==='watershed'?2:1;watershedSelection=null;drainSelectedSegment=null;renderMap()};$('drainWest').onclick=()=>{drainInspectX-=mapMode==='watershed'?2:1;watershedSelection=null;drainSelectedSegment=null;renderMap()};
 function bindHold(id,value){const el=$(id);el.addEventListener('pointerdown',e=>{e.preventDefault();verticalTouch=value;el.setPointerCapture(e.pointerId)});el.addEventListener('pointerup',()=>verticalTouch=0);el.addEventListener('pointercancel',()=>verticalTouch=0)}bindHold('upBtn',1);bindHold('downBtn',-1);$('flyBtn').onclick=()=>setFly(!player.fly);const joy=$('joystick');function moveJoy(e){const r=joy.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),mag=Math.max(1,Math.hypot(dx,dy)),m=Math.min(mag,42);touchVector.x=dx/mag*m/42;touchVector.y=dy/mag*m/42;$('stick').style.transform=`translate(${touchVector.x*37}px,${touchVector.y*37}px)`}joy.addEventListener('pointerdown',e=>{joy.setPointerCapture(e.pointerId);moveJoy(e)});joy.addEventListener('pointermove',e=>{if(joy.hasPointerCapture(e.pointerId))moveJoy(e)});function releaseJoy(){touchVector.x=touchVector.y=0;$('stick').style.transform=''}joy.addEventListener('pointerup',releaseJoy);joy.addEventListener('pointercancel',releaseJoy);$('view').addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;touchLook={id:e.pointerId,x:e.clientX,y:e.clientY};$('view').setPointerCapture(e.pointerId)});$('view').addEventListener('pointermove',e=>{if(!touchLook||e.pointerId!==touchLook.id)return;player.yaw-=(e.clientX-touchLook.x)*.004;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-(e.clientY-touchLook.y)*.004));touchLook.x=e.clientX;touchLook.y=e.clientY});$('view').addEventListener('pointerup',()=>touchLook=null);window.addEventListener('resize',()=>{updateRenderResolution();camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()});
 seedNumber=seedHash(config.seed);player.x=0;player.z=0;player.y=terrain(0,0)+220;updateCamera();planTerrain(true);$('region').textContent=regionName(player.x,player.z);loop();
