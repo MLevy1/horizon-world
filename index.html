@@ -726,8 +726,7 @@ function switchShrubVariants(enabled){
  // Rebuild only ground cover. Terrain, rock and tree streaming stay untouched.
  for(const tile of tiles.values()){
   if(!tile.cover)continue;
-  tile.group.remove(tile.cover);
-  tile.cover=null;
+  disposeGroundCover(tile);
  }
  refreshGroundCover();
 }
@@ -799,7 +798,7 @@ let naturalSmallPlants=true;
 function setNaturalSmallPlants(on){
  naturalSmallPlants=on;
  for(const tile of tiles.values()){
-  if(tile.cover){tile.group.remove(tile.cover);tile.cover=null;tile.coverDetail=0;}
+  disposeGroundCover(tile);
  }
  refreshGroundCover();
 }
@@ -809,7 +808,7 @@ function setDenseUndergrowth(on){
  denseUndergrowth=on;
  // Existing medium-distance cover is retained. Only nearby detail changes.
  for(const tile of tiles.values()){
-  if(tile.cover){tile.group.remove(tile.cover);tile.cover=null;tile.coverDetail=0;}
+  disposeGroundCover(tile);
  }
  refreshGroundCover();
 }
@@ -956,6 +955,14 @@ function groundDetailForTile(tile,ctx){
     (vis.look>-.6||vis.distance<80||ctx.altitude<45))return 1;
  return 0;
 }
+function disposeGroundCover(tile){
+ if(!tile.cover)return;
+ tile.group.remove(tile.cover);
+ // InstancedMesh.dispose releases renderer-owned instance/color buffers.
+ // Shared plant geometries and materials must NOT be disposed here.
+ for(const obj of tile.cover.children)if(obj.isInstancedMesh)obj.dispose();
+ tile.cover=null;tile.coverDetail=0;
+}
 function refreshGroundCover(){
  // Batch job cost is bounded; prioritize the immediate view and movement
  // path, but keep a ring near the player so turning does not reveal holes.
@@ -965,7 +972,7 @@ function refreshGroundCover(){
   const wanted=groundDetailForTile(tile,ctx);
   const vis=tileVisibility(tile,ctx);
   if(!wanted){
-   if(tile.cover){tile.group.remove(tile.cover);tile.cover=null;tile.coverDetail=0;}
+   disposeGroundCover(tile);
    continue;
   }
   if(wanted===2)detailCount++;else baseCount++;
@@ -977,7 +984,7 @@ function refreshGroundCover(){
  candidates.sort((a,b)=>a.score-b.score);
  for(const {tile,wanted} of candidates){
   if(built>=3)break;
-  if(tile.cover){tile.group.remove(tile.cover);tile.cover=null;}
+  disposeGroundCover(tile);
   createGroundCover(tile,wanted);built++;
  }
  visibilityLast.altitude=ctx.altitude;
@@ -1409,6 +1416,7 @@ function clearVegetation(){
 }
 function deleteTile(k){
  const t=tiles.get(k);if(!t)return;
+ if(t.cover)disposeGroundCover(t);
  scene.remove(t.group);
  for(const child of t.group.children){
   if(child.geometry&&child.geometry!==trunkGeo&&!foliageGeos.includes(child.geometry)&&![grassGeo,stoneGeo,shrubGeo].includes(child.geometry))child.geometry.dispose();
