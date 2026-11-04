@@ -10,7 +10,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 1.8</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 1.9</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span><br><span id="surfaceDebug" style="font-size:10px;opacity:.8">Surface alignment checking…</span></div></div>
@@ -118,6 +118,35 @@ treeFade(baseTrunkMat,5500,7100);
 treeFade(detailTrunkMat,2000,3200);
 baseFoliageMats.forEach(m=>treeFade(m,5500,7100));
 detailFoliageMats.forEach(m=>treeFade(m,2000,3200));
+// Each tree is ONE instanced mesh with a single ground-anchored transform.
+// A shared vertex buffer carries the trunk and canopy as two material groups.
+// This prevents them from drifting, fading, or being frustum-culled separately.
+const treeTrunkCenter=4.5;
+function buildRootedTreeGeometry(type){
+ const out=new THREE.BufferGeometry(),positions=[],normals=[];
+ const parts=[
+  {geo:trunkGeo,offset:treeTrunkCenter,material:0},
+  {geo:foliageGeos[type],offset:foliageBaseHeights[type],material:1}
+ ];
+ let firstVertex=0;
+ for(const part of parts){
+  const indexed=part.geo.getIndex()!==null;
+  const geo=indexed?part.geo.toNonIndexed():part.geo;
+  const p=geo.getAttribute('position'),n=geo.getAttribute('normal');
+  for(let i=0;i<p.count;i++){
+   positions.push(p.getX(i),p.getY(i)+part.offset,p.getZ(i));
+   normals.push(n.getX(i),n.getY(i),n.getZ(i));
+  }
+  out.addGroup(firstVertex,p.count,part.material);
+  firstVertex+=p.count;
+  if(indexed)geo.dispose();
+ }
+ out.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+ out.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
+ out.computeBoundingSphere();
+ return out;
+}
+const rootedTreeGeos=[0,1,2].map(buildRootedTreeGeometry);
 const tempObj=new THREE.Object3D();
 // Groundcover is generated independently from trees, and only close to the player.
 // Two crossed triangular blades make a low-cost grass tuft without alpha sorting.
@@ -253,18 +282,14 @@ function reanchorRockGroup(entry){
 function reanchorTreeGroup(entry){
  const records=entry.group.userData.treeAnchors;
  if(!records)return;
- for(const {trunk,leaves,data,type} of records){
-  data.forEach(([x,,z,scale],i)=>{
-   const y=displayedGroundHeight(x,z);
-   trunk.getMatrixAt(i,anchorScratch);
-   anchorScratch.setPosition(x,y+4.5*scale,z);
-   trunk.setMatrixAt(i,anchorScratch);
-   leaves.getMatrixAt(i,anchorScratch);
-   anchorScratch.setPosition(x,y+foliageBaseHeights[type]*scale,z);
-   leaves.setMatrixAt(i,anchorScratch);
+ for(const {mesh,data} of records){
+  data.forEach(([x,,z],i)=>{
+   mesh.getMatrixAt(i,anchorScratch);
+   anchorScratch.setPosition(x,displayedGroundHeight(x,z),z);
+   mesh.setMatrixAt(i,anchorScratch);
   });
-  trunk.instanceMatrix.needsUpdate=true;leaves.instanceMatrix.needsUpdate=true;
-  trunk.computeBoundingSphere();leaves.computeBoundingSphere();
+  mesh.instanceMatrix.needsUpdate=true;
+  mesh.computeBoundingSphere();
  }
 }
 let anchorPass=0,anchorRefreshBudget=0;
@@ -408,20 +433,27 @@ function makeVegetationTile(job){
   const type=(c.temp>.38&&hash(ix*25,iz*25,205)>.46)?1:(hash(ix*25,iz*25,206)>.58?2:0);
   families[type].push([px,h,pz,.65+hash(ix*25,iz*25,204)*.95,hash(ix*25,iz*25,207)*6.283]);
  }
- const group=new THREE.Group(),materials=base?baseFoliageMats:detailFoliageMats;
+ const group=new THREE.Group(),canopyMaterials=base?baseFoliageMats:detailFoliageMats;
  group.userData.treeAnchors=[];
  families.forEach((data,type)=>{
   if(!data.length)return;
-  const trunk=new THREE.InstancedMesh(trunkGeo,base?baseTrunkMat:detailTrunkMat,data.length);
-  const leaves=new THREE.InstancedMesh(foliageGeos[type],materials[type],data.length);
+  const mesh=new THREE.InstancedMesh(
+   rootedTreeGeos[type],
+   [base?baseTrunkMat:detailTrunkMat,canopyMaterials[type]],
+   data.length
+  );
   data.forEach(([px,h,pz,scale,rotation],i)=>{
-   tempObj.rotation.set(0,rotation,0);tempObj.scale.set(scale,scale,scale);
-   tempObj.position.set(px,displayedGroundHeight(px,pz)+4.5*scale,pz);tempObj.updateMatrix();trunk.setMatrixAt(i,tempObj.matrix);
-   tempObj.position.y=displayedGroundHeight(px,pz)+foliageBaseHeights[type]*scale;tempObj.updateMatrix();leaves.setMatrixAt(i,tempObj.matrix);
+   const rootHeight=displayedGroundHeight(px,pz);
+   tempObj.rotation.set(0,rotation,0);
+   tempObj.scale.set(scale,scale,scale);
+   tempObj.position.set(px,rootHeight,pz);
+   tempObj.updateMatrix();
+   mesh.setMatrixAt(i,tempObj.matrix);
   });
-  trunk.instanceMatrix.needsUpdate=true;leaves.instanceMatrix.needsUpdate=true;
-  trunk.computeBoundingSphere();leaves.computeBoundingSphere();
-  group.add(trunk,leaves);group.userData.treeAnchors.push({trunk,leaves,data,type});
+  mesh.instanceMatrix.needsUpdate=true;
+  mesh.computeBoundingSphere();
+  group.add(mesh);
+  group.userData.treeAnchors.push({mesh,data,type});
  });
  scene.add(group);vegetationTiles.set(job.key,{group,job});
 }
