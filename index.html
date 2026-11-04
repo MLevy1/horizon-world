@@ -10,7 +10,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 1.5</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 1.6</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span></div></div>
@@ -348,28 +348,15 @@ function buildTile(key,d){const {x,z,size}=d,N=d.segments||config.detail,step=si
   tileContaining(x+size/2,z-.02),tileContaining(x+size+.02,z+size/2),
   tileContaining(x+size/2,z+size+.02),tileContaining(x-.02,z+size/2)
  ];
- // Inward geomorph avoids cliffs where fine patches meet coarse geometry.
- const edgeWidth=Math.max(3,Math.min(6,Math.floor(N/5)));
- function edgeWeight(rows){const t=Math.max(0,1-rows/edgeWidth);return t*t*(3-2*t)}
+ // Use the canonical procedural height at EVERY vertex. Previous edge morphing
+ // could change heights by tens of metres, raising entire patches above tree roots.
+ // Never change the surface to match another LOD: refine geometry instead.
  for(let j=0;j<=N;j++)for(let i=0;i<=N;i++){
-  const xx=x+i*step,zz=z+j*step;
-  const original=terrain(xx,zz);
-  let correction=0,weight=0;
-  function bend(side,rows,edgeX,edgeZ,axis){
-   const neighbor=neighbors[side];
-   if(!neighbor||neighbor.size<=size||rows>=edgeWidth)return;
-   const w=edgeWeight(rows);
-   const target=sampleMatchedEdge(edgeX,edgeZ,axis,size,neighbor);
-   correction+=(target-terrain(edgeX,edgeZ))*w;weight+=w;
-  }
-  bend(0,j,xx,z,'z');
-  bend(2,N-j,xx,z+size,'z');
-  bend(3,i,x,zz,'x');
-  bend(1,N-i,x+size,zz,'x');
-  const hh=original+(weight?correction/Math.max(1,weight):0);
-  vertices.push(xx,hh,zz);colors.push(...colorFor(xx,zz,original));
+  const xx=x+i*step,zz=z+j*step,h=terrain(xx,zz);
+  vertices.push(xx,h,zz);
+  colors.push(...colorFor(xx,zz,h));
  }
- for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=j*(N+1)+i,b=a+1,c=a+N+1,e=c+1;indices.push(a,c,b,b,c,e)}
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=j*(N+1)+i,b=a+1,c=a+N+1,e=c+1;indices.push(a,c,b,b,c,e)}
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();const mesh=new THREE.Mesh(geometry,terrainMaterial);mesh.frustumCulled=true;const group=new THREE.Group();group.add(mesh);
 scene.add(group);tiles.set(key,{group,d});}
 // Trees are positioned on a permanent 25m world grid, independent of terrain LOD.
@@ -477,7 +464,7 @@ function markTerrainSurfaceChanged(){
 }
 function tileSegments(size){
  // Sampling density varies with distance: no need for 40x40 grids 15 km away.
- return size>=4096?20:size>=2048?20:size>=1024?20:size>=512?24:config.detail;
+ return size>=16384?20:size>=8192?28:size>=4096?40:size>=2048?48:size>=1024?40:size>=512?32:config.detail;
 }
 function planTerrain(force=false){
  const moved=Math.hypot(player.x-lastUpdateX,player.z-lastUpdateZ);
