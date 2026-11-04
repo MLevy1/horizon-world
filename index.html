@@ -224,7 +224,7 @@ function naturalRivers(ix,iz){
  // abruptly stop in the middle of a hillside.
  for(let id=0;id<w.C;id++){
   const down=w.parent[id],a=w.acc[id];
-  if(down<0||a<NATURAL_RIVER_THRESHOLD||!w.ocean[id]||w.base[id]<2)continue;
+  if(down<0||a<NATURAL_RIVER_THRESHOLD||!w.ocean[id]||w.base[id]<=0)continue;
   const h0=w.base[id],h1=Math.max(0,w.base[down]);
   const x0=w.ox+(id%N+.5)*S,z0=w.oz+(Math.floor(id/N)+.5)*S;
   const x1=w.ox+(down%N+.5)*S,z1=w.oz+(Math.floor(down/N)+.5)*S;
@@ -307,7 +307,7 @@ function naturalRivers(ix,iz){
   }
  }
  const data={w,segments,bins};
- if(naturalRiverCache.size>=3)naturalRiverCache.clear();
+ if(naturalRiverCache.size>=8)naturalRiverCache.clear();
  naturalRiverCache.set(key,data);
  return data;
 }
@@ -342,6 +342,14 @@ function naturalRiverbed(raw,river){
  const falloff=1-smoothRange(river.width*.85,river.bank,river.distance);
  const bed=river.water-.85;
  return raw-Math.min(NATURAL_VALLEY_MAX_CUT,Math.max(0,raw-bed))*falloff;
+}
+function wetRiverbankColor(color,river){
+ if(!river)return color;
+ const inner=river.width*1.2;
+ const wet=1-smoothRange(inner,river.bank,river.distance);
+ const bank=[.28,.39,.27];
+ const factor=wet*.25;
+ return color.map((v,i)=>clamp01(v*(1-factor)+bank[i]*factor));
 }
 function terrain(x,z){
  const raw=baseTerrain(x,z);
@@ -1462,9 +1470,10 @@ function buildTile(key,d){
   vertices.push(xx,h,zz);
   // World-aligned UVs keep ground texture stationary as terrain tiles stream.
   uvs.push(xx/18,zz/18);
-  const original=colorFor(xx,zz,h);
+  const river=naturalWaterwaysEnabled?naturalRiverAt(xx,zz):null;
+  const original=wetRiverbankColor(colorFor(xx,zz,h),river);
   colors.push(...original);
-  naturalColors.push(...naturalColorFor(xx,zz,h,original));
+  naturalColors.push(...wetRiverbankColor(naturalColorFor(xx,zz,h,original),river));
  }
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=j*(N+1)+i,b=a+1,c=a+N+1,e=c+1;indices.push(a,c,b,b,c,e)}
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));const originalColors=new THREE.Float32BufferAttribute(colors,3);
