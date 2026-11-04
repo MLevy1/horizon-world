@@ -1338,7 +1338,7 @@ function streamSurfaceGeometry(lane,z0,z1,branch=false,bank=false){
   if(branch&&!side)continue;
   const center=branch?side.x:riverCenterX(lane,z);
   const width=branch?(2.5+3.5*(1-side.t)):12.5;
-  const half=width*(bank?1.20:.62);
+  const half=width*(bank?1.20:.48);
   const slopeX=(branch?((tributaryAt(lane,z+.25)||side).x-(tributaryAt(lane,z-.25)||side).x):
    riverCenterX(lane,z+.25)-riverCenterX(lane,z-.25))/.5;
   const norm=1/Math.hypot(1,slopeX),nx=norm,nz=-slopeX*norm;
@@ -1346,7 +1346,7 @@ function streamSurfaceGeometry(lane,z0,z1,branch=false,bank=false){
   const y=branch?(
    h+(baseTerrain(center,z)-3-h)*(side.t*side.t*(3-2*side.t))
   ):h;
-  const level=y+(bank?-.50:.18);
+  const level=y+(bank?-.50:.95);
   for(const sign of [-1,1]){
    const x=center+sign*nx*half,zz=z+sign*nz*half;
    // Stay visually above the bed. The terrain model carves a depression
@@ -1369,9 +1369,8 @@ function buildStream(lane,index,key){
  const group=new THREE.Group();
  // Main stems never end at a chunk boundary. Each chunk shares endpoint
  // samples with its neighbor and has the same deterministic water profile.
- const bank=streamSurfaceGeometry(lane,z0,z1,false,true);
+ // The actual carved terrain forms the banks, avoiding raised colored strips.
  const water=streamSurfaceGeometry(lane,z0,z1,false,false);
- if(bank)group.add(new THREE.Mesh(bank,streamBankMaterial));
  if(water)group.add(new THREE.Mesh(water,streamWaterMaterial));
  // Tributaries join the mainstem and taper towards their source.
  const slot0=Math.floor((z0-300)/2400)-1,slot1=Math.floor((z1-300)/2400)+1;
