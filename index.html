@@ -194,16 +194,46 @@ function terrain(x,z){
  if(!riversEnabled||raw<0)return raw;
  return riverbedHeight(raw,drainageAt(x,z));
 }
+function pondElevationAt(x,z){
+ if(!riversEnabled)return null;
+ const region=drainageRegion(Math.floor(x/HYDRO_SIZE),Math.floor(z/HYDRO_SIZE));
+ if(!region||!region.lakes.length)return null;
+ const ground=baseTerrain(x,z);
+ for(const lake of region.lakes){
+  const radius=Math.min(45,16+lake.depth*3);
+  if(Math.hypot(lake.x-x,lake.z-z)<radius-2&&ground<lake.level-.25)
+   return lake.level+.30;
+ }
+ return null;
+}
 function inRiverChannel(x,z,margin=0){
  const channel=drainageAt(x,z);
- return !!channel&&channel.distance<channel.width*.7+margin;
+ if(channel&&channel.distance<channel.width*.7+margin)return true;
+ return pondElevationAt(x,z)!==null;
 }
 function waterElevationAt(x,z){
  if(!riversEnabled)return null;
  if(baseTerrain(x,z)<0)return 0;
  const channel=drainageAt(x,z);
- if(!channel||channel.distance>channel.width*.67)return null;
- return channel.water;
+ if(channel&&channel.distance<=channel.width*.67)return channel.water+.70;
+ return pondElevationAt(x,z);
+}
+function tileHasDrainage(d){
+ if(!riversEnabled)return false;
+ const pad=24,x0=d.x-pad,x1=d.x+d.size+pad,z0=d.z-pad,z1=d.z+d.size+pad;
+ const minX=Math.floor(x0/HYDRO_SIZE),maxX=Math.floor(x1/HYDRO_SIZE);
+ const minZ=Math.floor(z0/HYDRO_SIZE),maxZ=Math.floor(z1/HYDRO_SIZE);
+ for(let iz=minZ;iz<=maxZ;iz++)for(let ix=minX;ix<=maxX;ix++){
+  const region=drainageRegion(ix,iz);if(!region)continue;
+  for(const seg of region.segments){
+   if(Math.max(seg.x0,seg.x1)+seg.width<x0||Math.min(seg.x0,seg.x1)-seg.width>x1)continue;
+   if(Math.max(seg.z0,seg.z1)+seg.width<z0||Math.min(seg.z0,seg.z1)-seg.width>z1)continue;
+   return true;
+  }
+  for(const lake of region.lakes)
+   if(lake.x+60>x0&&lake.x-60<x1&&lake.z+60>z0&&lake.z-60<z1)return true;
+ }
+ return false;
 }
 function climate(x,z,h){const temp=.48+fbm(x,z,16500,100,3)*.35-h*.00031;const moisture=.48+fbm(x,z,9000,120,4)*.4;return {temp,moisture}}function clamp01(v){return Math.max(0,Math.min(1,v))}
 function smoothRange(a,b,v){let t=clamp01((v-a)/(b-a));return t*t*(3-2*t)}
@@ -1106,7 +1136,11 @@ function tileContaining(wx,wz){
  for(const tile of desired.values())if(wx>=tile.x&&wx<tile.x+tile.size&&wz>=tile.z&&wz<tile.z+tile.size)return tile;
  return null;
 }
-function buildTile(key,d){const {x,z,size}=d,N=d.segments||config.detail,step=size/N,vertices=[],uvs=[],colors=[],naturalColors=[],indices=[];
+function buildTile(key,d){
+ // Narrow, carved channels need denser near-field triangles, otherwise a
+ // 10m triangle can cover a 6m river. Only affected terrain tiles are refined.
+ if(d.size<=256&&tileHasDrainage(d))d.segments=Math.max(d.segments||config.detail,80);
+ const {x,z,size}=d,N=d.segments||config.detail,step=size/N,vertices=[],uvs=[],colors=[],naturalColors=[],indices=[];
  const neighbors=[
   tileContaining(x+size/2,z-.02),tileContaining(x+size+.02,z+size/2),
   tileContaining(x+size/2,z+size+.02),tileContaining(x-.02,z+size/2)
@@ -1611,7 +1645,7 @@ function reportPerf(now){
   'Terrain '+tiles.size+' tiles · '+buildQueue.length+' queued\n'+
   'Vegetation '+vegetationTiles.size+' tiles · '+vegetationQueue.length+' queued\n'+
   'Rocks '+rockTiles.size+' tiles · '+rockQueue.length+' queued\n'+
-  'River segments '+streamTiles.size+' · '+streamQueue.length+' queued\n'+
+  'River segments '+streamTiles.size+' · '+streamQueue.length+' queued · '+drainageRegions.size+' drainage regions\n'+
   'Trees '+num(treeCount)+' · rocks '+num(rockCount)+' · ground '+num(coverCount)+'\n'+
   Object.keys(perfStats.elapsed).map(k=>k+': '+perfStats.elapsed[k].toFixed(1)+' ms / '+perfStats.ops[k]+' operations').join('\n')+
   '\nWebGL geometries '+renderer.info.memory.geometries+' · textures '+renderer.info.memory.textures;
