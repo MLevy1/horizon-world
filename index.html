@@ -10,7 +10,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 2.5</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 2.6</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span><br><span id="surfaceDebug" style="font-size:10px;opacity:.8">Surface alignment checking…</span><br><span id="treeInspectStatus" style="font-size:10px;color:#fff2a7">Tree inspection: none</span></div></div>
@@ -177,6 +177,22 @@ const shrubGeo=new THREE.IcosahedronGeometry(1,0),shrubMat=new THREE.MeshLambert
 const grassColors=[0x6c8d4f,0x829758,0x496f45,0x9ba76d,0xa9a06d,0x557f4e].map(c=>new THREE.Color(c));
 const rockColors=[0x74776b,0xa59b82,0x666f6e,0xc0b497].map(c=>new THREE.Color(c));
 let showGroundCover=true,showRocks=true;
+// Groundcover is owned by its terrain tile, so sample that tile's triangles
+// directly once at creation. No per-instance raycasts or periodic reanchoring.
+function groundCoverSurfaceHeight(tile,x,z){
+ const {size}=tile.d,ox=tile.d.x,oz=tile.d.z;
+ const mesh=tile.group.children[0],attr=mesh?.geometry?.getAttribute('position');
+ if(!attr)return terrain(x,z);
+ const N=tile.d.segments||config.detail,step=size/N;
+ const gx=Math.max(0,Math.min(N,(x-ox)/step));
+ const gz=Math.max(0,Math.min(N,(z-oz)/step));
+ const i=Math.min(N-1,Math.floor(gx)),j=Math.min(N-1,Math.floor(gz));
+ const u=Math.max(0,Math.min(1,gx-i)),v=Math.max(0,Math.min(1,gz-j));
+ const a=j*(N+1)+i,b=a+1,c=a+N+1,e=c+1;
+ return u+v<=1
+  ? attr.getY(a)*(1-u-v)+attr.getY(b)*u+attr.getY(c)*v
+  : attr.getY(b)*(1-v)+attr.getY(c)*(1-u)+attr.getY(e)*(u+v-1);
+}
 function createGroundCover(tile){
  const {x,z,size}=tile.d,plants=[],rocks=[],shrubs=[];
  if(size>256)return;
@@ -196,9 +212,8 @@ function createGroundCover(tile){
  function instances(data,geometry,material,colors,heightOffset,flatten=1){
   if(!data.length)return;
   const mesh=new THREE.InstancedMesh(geometry,material,data.length);
-  mesh.userData.groundCoverRecords={data,heightOffset};
   data.forEach(([px,h,pz,scale,rotation,colorIndex],i)=>{
-   tempObj.position.set(px,displayedGroundHeight(px,pz)+heightOffset*scale,pz);tempObj.rotation.set(0,rotation,0);
+   tempObj.position.set(px,groundCoverSurfaceHeight(tile,px,pz)+heightOffset*scale,pz);tempObj.rotation.set(0,rotation,0);
    tempObj.scale.set(scale,scale*flatten,scale);tempObj.updateMatrix();
    mesh.setMatrixAt(i,tempObj.matrix);mesh.setColorAt(i,colors[colorIndex]);
   });
@@ -325,29 +340,10 @@ function reanchorTreeGroup(entry){
  }
 }
 let anchorPass=0,anchorRefreshBudget=0;
-function reanchorGroundCover(tile){
- if(!tile.cover||!tile.cover.visible)return;
- for(const mesh of tile.cover.children){
-  const records=mesh.userData.groundCoverRecords;
-  if(!records)continue;
-  const {data,heightOffset}=records;
-  data.forEach(([x,,z,scale],i)=>{
-   mesh.getMatrixAt(i,anchorScratch);
-   anchorScratch.setPosition(x,displayedGroundHeight(x,z)+heightOffset*scale,z);
-   mesh.setMatrixAt(i,anchorScratch);
-  });
-  mesh.instanceMatrix.needsUpdate=true;
- }
-}
 function refreshObjectAnchors(){
  // Re-anchor only nearby groups; far objects are too small for displacement to matter.
  // Work is spread across frames so high-speed flight remains responsive on mobile.
  const jobs=[];
- for(const tile of tiles.values()){
-  if(!tile.group.visible||!tile.cover||!tile.cover.visible)continue;
-  const {x,z,size}=tile.d;
-  if(Math.hypot(player.x-x-size/2,player.z-z-size/2)<400)jobs.push({entry:tile,dist:0,kind:2});
- }
  for(const entry of rockTiles.values()){
   const {x,z,size}=entry.job,dist=Math.hypot(player.x-x-size/2,player.z-z-size/2);
   if(dist<1100&&entry.group.userData.rockAnchors)jobs.push({entry,dist,kind:0});
@@ -362,8 +358,7 @@ function refreshObjectAnchors(){
  for(let k=0;k<count;k++){
   const job=jobs[(anchorPass+k)%jobs.length];
   if(job.kind===0)reanchorRockGroup(job.entry);
-  else if(job.kind===1)reanchorTreeGroup(job.entry);
-  else reanchorGroundCover(job.entry);
+  else reanchorTreeGroup(job.entry);
  }
  anchorPass=(anchorPass+count)%jobs.length;
  if(anchorRefreshBudget>0)anchorRefreshBudget--;
