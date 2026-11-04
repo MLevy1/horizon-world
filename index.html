@@ -552,7 +552,7 @@ function collidesWithScenery(px,py,pz){
   const horizontal=Math.hypot(px-xx,pz-zz);
   // Solid trunk, broad crown approximation; enough for convincing navigation.
   if(horizontal<radius+1.4*scale&&py>h-.5&&py<h+9*scale)return true;
-  const crownY=h+(type===2?15:12)*scale,crownRadius=(type===1?7.4:type===2?5.6:5.5)*scale;
+  const crownY=h+foliageBaseHeights[type]*scale,crownRadius=(type===1?6.2:type===2?5.6:5.5)*scale;
   if(Math.hypot(horizontal,py-crownY)<crownRadius+radius)return true;
  }
  // Same world coordinates and probability as the persistent rendered rock tiles.
