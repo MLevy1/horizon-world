@@ -236,8 +236,7 @@ function naturalRivers(ix,iz){
   }
   if(mismatch)continue;
   const width0=naturalRiverWidth(a),width1=naturalRiverWidth(w.acc[down]);
-  const head=a<NATURAL_RIVER_THRESHOLD*1.6;
-  const seg={x0,z0,x1,z1,h0,h1,width0,width1,width:Math.max(width0,width1),head,isCoast,acc:a};
+  const seg={id,down,x0,z0,x1,z1,h0,h1,width0,width1,width:Math.max(width0,width1),head:false,isCoast,acc:a};
   segments.push(seg);
   const xMin=Math.max(0,Math.floor((Math.min(x0,x1)-55-w.ox)/S));
   const xMax=Math.min(N-1,Math.floor((Math.max(x0,x1)+55-w.ox)/S));
@@ -247,6 +246,8 @@ function naturalRivers(ix,iz){
    const k=z*N+x,arr=bins.get(k)||[];arr.push(seg);bins.set(k,arr);
   }
  }
+ const receiving=new Set(segments.map(seg=>seg.down));
+ for(const seg of segments)seg.head=!receiving.has(seg.id);
  const data={w,segments,bins};
  if(naturalRiverCache.size>=3)naturalRiverCache.clear();
  naturalRiverCache.set(key,data);
@@ -268,7 +269,9 @@ function naturalRiverAt(x,z){
   const width=seg.width0+(seg.width1-seg.width0)*t;
   const bank=Math.max(22,width*3.5);
   if(dist>=bank||dist/bank>=best)continue;
-  const water=seg.h0+(seg.h1-seg.h0)*t-.16;
+  // Clamp local water to ground near the centerline to avoid floating.
+  const projected=seg.h0+(seg.h1-seg.h0)*t-.16;
+  const water=Math.min(projected,baseTerrain(x,z)+.10);
   nearest={distance:dist,width,bank,water};
   best=dist/bank;
  }
@@ -1696,7 +1699,8 @@ function makeNaturalRibbon(seg){
  const dx=(seg.x1-seg.x0)/length,dz=(seg.z1-seg.z0)/length;
  for(let k=0;k<=steps;k++){
   const t=k/steps,cx=seg.x0+(seg.x1-seg.x0)*t,cz=seg.z0+(seg.z1-seg.z0)*t;
-  const y=seg.h0+(seg.h1-seg.h0)*t-.06;
+  const projected=seg.h0+(seg.h1-seg.h0)*t-.06;
+  const y=Math.min(projected,baseTerrain(cx,cz)+.12);
   // Source headwaters grow from a barely perceptible thread, not a sudden
   // full-width blue rectangle at the drainage accumulation threshold.
   const nominal=seg.width0+(seg.width1-seg.width0)*t;
