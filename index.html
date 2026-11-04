@@ -18,7 +18,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 2.7</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 2.8</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="perfBtn" class="chip">▥ Perf</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div id="perfPanel" class="glass profiler">
 <h2>Live performance <button id="perfClose" class="chip" style="float:right;padding:3px 8px">×</button></h2>
@@ -309,13 +309,8 @@ function displayedGroundHeight(x,z){
  // Far scenery is approximate until the player approaches it.
  if(Math.hypot(x-player.x,z-player.z)>550)return terrain(x,z);
  const mesh=findVisibleTerrainMesh(x,z);
- if(!mesh)return terrain(x,z);
- groundRayOrigin.set(x,10000,z);
- groundRaycaster.set(groundRayOrigin,groundRayDirection);
- groundRaycaster.near=0;groundRaycaster.far=20000;
- const hits=groundRaycaster.intersectObject(mesh,false);
- if(!hits.length)return terrain(x,z);
- const y=hits[0].point.y;
+ if(!mesh?.userData.terrainTile)return terrain(x,z);
+ const y=groundCoverSurfaceHeight(mesh.userData.terrainTile,x,z);
  if(groundSampleCount<10000){
   const error=Math.abs(y-terrain(x,z));
   groundSampleCount++;
@@ -362,29 +357,49 @@ function reanchorTreeGroup(entry){
   if(rootPoint){rootPoint.instanceMatrix.needsUpdate=true;rootPoint.computeBoundingSphere()}
  }
 }
-let anchorPass=0,anchorRefreshBudget=0;
+// Dirty-group anchoring, triggered by terrain swaps and entering the near field.
+const dirtyAnchorJobs=new Map();
+const anchorNearRadius=550;
+function anchorEntryNear(entry){
+ const {x,z,size}=entry.job;
+ const dx=Math.max(0,Math.abs(player.x-x-size/2)-size/2);
+ const dz=Math.max(0,Math.abs(player.z-z-size/2)-size/2);
+ return Math.hypot(dx,dz)<anchorNearRadius;
+}
+function queueAnchor(entry,kind){
+ if(entry&&entry.group)dirtyAnchorJobs.set(kind+':'+entry.job.key,{entry,kind});
+}
+function markAnchorsForTerrainChange(area){
+ const touches=job=>job.x<area.x+area.size+12&&job.x+job.size>area.x-12&&job.z<area.z+area.size+12&&job.z+job.size>area.z-12;
+ for(const entry of rockTiles.values())if(touches(entry.job)&&anchorEntryNear(entry))queueAnchor(entry,'rock');
+ for(const entry of vegetationTiles.values())if(touches(entry.job)&&anchorEntryNear(entry))queueAnchor(entry,'tree');
+}
+function checkAnchorNearTransitions(){
+ // Groups are not reanchored when the camera stays still. A group is refreshed
+ // once on entry and again after traveling 150m within that group.
+ function scan(collection,kind,key){
+  for(const entry of collection.values()){
+   if(!entry.group.userData[key])continue;
+   const near=anchorEntryNear(entry);
+   if(!near){entry.lastAnchorX=undefined;continue}
+   if(entry.lastAnchorX===undefined||Math.hypot(player.x-entry.lastAnchorX,player.z-entry.lastAnchorZ)>150){
+    queueAnchor(entry,kind);
+    entry.lastAnchorX=player.x;entry.lastAnchorZ=player.z;
+   }
+  }
+ }
+ scan(rockTiles,'rock','rockAnchors');
+ scan(vegetationTiles,'tree','treeAnchors');
+}
 function refreshObjectAnchors(){
- // Re-anchor only nearby groups; far objects are too small for displacement to matter.
- // Work is spread across frames so high-speed flight remains responsive on mobile.
- const jobs=[];
- for(const entry of rockTiles.values()){
-  const {x,z,size}=entry.job,dist=Math.hypot(player.x-x-size/2,player.z-z-size/2);
-  if(dist<1100&&entry.group.userData.rockAnchors)jobs.push({entry,dist,kind:0});
- }
- for(const entry of vegetationTiles.values()){
-  const {x,z,size}=entry.job,dist=Math.hypot(player.x-x-size/2,player.z-z-size/2);
-  if(dist<1700&&entry.group.userData.treeAnchors)jobs.push({entry,dist,kind:1});
- }
- jobs.sort((a,b)=>a.dist-b.dist);
- if(!jobs.length)return;
- const count=Math.min(anchorRefreshBudget>0?14:5,jobs.length);
- for(let k=0;k<count;k++){
-  const job=jobs[(anchorPass+k)%jobs.length];
-  if(job.kind===0)reanchorRockGroup(job.entry);
-  else reanchorTreeGroup(job.entry);
- }
- anchorPass=(anchorPass+count)%jobs.length;
- if(anchorRefreshBudget>0)anchorRefreshBudget--;
+ // Process a single dirty group per frame, skipping obsolete streaming entries.
+ const item=dirtyAnchorJobs.entries().next();
+ if(item.done)return;
+ const [key,job]=item.value;dirtyAnchorJobs.delete(key);
+ const live=job.kind==='rock'?rockTiles.get(job.entry.job.key):vegetationTiles.get(job.entry.job.key);
+ if(live!==job.entry||!anchorEntryNear(live))return;
+ if(job.kind==='rock')reanchorRockGroup(live);
+ else reanchorTreeGroup(live);
 }
 function createRockTile(job){
  const data=[],spacing=18;
@@ -425,7 +440,7 @@ function planRocks(force=false){
  for(const [key,t] of rockTiles)if(!wanted.has(key)){scene.remove(t.group);rockTiles.delete(key)}
  rockQueue=[...wanted.values()].filter(v=>!rockTiles.has(v.key)).sort((a,b)=>a.dist-b.dist);
 }
-function clearRocks(){for(const t of rockTiles.values())scene.remove(t.group);rockTiles.clear();rockQueue=[];lastRocksX=Infinity}
+function clearRocks(){dirtyAnchorJobs.clear();for(const t of rockTiles.values())scene.remove(t.group);rockTiles.clear();rockQueue=[];lastRocksX=Infinity}
 function regionName(x,z){
  const h=terrain(x,z),c=climate(x,z,h),slope=slopeAt(x,z),L=landscapeAt(x,z,h,c,slope);
  if(h<0)return 'Open Water';
@@ -474,7 +489,7 @@ function buildTile(key,d){const {x,z,size}=d,N=d.segments||config.detail,step=si
  }
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=j*(N+1)+i,b=a+1,c=a+N+1,e=c+1;indices.push(a,c,b,b,c,e)}
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();const mesh=new THREE.Mesh(geometry,terrainMaterial);mesh.frustumCulled=true;const group=new THREE.Group();group.add(mesh);
-mesh.visible=perfTerrainEnabled;scene.add(group);tiles.set(key,{group,d});}
+mesh.visible=perfTerrainEnabled;scene.add(group);const tile={group,d};mesh.userData.terrainTile=tile;tiles.set(key,tile);}
 // Trees are positioned on a permanent 25m world grid, independent of terrain LOD.
 // The base layer samples every fourth tree candidate; the detail layer fills the rest.
 // Both layers fade out before reaching their streaming boundaries.
@@ -650,6 +665,7 @@ function inspectTreeNearCrosshair(){
  toast('Tree canopy selected by screen position');
 }
 function clearVegetation(){
+ dirtyAnchorJobs.clear();
  clearInspectedTree();
  for(const v of vegetationTiles.values())scene.remove(v.group);
  vegetationTiles.clear();vegetationQueue=[];lastVegetationX=Infinity;
@@ -665,28 +681,27 @@ function deleteTile(k){
 function tileKey(x,z,size){return size+':'+x+':'+z}
 function overlaps(a,b){return a.x<b.x+b.size&&b.x<a.x+a.size&&a.z<b.z+b.size&&b.z<a.z+a.size}
 function reconcileTiles(){
- // A surface swap invalidates previous object heights in its vicinity.
- let surfaceChanged=false;
+ // Track newly exposed tile areas, not a global redraw flag.
+ const changedAreas=[];
  const obsolete=[...tiles.entries()].filter(([k])=>!desired.has(k));
  for(const [k,t] of obsolete){
   const required=[...desired.entries()].filter(([,d])=>overlaps(d,t.d));
   if(!required.length||required.every(([dk])=>tiles.has(dk))){
-   deleteTile(k);surfaceChanged=true;
+   changedAreas.push(t.d);deleteTile(k);
   }
  }
  const remainingOld=[...tiles.entries()].filter(([k])=>!desired.has(k)).map(([,t])=>t.d);
  for(const [k,t] of tiles){
   if(desired.has(k)){
    const visible=!remainingOld.some(d=>overlaps(d,t.d));
-   if(t.group.visible!==visible){t.group.visible=visible;surfaceChanged=true}
+   if(t.group.visible!==visible){t.group.visible=visible;changedAreas.push(t.d)}
   }
  }
- if(surfaceChanged)markTerrainSurfaceChanged();
+ if(changedAreas.length)markTerrainSurfaceChanged(changedAreas);
 }
-function markTerrainSurfaceChanged(){
+function markTerrainSurfaceChanged(areas){
  groundSampleCount=0;groundSampleMaxError=0;groundSampleErrorSum=0;
- anchorRefreshBudget=12;
- anchorPass=0;
+ for(const area of areas)markAnchorsForTerrainChange(area);
 }
 function tileSegments(size){
  // Sampling density varies with distance: no need for 40x40 grids 15 km away.
@@ -879,7 +894,8 @@ function loop(){
   const job=rockQueue.shift();
   if(job&&!rockTiles.has(job.key))perfMeasure('rocks',()=>createRockTile(job));
  }
- if(active&&(anchorRefreshBudget>0||frame%6===0))perfMeasure('anchors',()=>refreshObjectAnchors());
+ if(active&&frame%12===0)checkAnchorNearTransitions();
+ if(active&&dirtyAnchorJobs.size)perfMeasure('anchors',()=>refreshObjectAnchors());
  if(active&&++frame%12===0){
   planTerrain();
   if(frame%60===0)perfMeasure('cover',()=>refreshGroundCover());
