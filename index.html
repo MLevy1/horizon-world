@@ -1635,12 +1635,16 @@ function drawDrainageMap(){
  const minX=drainInspectX*HYDRO_SIZE,minZ=drainInspectZ*HYDRO_SIZE;
  const step=HYDRO_SIZE/W;
  const pixels=ctx.createImageData(W,H);
- for(let j=0;j<H;j++)for(let i=0;i<W;i++){
-  const x=minX+(i+.5)*step,z=minZ+(H-j-.5)*step;
+ // 4px blocks cut the expensive terrain samples by 16x on mobile.
+ // The river network itself is drawn at full canvas resolution.
+ for(let j=0;j<H;j+=4)for(let i=0;i<W;i+=4){
+  const x=minX+(i+2)*step,z=minZ+(H-j-2)*step;
   const h=baseTerrain(x,z),colors=colorFor(x,z,h);
   const rgb=h<0?[45,101,133]:colors.map(c=>Math.round(Math.pow(c,1/2.2)*255)*.7);
-  const k=(j*W+i)*4;
-  pixels.data[k]=rgb[0];pixels.data[k+1]=rgb[1];pixels.data[k+2]=rgb[2];pixels.data[k+3]=255;
+  for(let dy=0;dy<4;dy++)for(let dx=0;dx<4;dx++){
+   const k=((j+dy)*W+i+dx)*4;
+   pixels.data[k]=rgb[0];pixels.data[k+1]=rgb[1];pixels.data[k+2]=rgb[2];pixels.data[k+3]=255;
+  }
  }
  ctx.putImageData(pixels,0,0);
  const px=x=>(x-minX)/HYDRO_SIZE*W,py=z=>H-(z-minZ)/HYDRO_SIZE*H;
