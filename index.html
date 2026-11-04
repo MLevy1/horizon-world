@@ -10,12 +10,12 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 2.2</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 2.3</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span><br><span id="surfaceDebug" style="font-size:10px;opacity:.8">Surface alignment checking…</span><br><span id="treeInspectStatus" style="font-size:10px;color:#fff2a7">Tree inspection: none</span></div></div>
 <div id="toast" class="toast"></div>
-<div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Vegetation collisions <output id="collisionOut">On</output></label><input id="collisions" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Trees and rocks block movement, including in flight. Turn off to pass through scenery.</p><label>Tree root diagnostic <output id="rootOut">Off</output></label><input id="rootDebug" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Draw magenta poles and yellow root dots through the terrain (X-ray view). If a dot is behind the foreground ridge, its tree can look like it floats even though it is rooted.</p><button id="inspectTree" class="action secondary" style="width:100%;margin-top:8px">Inspect tree near crosshair</button><p style="margin-top:5px;font-size:11px;color:var(--muted)">Center the crosshair on a floating tree first. This highlights only that tree, its root, and whether a ridge blocks the root.</p><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
+<div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Vegetation collisions <output id="collisionOut">On</output></label><input id="collisions" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Trees and rocks block movement, including in flight. Turn off to pass through scenery.</p><label>Tree root diagnostic <output id="rootOut">Off</output></label><input id="rootDebug" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Draw magenta poles and yellow root dots through the terrain (X-ray view). If a dot is behind the foreground ridge, its tree can look like it floats even though it is rooted.</p><button id="inspectTree" class="action secondary" style="width:100%;margin-top:8px">Inspect tree near crosshair</button><p style="margin-top:5px;font-size:11px;color:var(--muted)">Center the crosshair directly on the visible foliage. This selects the exact tree mesh you are aiming at, not a nearby tree.</p><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
 <div id="mapbox" class="glass mapbox"><div class="maphead"><b>REGIONAL MAP</b><button id="closeMap" class="chip" style="padding:3px 7px">×</button></div><canvas id="mapCanvas" width="256" height="256"></canvas><div class="mapfoot">20 × 20 km · north is up<br>Click a point to teleport · dotted rings every 2.5 km</div></div>
 <div class="mobile"><div id="joystick" class="touchpad"><div class="stick" id="stick"></div></div><div class="mobbuttons"><button id="upBtn">↑</button><button id="flyBtn">✈</button><button id="downBtn">↓</button></div></div>
 <div class="footnote">Procedural terrain · browser-rendered · no server required</div>
@@ -534,30 +534,31 @@ function clearInspectedTree(){
 }
 function inspectTreeNearCrosshair(){
  camera.updateMatrixWorld(true);
- const root=new THREE.Vector3(),projected=new THREE.Vector3(),target=new THREE.Vector3();
- let best=null,bestScore=Infinity;
+ // Raycast against the actual instanced tree geometry rather than guessing which
+ // tree center lies closest to the crosshair. The old test could select a tree in
+ // a distant valley instead of the prominent tree on screen.
+ const pickRay=new THREE.Raycaster();
+ pickRay.near=.05;pickRay.far=6500;
+ pickRay.setFromCamera(new THREE.Vector2(0,0),camera);
+ const objects=[],records=new Map();
  for(const entry of vegetationTiles.values()){
   for(const record of entry.group.userData.treeAnchors||[]){
-   const {mesh,data,type}=record;
-   for(let i=0;i<data.length;i++){
-    const [x,,z,scale]=data[i];
-    if(Math.hypot(x-player.x,z-player.z)>1700)continue;
-    mesh.getMatrixAt(i,inspectionInstanceMatrix);
-    const e=inspectionInstanceMatrix.elements;
-    root.set(e[12],e[13],e[14]);
-    target.set(root.x,root.y+foliageBaseHeights[type]*scale,root.z);
-    projected.copy(target).project(camera);
-    if(projected.z<0||projected.z>1)continue;
-    const score=Math.hypot(projected.x*camera.aspect,projected.y)+Math.hypot(x-player.x,z-player.z)*.00002;
-    if(score<bestScore){bestScore=score;best={root:root.clone(),top:target.clone(),x,z,scale}}
-   }
+   objects.push(record.mesh);records.set(record.mesh,record);
   }
  }
- if(!best||bestScore>.75){
-  $('treeInspectStatus').textContent='Aim at a nearby tree (within 1.7 km)';
+ const hits=pickRay.intersectObjects(objects,false);
+ const hit=hits.find(h=>h.instanceId!==undefined&&records.has(h.object));
+ if(!hit){
+  $('treeInspectStatus').textContent='No visible tree intersects crosshair. Aim directly at its foliage.';
   $('panel').classList.remove('open');
-  toast('No nearby tree near crosshair');return;
+  toast('Aim crosshair directly at the tree foliage');return;
  }
+ const record=records.get(hit.object),[x,,z,scale]=record.data[hit.instanceId];
+ record.mesh.getMatrixAt(hit.instanceId,inspectionInstanceMatrix);
+ const e=inspectionInstanceMatrix.elements;
+ const root=new THREE.Vector3(e[12],e[13],e[14]);
+ const top=new THREE.Vector3(root.x,root.y+foliageBaseHeights[record.type]*scale,root.z);
+ const best={root,top,x,z,scale,distance:hit.distance};
  clearInspectedTree();
  const group=new THREE.Group();
  const geo=new THREE.BufferGeometry().setFromPoints([best.root,best.top]);
@@ -567,20 +568,27 @@ function inspectTreeNearCrosshair(){
  const topMarker=new THREE.Mesh(new THREE.SphereGeometry(1.5,10,7),inspectCrownMaterial);
  topMarker.position.copy(best.top);topMarker.renderOrder=1101;
  group.add(line,rootMarker,topMarker);scene.add(group);inspectedTreeGroup=group;
- const actual=displayedGroundHeight(best.x,best.z);
+ // Raycast actual displayed terrain, regardless of diagnostic distance, when loaded.
+ const terrainMesh=findVisibleTerrainMesh(best.x,best.z);
+ let actual=terrain(best.x,best.z),surfaceType='procedural';
+ if(terrainMesh){
+  const query=new THREE.Raycaster(new THREE.Vector3(best.x,10000,best.z),new THREE.Vector3(0,-1,0),0,20000);
+  const surfaceHit=query.intersectObject(terrainMesh,false)[0];
+  if(surfaceHit){actual=surfaceHit.point.y;surfaceType='rendered'}
+ }
  const gap=best.root.y-actual;
- // Check whether the sightline to the root runs beneath a foreground hill.
+ // Separate a terrain sightline assessment from a measured root-to-surface gap.
  const from=camera.position,to=best.root;
  let hidden=false;
- for(let i=2;i<24;i++){
-  const t=i/24,x=from.x+(to.x-from.x)*t,z=from.z+(to.z-from.z)*t;
-  const y=from.y+(to.y-from.y)*t;
-  if(displayedGroundHeight(x,z)>y+.8){hidden=true;break}
+ for(let i=2;i<64;i++){
+  const t=i/64,xx=from.x+(to.x-from.x)*t,zz=from.z+(to.z-from.z)*t;
+  const yy=from.y+(to.y-from.y)*t;
+  if(terrain(xx,zz)>yy+1){hidden=true;break}
  }
- const result=hidden?'root hidden behind terrain':'root NOT hidden by terrain';
- $('treeInspectStatus').textContent='Tree root '+best.root.y.toFixed(1)+'m · ground '+actual.toFixed(1)+'m · gap '+gap.toFixed(1)+'m · '+result;
+ const result=hidden?'root behind terrain':'root in line of sight';
+ $('treeInspectStatus').textContent='Selected tree '+Math.round(best.distance)+'m away · root '+best.root.y.toFixed(1)+'m · '+surfaceType+' ground '+actual.toFixed(1)+'m · gap '+gap.toFixed(1)+'m · '+result;
  $('panel').classList.remove('open');
- toast(hidden?'Selected tree: terrain blocks its root':'Selected tree: root visible from camera');
+ toast('Selected exact tree at crosshair');
 }
 function clearVegetation(){
  clearInspectedTree();
