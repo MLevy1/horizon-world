@@ -94,29 +94,30 @@ function riverWaterHeight(lane,z){
 }
 function riverChannelAt(x,z){
  if(!riversEnabled)return null;
- const nearest=Math.round(x/RIVER_LANE);
+ const lane=Math.round(x/RIVER_LANE);
+ // Every main stem stays within 200 m of its 5 km lane; tributaries extend
+ // another 490 m. Most height queries therefore exit before any trigonometry.
+ if(Math.abs(x-lane*RIVER_LANE)>720)return null;
+ const center=riverCenterX(lane,z),d=Math.abs(x-center);
+ const mainWidth=12.5;
  let best=null;
- for(let lane=nearest-1;lane<=nearest+1;lane++){
-  const center=riverCenterX(lane,z),d=Math.abs(x-center);
-  const mainWidth=12.5;
-  if(d<49){
-   best={lane,water:riverWaterHeight(lane,z),distance:d,width:mainWidth,bank:49,kind:'main'};
-  }
-  const branch=tributaryAt(lane,z);
-  if(branch){
-   const db=Math.abs(x-branch.x),w=3.4*Math.min(1,Math.max(.05,(1-branch.t)*4));
-   // Branches become narrow at their headwaters, widen at the confluence.
-   const branchWidth=2.5+3.5*(1-branch.t);
-   if(db<branchWidth*3&&(!best||db/branchWidth<best.distance/best.width)){
-    const mainY=riverWaterHeight(lane,z);
-    const branchBase=baseTerrain(branch.x,z)-3.0;
-    const blend=branch.t*branch.t*(3-2*branch.t);
-    best={lane,water:mainY+(branchBase-mainY)*blend,distance:db,width:branchWidth,
-     bank:branchWidth*3,kind:'branch'};
-   }
+ if(d<49)best={lane,water:riverWaterHeight(lane,z),distance:d,width:mainWidth,bank:49,kind:'main'};
+ const branch=tributaryAt(lane,z);
+ if(branch){
+  const db=Math.abs(x-branch.x),branchWidth=2.5+3.5*(1-branch.t);
+  if(db<branchWidth*3&&(!best||db/branchWidth<best.distance/best.width)){
+   const mainY=riverWaterHeight(lane,z);
+   const branchBase=baseTerrain(branch.x,z)-3.0;
+   const blend=branch.t*branch.t*(3-2*branch.t);
+   best={lane,water:mainY+(branchBase-mainY)*blend,distance:db,width:branchWidth,
+    bank:branchWidth*3,kind:'branch'};
   }
  }
  return best;
+}
+function inRiverChannel(x,z,margin=0){
+ const r=riverChannelAt(x,z);
+ return !!r&&r.distance<r.width*.7+margin;
 }
 function riverbedHeight(raw,river){
  if(!river)return raw;
@@ -741,7 +742,7 @@ function createGroundCover(tile,detail=1){
  for(let tx=Math.ceil(x/spacing)*spacing;tx<x+size;tx+=spacing){
   const ix=Math.round(tx/spacing),iz=Math.round(tz/spacing);
   const px=tx+(hash(ix,iz,301)-.5)*spacing*.82,pz=tz+(hash(ix,iz,302)-.5)*spacing*.82;
-  const h=terrain(px,pz);if(h<.5)continue;
+  const h=terrain(px,pz);if(h<.5||inRiverChannel(px,pz,1.5))continue;
   const c=climate(px,pz,h),steep=slopeAt(px,pz),L=landscapeAt(px,pz,h,c,steep);
   if(hash(ix,iz,310)<clamp01(.16+L.meadow*.65+L.woodland*.30+L.forest*.15)*(1-L.exposed*.70))
    plants.push([px,h,pz,.48+hash(ix,iz,304)*1.2,hash(ix,iz,305)*6.28,L.forest>.45?(hash(ix,iz,306)>.4?2:5):Math.floor(hash(ix,iz,306)*grassColors.length)]);
@@ -758,7 +759,7 @@ function createGroundCover(tile,detail=1){
    const ix=Math.round(tx/nearSpacing),iz=Math.round(tz/nearSpacing);
    const px=tx+(hash(ix,iz,731)-.5)*2.8,pz=tz+(hash(ix,iz,732)-.5)*2.8;
    const h=terrain(px,pz);
-   if(h<9||h>1800)continue;
+   if(h<9||h>1800||inRiverChannel(px,pz,1.5))continue;
    const steep=slopeAt(px,pz),c=climate(px,pz,h),L=landscapeAt(px,pz,h,c,steep);
    const patch=.5+.5*noise(px,pz,47,738),largePatch=.5+.5*noise(px,pz,125,739);
    const sheltered=clamp01((L.meadow*.55+L.woodland*.4+L.forest*.28+L.shrub*.17)*1.7);
@@ -836,7 +837,7 @@ rockRenderMat.customProgramCacheKey=()=> 'horizon-rock-fade-v12';
 function rockSample(ix,iz){
  const tx=ix*18,tz=iz*18,px=tx+(hash(ix,iz,301)-.5)*12,pz=tz+(hash(ix,iz,302)-.5)*12;
  const h=terrain(px,pz);
- if(h<.5)return null;
+ if(h<.5||inRiverChannel(px,pz,2))return null;
  const steep=slopeAt(px,pz),c=climate(px,pz,h),L=landscapeAt(px,pz,h,c,steep);
  if(hash(ix,iz,303)>stoneProbability(h,L,steep))return null;
  const scale=.34+hash(ix,iz,304)*2.0;
@@ -1079,7 +1080,7 @@ function makeVegetationTile(job){
   }
   const px=ix*25+(hash(ix*25,iz*25,201)-.5)*20,pz=iz*25+(hash(ix*25,iz*25,202)-.5)*20;
   const h=terrain(px,pz),c=climate(px,pz,h),L=landscapeAt(px,pz,h,c,slopeAt(px,pz));
-  if(hash(ix*25,iz*25,203)>treeProbability(px,pz,h,c,L))continue;
+  if(inRiverChannel(px,pz,7)||hash(ix*25,iz*25,203)>treeProbability(px,pz,h,c,L))continue;
   const type=(c.temp>.38&&hash(ix*25,iz*25,205)>.46)?1:(hash(ix*25,iz*25,206)>.58?2:0);
   const variant=(!base&&detailedTreeModels&&variedTreeModels)?Math.min(2,Math.floor(hash(ix*25,iz*25,889)*3)):0;
   families[type*3+variant].push([px,h,pz,.65+hash(ix*25,iz*25,204)*.95,hash(ix*25,iz*25,207)*6.283]);
@@ -1385,6 +1386,7 @@ function buildStream(lane,index,key){
  streamTiles.set(key,{group,lane,index});
 }
 function planStreams(force=false){
+ if(!riversEnabled)return;
  if(!force&&Math.hypot(player.x-lastStreamX,player.z-lastStreamZ)<170)return;
  lastStreamX=player.x;lastStreamZ=player.z;
  const reach=2600,ix0=Math.round(player.x/RIVER_LANE);
