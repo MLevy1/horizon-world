@@ -286,6 +286,7 @@ function naturalRiverbed(raw,river){
 }
 function terrain(x,z){
  const raw=baseTerrain(x,z);
+ if(raw<0)return raw;
  if(naturalWaterwaysEnabled)return naturalRiverbed(raw,naturalRiverAt(x,z));
  if(!riversEnabled||raw<0)return raw;
  return riverbedHeight(raw,drainageAt(x,z));
@@ -1767,8 +1768,12 @@ function findNearbyStream(){
  if(!naturalWaterwaysEnabled)toggleStreams(true);
  const mx=Math.floor(player.x/MACRO_SIZE),mz=Math.floor(player.z/MACRO_SIZE);
  let best=null,score=Infinity;
- for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
-  const r=naturalRivers(mx+dx,mz+dz);
+ // Limit synchronous watershed generation on mobile: inspect the current
+ // macro first; expand to surrounding blocks only when it contains no rivers.
+ const center=naturalRivers(mx,mz);
+ const blocks=center.segments.length?[[mx,mz]]:[[mx,mz],[mx+1,mz],[mx-1,mz],[mx,mz+1],[mx,mz-1]];
+ for(const [ix,iz] of blocks){
+  const r=naturalRivers(ix,iz);
   for(const seg of r.segments){
    const x=(seg.x0+seg.x1)/2,z=(seg.z0+seg.z1)/2;
    const d=Math.hypot(player.x-x,player.z-z);
