@@ -10,7 +10,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 1.7</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 1.8</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span><br><span id="surfaceDebug" style="font-size:10px;opacity:.8">Surface alignment checking…</span></div></div>
@@ -91,7 +91,10 @@ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.43,.44,.405)*(.84+a*.28),rock*.82);`
 terrainMaterial.customProgramCacheKey=()=> 'horizon-surface-v12';
 // Three deterministic tree families: spruce, broadleaf, and tall fir. Shared geometries stay reusable.
 const trunkGeo=new THREE.CylinderGeometry(.95,1.3,11,6);
-const foliageGeos=[new THREE.ConeGeometry(5.2,18,7),new THREE.IcosahedronGeometry(7.2,1),new THREE.ConeGeometry(3.8,24,7)];
+// Keep foliage close to ground. Previous broadleaf canopies were disproportionately
+// large and high, so hills could hide their trunks and make them look airborne.
+const foliageGeos=[new THREE.ConeGeometry(5.2,18,7),new THREE.IcosahedronGeometry(6.0,1),new THREE.ConeGeometry(3.8,24,7)];
+const foliageBaseHeights=[9.25,9,12.25];
 const trunkMat=new THREE.MeshLambertMaterial({color:0x68513b});
 const foliageMats=[new THREE.MeshLambertMaterial({color:0x365d43}),new THREE.MeshLambertMaterial({color:0x548047}),new THREE.MeshLambertMaterial({color:0x294b3f})];
 // Two stable vegetation layers have independent, distance-faded geometry.
@@ -257,7 +260,7 @@ function reanchorTreeGroup(entry){
    anchorScratch.setPosition(x,y+4.5*scale,z);
    trunk.setMatrixAt(i,anchorScratch);
    leaves.getMatrixAt(i,anchorScratch);
-   anchorScratch.setPosition(x,y+(type===2?15:12)*scale,z);
+   anchorScratch.setPosition(x,y+foliageBaseHeights[type]*scale,z);
    leaves.setMatrixAt(i,anchorScratch);
   });
   trunk.instanceMatrix.needsUpdate=true;leaves.instanceMatrix.needsUpdate=true;
@@ -414,7 +417,7 @@ function makeVegetationTile(job){
   data.forEach(([px,h,pz,scale,rotation],i)=>{
    tempObj.rotation.set(0,rotation,0);tempObj.scale.set(scale,scale,scale);
    tempObj.position.set(px,displayedGroundHeight(px,pz)+4.5*scale,pz);tempObj.updateMatrix();trunk.setMatrixAt(i,tempObj.matrix);
-   tempObj.position.y=displayedGroundHeight(px,pz)+(type===2?15:12)*scale;tempObj.updateMatrix();leaves.setMatrixAt(i,tempObj.matrix);
+   tempObj.position.y=displayedGroundHeight(px,pz)+foliageBaseHeights[type]*scale;tempObj.updateMatrix();leaves.setMatrixAt(i,tempObj.matrix);
   });
   trunk.instanceMatrix.needsUpdate=true;leaves.instanceMatrix.needsUpdate=true;
   trunk.computeBoundingSphere();leaves.computeBoundingSphere();
