@@ -2248,7 +2248,7 @@ function loop(){
   $('speedtext').textContent=config.speed+' km/h';
   $('chunks').textContent=tiles.size+' terrain tiles · '+buildQueue.length+' queued';
   $('surfaceDebug').textContent=groundSampleCount?'Surface error max '+groundSampleMaxError.toFixed(1)+' m · avg '+(groundSampleErrorSum/groundSampleCount).toFixed(1)+' m':'Surface alignment checking…';
-  if($('mapbox').classList.contains('open'))renderMap();
+  if($('mapbox').classList.contains('open')&&mapMode!=='watershed')renderMap();
  }
  if(prof){
   const t=performance.now();
