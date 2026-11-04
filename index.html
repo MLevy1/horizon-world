@@ -18,7 +18,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 3.0</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 3.1</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="perfBtn" class="chip">▥ Perf</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div id="perfPanel" class="glass profiler">
 <h2>Live performance <button id="perfClose" class="chip" style="float:right;padding:3px 8px">×</button></h2>
@@ -38,7 +38,7 @@
 </div><div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span><br><span id="surfaceDebug" style="font-size:10px;opacity:.8">Surface alignment checking…</span><br><span id="treeInspectStatus" style="font-size:10px;color:#fff2a7">Tree inspection: none</span></div></div>
 <div id="toast" class="toast"></div>
-<div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Detailed nearby trees <output id="treeModelsOut">On</output></label><input id="treeModels" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare layered conifers and branched broadleaf silhouettes against the original models. Distant trees use the lightweight originals.</p><label>Natural terrain colors <output id="naturalOut">On</output></label><input id="naturalColors" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare visibly darker green and warmer earth patches against the original colors. Uses the same working terrain shader.</p><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Vegetation collisions <output id="collisionOut">On</output></label><input id="collisions" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Trees and rocks block movement, including in flight. Turn off to pass through scenery.</p><label>Tree root diagnostic <output id="rootOut">Off</output></label><input id="rootDebug" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Draw magenta poles and yellow root dots through the terrain (X-ray view). If a dot is behind the foreground ridge, its tree can look like it floats even though it is rooted.</p><button id="inspectTree" class="action secondary" style="width:100%;margin-top:8px">Inspect tree near crosshair</button><p style="margin-top:5px;font-size:11px;color:var(--muted)">Center the crosshair directly on the visible foliage. This selects trees by the visible canopy outline rather than unreliable triangle raycasting.</p><label>Show shrubs and ground cover <output id="groundCoverOut">On</output></label><input id="groundCoverVisible" type="checkbox" checked><label>Show scattered rocks <output id="rockVisibleOut">On</output></label><input id="rockVisible" type="checkbox" checked><p style="margin-top:3px;font-size:11px;color:var(--muted)">Hide each category independently to identify which objects appear detached.</p><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
+<div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Detailed nearby trees <output id="treeModelsOut">On</output></label><input id="treeModels" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare layered conifers and branched broadleaf silhouettes against the original models. Distant trees use the lightweight originals.</p><label>Varied tree silhouettes <output id="treeVarOut">On</output></label><input id="treeVariants" type="checkbox" checked><label>Varied shrubs <output id="shrubVarOut">On</output></label><input id="shrubVariants" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare deterministic shape variants with Alpha 3.0 trees and shrubs. Detailed variants apply nearby; distant trees remain simple.</p><label>Natural terrain colors <output id="naturalOut">On</output></label><input id="naturalColors" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare visibly darker green and warmer earth patches against the original colors. Uses the same working terrain shader.</p><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Vegetation collisions <output id="collisionOut">On</output></label><input id="collisions" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Trees and rocks block movement, including in flight. Turn off to pass through scenery.</p><label>Tree root diagnostic <output id="rootOut">Off</output></label><input id="rootDebug" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Draw magenta poles and yellow root dots through the terrain (X-ray view). If a dot is behind the foreground ridge, its tree can look like it floats even though it is rooted.</p><button id="inspectTree" class="action secondary" style="width:100%;margin-top:8px">Inspect tree near crosshair</button><p style="margin-top:5px;font-size:11px;color:var(--muted)">Center the crosshair directly on the visible foliage. This selects trees by the visible canopy outline rather than unreliable triangle raycasting.</p><label>Show shrubs and ground cover <output id="groundCoverOut">On</output></label><input id="groundCoverVisible" type="checkbox" checked><label>Show scattered rocks <output id="rockVisibleOut">On</output></label><input id="rockVisible" type="checkbox" checked><p style="margin-top:3px;font-size:11px;color:var(--muted)">Hide each category independently to identify which objects appear detached.</p><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
 <div id="mapbox" class="glass mapbox"><div class="maphead"><b>REGIONAL MAP</b><button id="closeMap" class="chip" style="padding:3px 7px">×</button></div><canvas id="mapCanvas" width="256" height="256"></canvas><div class="mapfoot">20 × 20 km · north is up<br>Click a point to teleport · dotted rings every 2.5 km</div></div>
 <div class="mobile"><div id="joystick" class="touchpad"><div class="stick" id="stick"></div></div><div class="mobbuttons"><button id="upBtn">↑</button><button id="flyBtn">✈</button><button id="downBtn">↓</button></div></div>
 <div class="footnote">Procedural terrain · browser-rendered · no server required</div>
@@ -257,18 +257,32 @@ function buildDetailedTreeGeometry(type){
  return out;
 }
 const detailedTreeGeos=[0,1,2].map(buildDetailedTreeGeometry);
-let detailedTreeModels=true;
+// Three deterministic, static geometry variants per family. Silhouettes vary,
+// but all variants reuse the same two trunk/foliage materials and anchor roots.
+function makeTreeVariant(type,variant){
+ const geo=detailedTreeGeos[type].clone(),p=geo.getAttribute('position');
+ for(let i=0;i<p.count;i++){
+  const x=p.getX(i),y=p.getY(i),z=p.getZ(i),upper=Math.min(1,Math.max(0,(y-4)/15));
+  const drift=(variant===1?.85:-.75)*upper*upper;
+  const width=variant===1?(type===1?1.20:1.15):(type===1?.83:.78);
+  const height=variant===1?(type===1?.88:1.08):(type===1?1.16:.92);
+  // Preserve the root and trunk base while reshaping the crown.
+  p.setXYZ(i,x*(1+(width-1)*upper)+drift,y*(1+(height-1)*upper),z*(1+(width-1)*upper*.72)+drift*.4);
+ }
+ p.needsUpdate=true;
+ geo.computeVertexNormals();geo.computeBoundingSphere();
+ return geo;
+}
+const treeVariants=detailedTreeGeos.map((geo,type)=>[geo,makeTreeVariant(type,1),makeTreeVariant(type,2)]);
+let detailedTreeModels=true,variedTreeModels=true;
 function switchTreeModels(enabled){
  detailedTreeModels=enabled;
- for(const entry of vegetationTiles.values()){
-  if(entry.job.layer!=='detail')continue;
-  for(const record of entry.group.userData.treeAnchors||[]){
-   record.mesh.geometry=enabled?detailedTreeGeos[record.type]:rootedTreeGeos[record.type];
-   record.mesh.computeBoundingSphere();
-  }
- }
+ clearVegetation();planVegetation(true);
 }
-
+function switchTreeVariants(enabled){
+ variedTreeModels=enabled;
+ clearVegetation();planVegetation(true);
+}
 let showTreeRoots=false;
 // X-ray diagnostic: visibly mark each tree's actual ground anchor even
 // when the terrain lies between that anchor and the camera.
@@ -296,6 +310,50 @@ grassGeo.setAttribute('position',new THREE.Float32BufferAttribute([
 const grassMat=new THREE.MeshLambertMaterial({color:0xffffff,side:THREE.DoubleSide});
 const stoneGeo=new THREE.DodecahedronGeometry(1,0),stoneMat=new THREE.MeshLambertMaterial({color:0xffffff});
 const shrubGeo=new THREE.IcosahedronGeometry(1,0),shrubMat=new THREE.MeshLambertMaterial({color:0xffffff});
+// Distinct bushes reuse shared low-poly geometry and instancing.
+function buildShrubVariant(kind){
+ const parts=[],offsets=kind===0?[
+  [-.42,.15,.02,.78,.64,.74],[.44,.2,.12,.80,.70,.74],[0,.44,-.2,.75,.78,.70]
+ ]:kind===1?[
+  [0,.25,0,.61,.93,.66],[-.38,.12,.1,.44,.61,.46],[.31,.46,-.18,.49,.82,.51]
+ ]:[
+  [-.54,.15,0,.43,.47,.45],[.45,.14,.25,.45,.52,.50],[.08,.35,-.48,.40,.57,.42],[.17,.53,.32,.35,.44,.39]
+ ];
+ for(const [x,y,z,sx,sy,sz] of offsets){
+  const piece=new THREE.IcosahedronGeometry(1,0);
+  piece.scale(sx,sy,sz);piece.translate(x,y+sy,z);
+  const g=piece.index?piece.toNonIndexed():piece;
+  parts.push(g);
+  if(g!==piece)piece.dispose();
+ }
+ const positions=[],normals=[];
+ for(const g of parts){
+  const p=g.getAttribute('position'),n=g.getAttribute('normal');
+  for(let i=0;i<p.count;i++){
+   positions.push(p.getX(i),p.getY(i),p.getZ(i));
+   normals.push(n.getX(i),n.getY(i),n.getZ(i));
+  }
+  g.dispose();
+ }
+ const out=new THREE.BufferGeometry();
+ out.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+ out.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
+ out.computeBoundingSphere();
+ return out;
+}
+const variedShrubGeos=[0,1,2].map(buildShrubVariant);
+let variedShrubs=true;
+function switchShrubVariants(enabled){
+ variedShrubs=enabled;
+ // Rebuild only ground cover. Terrain, rock and tree streaming stay untouched.
+ for(const tile of tiles.values()){
+  if(!tile.cover)continue;
+  tile.group.remove(tile.cover);
+  tile.cover=null;
+ }
+ refreshGroundCover();
+}
+
 const grassColors=[0x6c8d4f,0x829758,0x496f45,0x9ba76d,0xa9a06d,0x557f4e].map(c=>new THREE.Color(c));
 const rockColors=[0x74776b,0xa59b82,0x666f6e,0xc0b497].map(c=>new THREE.Color(c));
 let showGroundCover=true,showRocks=true;
@@ -316,7 +374,7 @@ function groundCoverSurfaceHeight(tile,x,z){
   : attr.getY(b)*(1-v)+attr.getY(c)*(1-u)+attr.getY(e)*(u+v-1);
 }
 function createGroundCover(tile){
- const {x,z,size}=tile.d,plants=[],rocks=[],shrubs=[];
+ const {x,z,size}=tile.d,plants=[],shrubs=[[],[],[]];
  if(size>256)return;
  const spacing=9;
  for(let tz=Math.ceil(z/spacing)*spacing;tz<z+size;tz+=spacing)
@@ -328,7 +386,7 @@ function createGroundCover(tile){
   if(hash(ix,iz,310)<clamp01(.16+L.meadow*.65+L.woodland*.30+L.forest*.15)*(1-L.exposed*.70))
    plants.push([px,h,pz,.48+hash(ix,iz,304)*1.2,hash(ix,iz,305)*6.28,L.forest>.45?(hash(ix,iz,306)>.4?2:5):Math.floor(hash(ix,iz,306)*grassColors.length)]);
   if(hash(ix,iz,309)<.018+L.shrub*.40)
-   shrubs.push([px,h,pz,.52+hash(ix,iz,307)*1.5,hash(ix,iz,305)*6.28,Math.floor(hash(ix,iz,308)*grassColors.length)]);
+   shrubs[Math.min(2,Math.floor(hash(ix,iz,607)*3))].push([px,h,pz,.52+hash(ix,iz,307)*1.5,hash(ix,iz,305)*6.28,Math.floor(hash(ix,iz,308)*grassColors.length)]);
  }
  const cover=new THREE.Group();
  function instances(data,geometry,material,colors,heightOffset,flatten=1){
@@ -343,7 +401,8 @@ function createGroundCover(tile){
   mesh.frustumCulled=false;cover.add(mesh);
  }
  instances(plants,grassGeo,grassMat,grassColors,0);
- instances(shrubs,shrubGeo,shrubMat,grassColors,.85,.8);
+ if(variedShrubs)shrubs.forEach((data,kind)=>instances(data,variedShrubGeos[kind],shrubMat,grassColors,0,1));
+ else instances(shrubs.flat(),shrubGeo,shrubMat,grassColors,.85,.8);
  cover.visible=showGroundCover;
  tile.group.add(cover);tile.cover=cover;
 }
@@ -597,7 +656,7 @@ mesh.visible=perfTerrainEnabled;scene.add(group);const tile={group,d,originalCol
 // The base layer samples every fourth tree candidate; the detail layer fills the rest.
 // Both layers fade out before reaching their streaming boundaries.
 function makeVegetationTile(job){
- const {x,z,size,layer}=job,base=layer==='base',families=[[],[],[]],spacing=base?100:25;
+ const {x,z,size,layer}=job,base=layer==='base',families=Array.from({length:9},()=>[]),spacing=base?100:25;
  // Both LOD layers draw from precisely the same 25m candidate grid.
  // For each 100m cell, choose ONE of its sixteen candidates using stable hashes.
  // This preserves the cheap 1:16 distant density without visible orchard-like rows.
@@ -619,14 +678,16 @@ function makeVegetationTile(job){
   const h=terrain(px,pz),c=climate(px,pz,h),L=landscapeAt(px,pz,h,c,slopeAt(px,pz));
   if(hash(ix*25,iz*25,203)>treeProbability(px,pz,h,c,L))continue;
   const type=(c.temp>.38&&hash(ix*25,iz*25,205)>.46)?1:(hash(ix*25,iz*25,206)>.58?2:0);
-  families[type].push([px,h,pz,.65+hash(ix*25,iz*25,204)*.95,hash(ix*25,iz*25,207)*6.283]);
+  const variant=(!base&&detailedTreeModels&&variedTreeModels)?Math.min(2,Math.floor(hash(ix*25,iz*25,889)*3)):0;
+  families[type*3+variant].push([px,h,pz,.65+hash(ix*25,iz*25,204)*.95,hash(ix*25,iz*25,207)*6.283]);
  }
  const group=new THREE.Group(),canopyMaterials=base?baseFoliageMats:detailFoliageMats;
  group.userData.treeAnchors=[];
- families.forEach((data,type)=>{
+ families.forEach((data,slot)=>{
   if(!data.length)return;
+  const type=Math.floor(slot/3),variant=slot%3;
   const mesh=new THREE.InstancedMesh(
-   (!base&&detailedTreeModels)?detailedTreeGeos[type]:rootedTreeGeos[type],
+   (!base&&detailedTreeModels)?treeVariants[type][variant]:rootedTreeGeos[type],
    [base?baseTrunkMat:detailTrunkMat,canopyMaterials[type]],
    data.length
   );
@@ -656,7 +717,7 @@ function makeVegetationTile(job){
   rootPoint.instanceMatrix.needsUpdate=true;
   rootPoint.computeBoundingSphere();
   group.add(mesh,marker,rootPoint);
-  group.userData.treeAnchors.push({mesh,marker,rootPoint,data,type});
+  group.userData.treeAnchors.push({mesh,marker,rootPoint,data,type,variant});
  });
  group.visible=perfTreesEnabled;scene.add(group);vegetationTiles.set(job.key,{group,job});
 }
@@ -1023,7 +1084,7 @@ function loop(){
 }
 function setSeed(){config.seed=$('seed').value.trim()||'HORIZON-01';seedNumber=seedHash(config.seed);clearVegetation();clearRocks();for(const k of [...tiles.keys()])deleteTile(k);lastUpdateX=Infinity;mapDirty=true;reposition(0,0);$('loading').textContent='Generating your landscape…';toast('Seed: '+config.seed)}
 $('start').onclick=()=>{active=true;$('intro').classList.add('hidden');if(matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()};$('helpBtn').onclick=()=>{$('intro').classList.remove('hidden');active=false;document.exitPointerLock?.()};$('settingsBtn').onclick=()=>{$('panel').classList.toggle('open');if($('panel').classList.contains('open'))document.exitPointerLock?.()};$('mapBtn').onclick=()=>{$('mapbox').classList.toggle('open');if($('mapbox').classList.contains('open')){renderMap();document.exitPointerLock?.()}};$('closeMap').onclick=()=>$('mapbox').classList.remove('open');$('view').addEventListener('click',()=>{if(active&&!$('panel').classList.contains('open')&&!$('mapbox').classList.contains('open')&&matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()});document.addEventListener('mousemove',e=>{if(document.pointerLockElement===$('view')){player.yaw-=e.movementX*.002;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-e.movementY*.002))}});document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;keys.add(e.code);if(['Space','ArrowDown','ArrowUp'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='KeyF')setFly(!player.fly);if(e.code==='KeyM')$('mapBtn').click();if(e.code==='KeyG')$('settingsBtn').click();if(e.code==='Escape')document.exitPointerLock?.()});document.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>keys.clear());
-$('treeModels').onchange=e=>{switchTreeModels(e.target.checked);$('treeModelsOut').textContent=e.target.checked?'On':'Off'};$('naturalColors').onchange=e=>{switchNaturalColors(e.target.checked);$('naturalOut').textContent=e.target.checked?'On':'Off'};$('groundCoverVisible').onchange=e=>{showGroundCover=e.target.checked;$('groundCoverOut').textContent=showGroundCover?'On':'Off';$('perfCover').checked=showGroundCover;applyPerfVisibility()};$('rockVisible').onchange=e=>{showRocks=e.target.checked;$('rockVisibleOut').textContent=showRocks?'On':'Off';$('perfRocks').checked=showRocks;applyPerfVisibility()};$('inspectTree').onclick=inspectTreeNearCrosshair;$('rootDebug').onchange=e=>{setRootMarkersVisible(e.target.checked);$('rootOut').textContent=e.target.checked?'On':'Off';toast(e.target.checked?'X-ray roots: yellow dots at bases, magenta poles':'Tree root markers hidden')};$('collisions').onchange=e=>{config.collisions=e.target.checked;$('collisionOut').textContent=config.collisions?'On':'Off';toast(config.collisions?'Scenery collisions enabled':'Scenery collisions disabled')};$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';clearVegetation();clearRocks();for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{let r=e.target.getBoundingClientRect();reposition(((e.clientX-r.left)/r.width-.5)*20000,(.5-(e.clientY-r.top)/r.height)*20000)};
+$('treeVariants').onchange=e=>{switchTreeVariants(e.target.checked);$('treeVarOut').textContent=e.target.checked?'On':'Off'};$('shrubVariants').onchange=e=>{switchShrubVariants(e.target.checked);$('shrubVarOut').textContent=e.target.checked?'On':'Off'};$('treeModels').onchange=e=>{switchTreeModels(e.target.checked);$('treeModelsOut').textContent=e.target.checked?'On':'Off'};$('naturalColors').onchange=e=>{switchNaturalColors(e.target.checked);$('naturalOut').textContent=e.target.checked?'On':'Off'};$('groundCoverVisible').onchange=e=>{showGroundCover=e.target.checked;$('groundCoverOut').textContent=showGroundCover?'On':'Off';$('perfCover').checked=showGroundCover;applyPerfVisibility()};$('rockVisible').onchange=e=>{showRocks=e.target.checked;$('rockVisibleOut').textContent=showRocks?'On':'Off';$('perfRocks').checked=showRocks;applyPerfVisibility()};$('inspectTree').onclick=inspectTreeNearCrosshair;$('rootDebug').onchange=e=>{setRootMarkersVisible(e.target.checked);$('rootOut').textContent=e.target.checked?'On':'Off';toast(e.target.checked?'X-ray roots: yellow dots at bases, magenta poles':'Tree root markers hidden')};$('collisions').onchange=e=>{config.collisions=e.target.checked;$('collisionOut').textContent=config.collisions?'On':'Off';toast(config.collisions?'Scenery collisions enabled':'Scenery collisions disabled')};$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';clearVegetation();clearRocks();for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{let r=e.target.getBoundingClientRect();reposition(((e.clientX-r.left)/r.width-.5)*20000,(.5-(e.clientY-r.top)/r.height)*20000)};
 function bindHold(id,value){const el=$(id);el.addEventListener('pointerdown',e=>{e.preventDefault();verticalTouch=value;el.setPointerCapture(e.pointerId)});el.addEventListener('pointerup',()=>verticalTouch=0);el.addEventListener('pointercancel',()=>verticalTouch=0)}bindHold('upBtn',1);bindHold('downBtn',-1);$('flyBtn').onclick=()=>setFly(!player.fly);const joy=$('joystick');function moveJoy(e){const r=joy.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),mag=Math.max(1,Math.hypot(dx,dy)),m=Math.min(mag,42);touchVector.x=dx/mag*m/42;touchVector.y=dy/mag*m/42;$('stick').style.transform=`translate(${touchVector.x*37}px,${touchVector.y*37}px)`}joy.addEventListener('pointerdown',e=>{joy.setPointerCapture(e.pointerId);moveJoy(e)});joy.addEventListener('pointermove',e=>{if(joy.hasPointerCapture(e.pointerId))moveJoy(e)});function releaseJoy(){touchVector.x=touchVector.y=0;$('stick').style.transform=''}joy.addEventListener('pointerup',releaseJoy);joy.addEventListener('pointercancel',releaseJoy);$('view').addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;touchLook={id:e.pointerId,x:e.clientX,y:e.clientY};$('view').setPointerCapture(e.pointerId)});$('view').addEventListener('pointermove',e=>{if(!touchLook||e.pointerId!==touchLook.id)return;player.yaw-=(e.clientX-touchLook.x)*.004;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-(e.clientY-touchLook.y)*.004));touchLook.x=e.clientX;touchLook.y=e.clientY});$('view').addEventListener('pointerup',()=>touchLook=null);window.addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()});
 seedNumber=seedHash(config.seed);player.x=0;player.z=0;player.y=terrain(0,0)+220;updateCamera();planTerrain(true);$('region').textContent=regionName(player.x,player.z);loop();
 </script>
