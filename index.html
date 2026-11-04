@@ -10,12 +10,12 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 1.9</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 2.0</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span><br><span id="surfaceDebug" style="font-size:10px;opacity:.8">Surface alignment checking…</span></div></div>
 <div id="toast" class="toast"></div>
-<div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Vegetation collisions <output id="collisionOut">On</output></label><input id="collisions" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Trees and rocks block movement, including in flight. Turn off to pass through scenery.</p><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
+<div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Vegetation collisions <output id="collisionOut">On</output></label><input id="collisions" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Trees and rocks block movement, including in flight. Turn off to pass through scenery.</p><label>Tree root diagnostic <output id="rootOut">Off</output></label><input id="rootDebug" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Show bright magenta poles extending upward from the actual tree root. Their lower ends should touch the ground. Useful for distinguishing positioning errors from hidden trunks.</p><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
 <div id="mapbox" class="glass mapbox"><div class="maphead"><b>REGIONAL MAP</b><button id="closeMap" class="chip" style="padding:3px 7px">×</button></div><canvas id="mapCanvas" width="256" height="256"></canvas><div class="mapfoot">20 × 20 km · north is up<br>Click a point to teleport · dotted rings every 2.5 km</div></div>
 <div class="mobile"><div id="joystick" class="touchpad"><div class="stick" id="stick"></div></div><div class="mobbuttons"><button id="upBtn">↑</button><button id="flyBtn">✈</button><button id="downBtn">↓</button></div></div>
 <div class="footnote">Procedural terrain · browser-rendered · no server required</div>
@@ -147,6 +147,17 @@ function buildRootedTreeGeometry(type){
  return out;
 }
 const rootedTreeGeos=[0,1,2].map(buildRootedTreeGeometry);
+let showTreeRoots=false;
+const rootPoleGeo=new THREE.CylinderGeometry(.20,.20,14,6);
+const rootPoleMat=new THREE.MeshBasicMaterial({color:0xff28cc,depthTest:true,depthWrite:true});
+function setRootMarkersVisible(visible){
+ showTreeRoots=visible;
+ for(const entry of vegetationTiles.values()){
+  for(const record of entry.group.userData.treeAnchors||[]){
+   if(record.marker)record.marker.visible=visible;
+  }
+ }
+}
 const tempObj=new THREE.Object3D();
 // Groundcover is generated independently from trees, and only close to the player.
 // Two crossed triangular blades make a low-cost grass tuft without alpha sorting.
@@ -282,14 +293,21 @@ function reanchorRockGroup(entry){
 function reanchorTreeGroup(entry){
  const records=entry.group.userData.treeAnchors;
  if(!records)return;
- for(const {mesh,data} of records){
-  data.forEach(([x,,z],i)=>{
+ for(const {mesh,marker,data} of records){
+  data.forEach(([x,,z,scale],i)=>{
+   const h=displayedGroundHeight(x,z);
    mesh.getMatrixAt(i,anchorScratch);
-   anchorScratch.setPosition(x,displayedGroundHeight(x,z),z);
+   anchorScratch.setPosition(x,h,z);
    mesh.setMatrixAt(i,anchorScratch);
+   if(marker){
+    marker.getMatrixAt(i,anchorScratch);
+    anchorScratch.setPosition(x,h+7*scale,z);
+    marker.setMatrixAt(i,anchorScratch);
+   }
   });
   mesh.instanceMatrix.needsUpdate=true;
   mesh.computeBoundingSphere();
+  if(marker){marker.instanceMatrix.needsUpdate=true;marker.computeBoundingSphere()}
  }
 }
 let anchorPass=0,anchorRefreshBudget=0;
@@ -442,6 +460,8 @@ function makeVegetationTile(job){
    [base?baseTrunkMat:detailTrunkMat,canopyMaterials[type]],
    data.length
   );
+  const marker=new THREE.InstancedMesh(rootPoleGeo,rootPoleMat,data.length);
+  marker.visible=showTreeRoots;
   data.forEach(([px,h,pz,scale,rotation],i)=>{
    const rootHeight=displayedGroundHeight(px,pz);
    tempObj.rotation.set(0,rotation,0);
@@ -449,11 +469,16 @@ function makeVegetationTile(job){
    tempObj.position.set(px,rootHeight,pz);
    tempObj.updateMatrix();
    mesh.setMatrixAt(i,tempObj.matrix);
+   tempObj.position.y=rootHeight+7*scale;
+   tempObj.updateMatrix();
+   marker.setMatrixAt(i,tempObj.matrix);
   });
   mesh.instanceMatrix.needsUpdate=true;
   mesh.computeBoundingSphere();
-  group.add(mesh);
-  group.userData.treeAnchors.push({mesh,data,type});
+  marker.instanceMatrix.needsUpdate=true;
+  marker.computeBoundingSphere();
+  group.add(mesh,marker);
+  group.userData.treeAnchors.push({mesh,marker,data,type});
  });
  scene.add(group);vegetationTiles.set(job.key,{group,job});
 }
@@ -639,7 +664,7 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.
  if(active&&++frame%12===0){planTerrain();if(frame%60===0)refreshGroundCover();$('region').textContent=regionName(player.x,player.z);$('coords').textContent=`${Math.round(player.x).toLocaleString()} E · ${Math.round(player.z).toLocaleString()} N · ${Math.round(player.y).toLocaleString()} m elevation`;$('movement').textContent=player.fly?'FLYING':'WALKING';$('speedtext').textContent=config.speed+' km/h';$('chunks').textContent=tiles.size+' terrain tiles · '+buildQueue.length+' queued';$('surfaceDebug').textContent=groundSampleCount?'Surface error max '+groundSampleMaxError.toFixed(1)+' m · avg '+(groundSampleErrorSum/groundSampleCount).toFixed(1)+' m':'Surface alignment checking…';if($('mapbox').classList.contains('open'))renderMap()}renderer.render(scene,camera);if(!buildQueue.length&&$('loading').textContent.startsWith('Generating'))$('loading').textContent='World ready · seed '+config.seed;}
 function setSeed(){config.seed=$('seed').value.trim()||'HORIZON-01';seedNumber=seedHash(config.seed);clearVegetation();clearRocks();for(const k of [...tiles.keys()])deleteTile(k);lastUpdateX=Infinity;mapDirty=true;reposition(0,0);$('loading').textContent='Generating your landscape…';toast('Seed: '+config.seed)}
 $('start').onclick=()=>{active=true;$('intro').classList.add('hidden');if(matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()};$('helpBtn').onclick=()=>{$('intro').classList.remove('hidden');active=false;document.exitPointerLock?.()};$('settingsBtn').onclick=()=>{$('panel').classList.toggle('open');if($('panel').classList.contains('open'))document.exitPointerLock?.()};$('mapBtn').onclick=()=>{$('mapbox').classList.toggle('open');if($('mapbox').classList.contains('open')){renderMap();document.exitPointerLock?.()}};$('closeMap').onclick=()=>$('mapbox').classList.remove('open');$('view').addEventListener('click',()=>{if(active&&!$('panel').classList.contains('open')&&!$('mapbox').classList.contains('open')&&matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()});document.addEventListener('mousemove',e=>{if(document.pointerLockElement===$('view')){player.yaw-=e.movementX*.002;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-e.movementY*.002))}});document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;keys.add(e.code);if(['Space','ArrowDown','ArrowUp'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='KeyF')setFly(!player.fly);if(e.code==='KeyM')$('mapBtn').click();if(e.code==='KeyG')$('settingsBtn').click();if(e.code==='Escape')document.exitPointerLock?.()});document.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>keys.clear());
-$('collisions').onchange=e=>{config.collisions=e.target.checked;$('collisionOut').textContent=config.collisions?'On':'Off';toast(config.collisions?'Scenery collisions enabled':'Scenery collisions disabled')};$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';clearVegetation();clearRocks();for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{let r=e.target.getBoundingClientRect();reposition(((e.clientX-r.left)/r.width-.5)*20000,(.5-(e.clientY-r.top)/r.height)*20000)};
+$('rootDebug').onchange=e=>{setRootMarkersVisible(e.target.checked);$('rootOut').textContent=e.target.checked?'On':'Off';toast(e.target.checked?'Magenta poles show tree root positions':'Tree root markers hidden')};$('collisions').onchange=e=>{config.collisions=e.target.checked;$('collisionOut').textContent=config.collisions?'On':'Off';toast(config.collisions?'Scenery collisions enabled':'Scenery collisions disabled')};$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';clearVegetation();clearRocks();for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{let r=e.target.getBoundingClientRect();reposition(((e.clientX-r.left)/r.width-.5)*20000,(.5-(e.clientY-r.top)/r.height)*20000)};
 function bindHold(id,value){const el=$(id);el.addEventListener('pointerdown',e=>{e.preventDefault();verticalTouch=value;el.setPointerCapture(e.pointerId)});el.addEventListener('pointerup',()=>verticalTouch=0);el.addEventListener('pointercancel',()=>verticalTouch=0)}bindHold('upBtn',1);bindHold('downBtn',-1);$('flyBtn').onclick=()=>setFly(!player.fly);const joy=$('joystick');function moveJoy(e){const r=joy.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),mag=Math.max(1,Math.hypot(dx,dy)),m=Math.min(mag,42);touchVector.x=dx/mag*m/42;touchVector.y=dy/mag*m/42;$('stick').style.transform=`translate(${touchVector.x*37}px,${touchVector.y*37}px)`}joy.addEventListener('pointerdown',e=>{joy.setPointerCapture(e.pointerId);moveJoy(e)});joy.addEventListener('pointermove',e=>{if(joy.hasPointerCapture(e.pointerId))moveJoy(e)});function releaseJoy(){touchVector.x=touchVector.y=0;$('stick').style.transform=''}joy.addEventListener('pointerup',releaseJoy);joy.addEventListener('pointercancel',releaseJoy);$('view').addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;touchLook={id:e.pointerId,x:e.clientX,y:e.clientY};$('view').setPointerCapture(e.pointerId)});$('view').addEventListener('pointermove',e=>{if(!touchLook||e.pointerId!==touchLook.id)return;player.yaw-=(e.clientX-touchLook.x)*.004;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-(e.clientY-touchLook.y)*.004));touchLook.x=e.clientX;touchLook.y=e.clientY});$('view').addEventListener('pointerup',()=>touchLook=null);window.addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()});
 seedNumber=seedHash(config.seed);player.x=0;player.z=0;player.y=terrain(0,0)+220;updateCamera();planTerrain(true);$('region').textContent=regionName(player.x,player.z);loop();
 </script>
