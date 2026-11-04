@@ -1425,6 +1425,21 @@ function buildStream(ix,iz,key){
    for(let i=0;i<index.count;i++)indices.push(index.getX(i)+start);
    g.dispose();
   }
+  // A limited set of shallow priority-flood depressions becomes ponds.
+  // 12m terrain samples clip the water at the natural shoreline rather than
+  // making a raised square. Merge triangles into the river mesh/draw call.
+  for(const lake of reg.lakes){
+   const radius=Math.min(45,16+lake.depth*3),step=12;
+   for(let dz=-radius;dz<radius;dz+=step)for(let dx=-radius;dx<radius;dx+=step){
+    const x=lake.x+dx,z=lake.z+dz;
+    const points=[[x,z],[x+step,z],[x,z+step],[x+step,z+step]];
+    if(points.some(([px,pz])=>Math.hypot(px-lake.x,pz-lake.z)>radius))continue;
+    if(points.some(([px,pz])=>baseTerrain(px,pz)>lake.level-.25))continue;
+    const start=positions.length/3,y=lake.level+.30;
+    for(const [px,pz] of points)positions.push(px,y,pz);
+    indices.push(start,start+2,start+1,start+1,start+2,start+3);
+   }
+  }
   if(indices.length){
    const geo=new THREE.BufferGeometry();
    geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
