@@ -100,8 +100,8 @@ function colorFor(x,z,h){
 const terrainMaterialLegacy=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
 terrainMaterialLegacy.onBeforeCompile=shader=>{
  shader.vertexShader=shader.vertexShader
-  .replace('#include <common>','#include <common>\\nvarying vec3 vGroundPosition; varying vec3 vGroundNormal;')
-  .replace('#include <begin_vertex>','#include <begin_vertex>\\nvGroundPosition=position; vGroundNormal=normal;');
+  .replace('#include <common>','#include <common>\nvarying vec3 vGroundPosition; varying vec3 vGroundNormal;')
+  .replace('#include <begin_vertex>','#include <begin_vertex>\nvGroundPosition=position; vGroundNormal=normal;');
  shader.fragmentShader=shader.fragmentShader
   .replace('#include <common>',`#include <common>
 varying vec3 vGroundPosition; varying vec3 vGroundNormal;
@@ -121,9 +121,9 @@ terrainMaterialLegacy.customProgramCacheKey=()=> 'horizon-surface-v12';
 const terrainMaterial=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
 terrainMaterial.onBeforeCompile=shader=>{
  shader.vertexShader=shader.vertexShader
-  .replace('#include <common>','#include <common>\\nvarying vec3 vGroundPosition; varying vec3 vGroundNormal; varying float vGroundViewDistance;')
-  .replace('#include <begin_vertex>','#include <begin_vertex>\\nvGroundPosition=position; vGroundNormal=normal;')
-  .replace('#include <project_vertex>','#include <project_vertex>\\nvGroundViewDistance=length(mvPosition.xyz);');
+  .replace('#include <common>','#include <common>\nvarying vec3 vGroundPosition; varying vec3 vGroundNormal; varying float vGroundViewDistance;')
+  .replace('#include <begin_vertex>','#include <begin_vertex>\nvGroundPosition=position; vGroundNormal=normal;')
+  .replace('#include <project_vertex>','#include <project_vertex>\nvGroundViewDistance=length(mvPosition.xyz);');
  shader.fragmentShader=shader.fragmentShader
   .replace('#include <common>',`#include <common>
 varying vec3 vGroundPosition; varying vec3 vGroundNormal; varying float vGroundViewDistance;
