@@ -206,20 +206,18 @@ const rootedTreeGeos=[0,1,2].map(buildRootedTreeGeometry);
 // The nearest vegetation layer receives distinctive tiered conifers and crowns.
 // Distant trees continue using the original, lighter geometry.
 function buildDetailedTreeGeometry(type){
- const positions=[],normals=[],groups=[];
- let vertexCount=0;
+ const buckets=[{positions:[],normals:[]},{positions:[],normals:[]}];
  function part(geometry,material,x,y,z,sx=1,sy=1,sz=1,rotationY=0){
   geometry.scale(sx,sy,sz);
   geometry.rotateY(rotationY);
   geometry.translate(x,y,z);
   const converted=geometry.index?geometry.toNonIndexed():geometry;
   const p=converted.getAttribute('position'),n=converted.getAttribute('normal');
+  const bucket=buckets[material];
   for(let i=0;i<p.count;i++){
-   positions.push(p.getX(i),p.getY(i),p.getZ(i));
-   normals.push(n.getX(i),n.getY(i),n.getZ(i));
+   bucket.positions.push(p.getX(i),p.getY(i),p.getZ(i));
+   bucket.normals.push(n.getX(i),n.getY(i),n.getZ(i));
   }
-  groups.push({start:vertexCount,count:p.count,material});
-  vertexCount+=p.count;
   if(converted!==geometry)converted.dispose();
   geometry.dispose();
  }
@@ -250,9 +248,11 @@ function buildDetailedTreeGeometry(type){
   part(new THREE.ConeGeometry(1.65,7.2,7),1,0,20.4,0);
  }
  const out=new THREE.BufferGeometry();
- out.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
- out.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
- for(const g of groups)out.addGroup(g.start,g.count,g.material);
+ out.setAttribute('position',new THREE.Float32BufferAttribute([...buckets[0].positions,...buckets[1].positions],3));
+ out.setAttribute('normal',new THREE.Float32BufferAttribute([...buckets[0].normals,...buckets[1].normals],3));
+ const woodVertices=buckets[0].positions.length/3,leafVertices=buckets[1].positions.length/3;
+ out.addGroup(0,woodVertices,0);
+ out.addGroup(woodVertices,leafVertices,1);
  out.computeBoundingSphere();
  return out;
 }
