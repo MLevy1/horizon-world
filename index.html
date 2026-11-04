@@ -6,13 +6,36 @@
 <style>
 :root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;--line:rgba(255,255,255,.15);--surface:rgba(17,28,32,.85);--muted:#adb9b7}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8aafc5;color:#f5f8f7}canvas#view{display:block;width:100%;height:100%;touch-action:none}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:2px solid #bce4ba;outline-offset:2px}.glass{background:var(--surface);backdrop-filter:blur(18px);border:1px solid var(--line);box-shadow:0 12px 40px #07141930}.brand{position:absolute;top:18px;left:20px;pointer-events:none;text-shadow:0 1px 6px #243b4588}.brand b{letter-spacing:.2em;font-size:13px;font-weight:800}.brand span{display:block;letter-spacing:.12em;font-size:10px;color:#e1ebeb;margin-top:5px}.topright{position:absolute;right:18px;top:17px;display:flex;gap:8px}.chip{border:1px solid var(--line);padding:9px 12px;background:var(--surface);color:white;border-radius:11px;font-size:12px;backdrop-filter:blur(12px)}.chip:hover{background:#35494a}.hud{position:absolute;bottom:20px;left:20px;padding:12px 15px;border-radius:13px;min-width:225px;font-size:12px;pointer-events:none}.hud strong{font-size:14px;letter-spacing:.03em}.hud .minor{color:#bed1cb;line-height:1.8;margin-top:4px;font-variant-numeric:tabular-nums}.hud .mode{color:#b4e5c6}.cross{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:17px;height:17px;pointer-events:none;opacity:.8}.cross:before,.cross:after{content:"";position:absolute;background:#fff;box-shadow:0 1px 4px #0008}.cross:before{width:1px;height:17px;left:8px}.cross:after{height:1px;width:17px;top:8px}.panel{position:absolute;right:18px;top:68px;width:min(330px,calc(100vw - 36px));padding:17px;border-radius:17px;max-height:calc(100vh - 95px);overflow:auto;display:none}.panel.open{display:block}.panel h2{margin:0 0 5px;font-size:15px}.panel p{color:var(--muted);font-size:12px;line-height:1.5;margin:0 0 15px}.panel label{font-size:12px;color:#dfece7;display:flex;justify-content:space-between;align-items:center;margin:15px 0 6px}.panel output{color:#b7debb;font-variant-numeric:tabular-nums}.panel input[type=range]{width:100%;accent-color:#a9d5ae}.panel input[type=number],.panel input[type=text]{padding:9px;color:white;width:100%;background:#142528;border-radius:9px;border:1px solid var(--line)}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.action{border:1px solid #6a9987;background:#446858;color:white;padding:10px 12px;border-radius:9px;font-size:12px}.action.secondary{background:#243839;border-color:var(--line)}.action:hover{filter:brightness(1.15)}.divider{height:1px;background:var(--line);margin:17px 0}.mapbox{position:absolute;bottom:20px;right:18px;border-radius:15px;padding:11px;width:234px;display:none}.mapbox.open{display:block}.maphead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px}.mapbox canvas{width:210px;height:210px;border-radius:9px;display:block;background:#66846c;cursor:crosshair}.mapfoot{font-size:10px;color:#c3d2ce;margin-top:6px;line-height:1.4}.intro{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(125deg,#0b1b20a3,#0b242757);backdrop-filter:blur(8px);z-index:5;padding:20px}.intro.hidden{display:none}.introcard{width:min(485px,100%);padding:30px;border-radius:22px}.eyebrow{letter-spacing:.22em;font-size:11px;color:#b3d9c3;font-weight:700}.introcard h1{font-size:36px;font-weight:600;letter-spacing:-.045em;margin:11px 0 8px}.introcard p{line-height:1.6;color:#cbd9d5;font-size:14px}.kbd{display:inline-block;border:1px solid #859792a0;border-radius:5px;padding:2px 6px;background:#ffffff12;font-size:11px;min-width:21px;text-align:center}.tips{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:22px 0;color:#e2eeea;font-size:12px}.tip span{display:block;color:#b5c8c1;margin-top:5px}.start{width:100%;padding:14px;border:0;border-radius:11px;background:#b7dfbd;color:#18352d;font-weight:750;font-size:14px}.start:hover{background:#d0f0d1}.status{font-size:11px;color:#c9d7d5;margin-top:11px;text-align:center}.toast{position:absolute;top:72px;left:50%;transform:translateX(-50%);background:#1b3032de;padding:9px 16px;border-radius:12px;font-size:12px;pointer-events:none;opacity:0;transition:opacity .2s}.toast.visible{opacity:1}.mobile{position:absolute;bottom:20px;left:20px;display:none;gap:8px;align-items:end}.touchpad{width:112px;height:112px;border-radius:50%;background:#10262855;border:2px solid #ffffff55;touch-action:none;position:relative}.stick{width:42px;height:42px;border-radius:50%;background:#e6fff188;position:absolute;left:33px;top:33px;pointer-events:none}.mobbuttons{display:flex;flex-direction:column;gap:8px}.mobbuttons button{border-radius:50%;width:50px;height:50px;background:#173a3aab;border:1px solid #ffffff66;color:white}.footnote{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:10px;color:#f0fff5b8;pointer-events:none;white-space:nowrap}@media(max-width:750px){.brand{left:12px;top:13px}.topright{right:10px;top:10px}.chip{padding:8px}.hud{bottom:145px;left:10px;font-size:11px;min-width:0}.mapbox{bottom:140px;right:10px;width:194px}.mapbox canvas{width:170px;height:170px}.mobile{display:flex;left:12px}.footnote{display:none}.introcard{padding:21px}.introcard h1{font-size:29px}.tips{gap:8px}}
 .panel.open ~ .mobile{pointer-events:none;opacity:.12}
+.profiler{position:absolute;top:57px;right:9px;width:min(320px,calc(100vw - 18px));max-height:calc(100vh - 70px);overflow:auto;padding:13px;z-index:4;border-radius:13px;display:none;font-size:12px}
+.profiler.open{display:block}.profiler h2{font-size:15px;margin:0 0 10px}.profiler p{font-size:11px;color:#c1d3cc;line-height:1.5}
+.profiler .metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px}.profiler .metric{padding:9px;background:#ffffff0c;border-radius:7px}
+.profiler .metric small{font-size:10px;color:#b7cbc2}.profiler .metric b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+.profiler label{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:8px 0}
+.profiler input[type=checkbox]{width:20px;height:20px;accent-color:#b7dfbd}
+.profiler .timings{white-space:pre-line;font-variant-numeric:tabular-nums;font-size:11px;line-height:1.6}
+@media(max-width:750px){.profiler{top:49px;max-height:calc(100vh - 60px)}}
 </style>
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 2.6</span></div>
-<div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
-<div class="cross"></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 2.7</span></div>
+<div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="perfBtn" class="chip">▥ Perf</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
+<div id="perfPanel" class="glass profiler">
+<h2>Live performance <button id="perfClose" class="chip" style="float:right;padding:3px 8px">×</button></h2>
+<div class="metrics">
+<div class="metric"><small>FPS</small><b id="perfFps">—</b></div>
+<div class="metric"><small>Frame avg / P95 ms</small><b id="perfFrame">—</b></div>
+<div class="metric"><small>Calls / triangles</small><b id="perfDraw">—</b></div>
+<div class="metric"><small>Visible instances</small><b id="perfInst">—</b></div>
+</div><div id="perfTiming" class="timings" style="margin:9px 0">Collecting metrics…</div>
+<b>Render isolation</b>
+<label>Terrain surface <input id="perfTerrain" type="checkbox" checked></label>
+<label>Trees <input id="perfTrees" type="checkbox" checked></label>
+<label>Shrubs and grass <input id="perfCover" type="checkbox" checked></label>
+<label>Rocks <input id="perfRocks" type="checkbox" checked></label>
+<button id="perfReset" class="action secondary" style="width:100%;margin-top:8px">Reset measurements</button>
+<p>Switches hide visuals only; simulation and generation continue. Frame time includes browser scheduling. CPU times measure JS tasks, not GPU time. Memory values are WebGL resource counts, not GPU bytes.</p>
+</div><div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span><br><span id="surfaceDebug" style="font-size:10px;opacity:.8">Surface alignment checking…</span><br><span id="treeInspectStatus" style="font-size:10px;color:#fff2a7">Tree inspection: none</span></div></div>
 <div id="toast" class="toast"></div>
 <div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Vegetation collisions <output id="collisionOut">On</output></label><input id="collisions" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Trees and rocks block movement, including in flight. Turn off to pass through scenery.</p><label>Tree root diagnostic <output id="rootOut">Off</output></label><input id="rootDebug" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Draw magenta poles and yellow root dots through the terrain (X-ray view). If a dot is behind the foreground ridge, its tree can look like it floats even though it is rooted.</p><button id="inspectTree" class="action secondary" style="width:100%;margin-top:8px">Inspect tree near crosshair</button><p style="margin-top:5px;font-size:11px;color:var(--muted)">Center the crosshair directly on the visible foliage. This selects trees by the visible canopy outline rather than unreliable triangle raycasting.</p><label>Show shrubs and ground cover <output id="groundCoverOut">On</output></label><input id="groundCoverVisible" type="checkbox" checked><label>Show scattered rocks <output id="rockVisibleOut">On</output></label><input id="rockVisible" type="checkbox" checked><p style="margin-top:3px;font-size:11px;color:var(--muted)">Hide each category independently to identify which objects appear detached.</p><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
@@ -451,7 +474,7 @@ function buildTile(key,d){const {x,z,size}=d,N=d.segments||config.detail,step=si
  }
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=j*(N+1)+i,b=a+1,c=a+N+1,e=c+1;indices.push(a,c,b,b,c,e)}
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();const mesh=new THREE.Mesh(geometry,terrainMaterial);mesh.frustumCulled=true;const group=new THREE.Group();group.add(mesh);
-scene.add(group);tiles.set(key,{group,d});}
+mesh.visible=perfTerrainEnabled;scene.add(group);tiles.set(key,{group,d});}
 // Trees are positioned on a permanent 25m world grid, independent of terrain LOD.
 // The base layer samples every fourth tree candidate; the detail layer fills the rest.
 // Both layers fade out before reaching their streaming boundaries.
@@ -517,7 +540,7 @@ function makeVegetationTile(job){
   group.add(mesh,marker,rootPoint);
   group.userData.treeAnchors.push({mesh,marker,rootPoint,data,type});
  });
- scene.add(group);vegetationTiles.set(job.key,{group,job});
+ group.visible=perfTreesEnabled;scene.add(group);vegetationTiles.set(job.key,{group,job});
 }
 function planVegetation(force=false){
  if(!force&&Math.hypot(player.x-lastVegetationX,player.z-lastVegetationZ)<110)return;
@@ -774,21 +797,114 @@ function toast(m){$('toast').textContent=m;$('toast').classList.add('visible');c
  updateCamera();
 }
 function renderMap(){const canvas=$('mapCanvas'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;if(mapDirty){const im=ctx.createImageData(W,H);for(let j=0;j<H;j++)for(let i=0;i<W;i++){const x=(i/W-.5)*20000,z=(.5-j/H)*20000,h=terrain(x,z),c=colorFor(x,z,h);let rgb=h<0?[59,114,149]:c.map(v=>Math.round(Math.pow(v,1/2.2)*255));const n=(j*W+i)*4;im.data[n]=rgb[0];im.data[n+1]=rgb[1];im.data[n+2]=rgb[2];im.data[n+3]=255}mapPixels=im;mapDirty=false}ctx.putImageData(mapPixels,0,0);ctx.strokeStyle='#ffffff45';ctx.lineWidth=.6;for(let r=2500;r<=10000;r+=2500){ctx.beginPath();ctx.arc(W/2,H/2,r/20000*W,0,Math.PI*2);ctx.stroke()}let px=(player.x/20000+.5)*W,py=(.5-player.z/20000)*H;ctx.save();ctx.translate(px,py);ctx.rotate(player.yaw);ctx.fillStyle='#fff';ctx.strokeStyle='#1b3e42';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(-6,7);ctx.lineTo(0,4);ctx.lineTo(6,7);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
-function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.055);if(active)update(dt);let work=0;while(buildQueue.length&&work<2){const [k,d]=buildQueue.shift();if(desired.has(k)&&!tiles.has(k)){buildTile(k,d);work++}}if(work>0)reconcileTiles();
- // Terrain remains the priority; vegetation has its own stable queue.
+// Alpha 2.7: collect cheap frame-level metrics only while the panel is open.
+let perfTerrainEnabled=true,perfTreesEnabled=true;
+const perfStats={lastFrame:0,lastReport:performance.now(),frames:[],cpu:[],elapsed:{terrain:0,trees:0,rocks:0,cover:0,anchors:0,render:0},ops:{terrain:0,trees:0,rocks:0,cover:0,anchors:0,render:0}};
+function perfOpen(){return $('perfPanel').classList.contains('open')}
+function perfMeasure(category,fn){
+ if(!perfOpen()){fn();return}
+ const before=performance.now();fn();
+ perfStats.elapsed[category]+=performance.now()-before;perfStats.ops[category]++;
+}
+function resetPerfStats(){
+ perfStats.lastReport=performance.now();perfStats.frames.length=0;perfStats.cpu.length=0;
+ for(const k in perfStats.elapsed){perfStats.elapsed[k]=0;perfStats.ops[k]=0}
+}
+function applyPerfVisibility(){
+ for(const tile of tiles.values()){
+  if(tile.group.children[0])tile.group.children[0].visible=perfTerrainEnabled;
+  if(tile.cover)tile.cover.visible=showGroundCover;
+ }
+ for(const v of vegetationTiles.values())v.group.visible=perfTreesEnabled;
+ for(const r of rockTiles.values())r.group.visible=showRocks;
+}
+function reportPerf(now){
+ if(!perfOpen()||now-perfStats.lastReport<1000)return;
+ const frames=perfStats.frames,cpus=perfStats.cpu;
+ const avg=frames.reduce((a,b)=>a+b,0)/Math.max(frames.length,1);
+ const sorted=[...frames].sort((a,b)=>a-b);
+ const p95=sorted.length?sorted[Math.floor((sorted.length-1)*.95)]:0;
+ const avgCpu=cpus.reduce((a,b)=>a+b,0)/Math.max(cpus.length,1);
+ const render=renderer.info.render;
+ let treeCount=0,rockCount=0,coverCount=0;
+ for(const e of vegetationTiles.values())if(e.group.visible)for(const r of e.group.userData.treeAnchors||[])treeCount+=r.mesh.count;
+ for(const e of rockTiles.values())if(e.group.visible)for(const o of e.group.children)if(o.isInstancedMesh)rockCount+=o.count;
+ for(const t of tiles.values())if(t.group.visible&&t.cover?.visible)for(const o of t.cover.children)if(o.isInstancedMesh)coverCount+=o.count;
+ const num=n=>Math.round(n).toLocaleString('en-US');
+ $('perfFps').textContent=avg?(1000/avg).toFixed(0):'—';
+ $('perfFrame').textContent=avg.toFixed(1)+' / '+p95.toFixed(1);
+ $('perfDraw').textContent=num(render.calls)+' / '+(render.triangles/1000).toFixed(0)+'k';
+ $('perfInst').textContent=num(treeCount+rockCount+coverCount);
+ $('perfTiming').textContent=
+  'Main-thread frame CPU: '+avgCpu.toFixed(1)+' ms avg\n'+
+  'Terrain '+tiles.size+' tiles · '+buildQueue.length+' queued\n'+
+  'Vegetation '+vegetationTiles.size+' tiles · '+vegetationQueue.length+' queued\n'+
+  'Rocks '+rockTiles.size+' tiles · '+rockQueue.length+' queued\n'+
+  'Trees '+num(treeCount)+' · rocks '+num(rockCount)+' · ground '+num(coverCount)+'\n'+
+  Object.keys(perfStats.elapsed).map(k=>k+': '+perfStats.elapsed[k].toFixed(1)+' ms / '+perfStats.ops[k]+' operations').join('\n')+
+  '\nWebGL geometries '+renderer.info.memory.geometries+' · textures '+renderer.info.memory.textures;
+ resetPerfStats();
+}
+$('perfBtn').onclick=()=>{$('perfPanel').classList.toggle('open');if(perfOpen()){$('panel').classList.remove('open');$('mapbox').classList.remove('open');document.exitPointerLock?.();resetPerfStats()}};
+$('perfClose').onclick=()=>{$('perfPanel').classList.remove('open')};
+$('perfReset').onclick=resetPerfStats;
+$('perfTerrain').onchange=e=>{perfTerrainEnabled=e.target.checked;applyPerfVisibility()};
+$('perfTrees').onchange=e=>{perfTreesEnabled=e.target.checked;applyPerfVisibility()};
+$('perfCover').onchange=e=>{showGroundCover=e.target.checked;$('groundCoverVisible').checked=showGroundCover;$('groundCoverOut').textContent=showGroundCover?'On':'Off';applyPerfVisibility()};
+$('perfRocks').onchange=e=>{showRocks=e.target.checked;$('rockVisible').checked=showRocks;$('rockVisibleOut').textContent=showRocks?'On':'Off';applyPerfVisibility()};
+function loop(){
+ requestAnimationFrame(loop);
+ const now=performance.now(),prof=perfOpen();
+ if(prof&&perfStats.lastFrame){
+  perfStats.frames.push(Math.max(0,now-perfStats.lastFrame));
+  if(perfStats.frames.length>180)perfStats.frames.shift();
+ }
+ perfStats.lastFrame=now;
+ const cpuStart=now,dt=Math.min(clock.getDelta(),.055);
+ if(active)update(dt);
+ let work=0;
+ while(buildQueue.length&&work<2){
+  const [k,d]=buildQueue.shift();
+  if(desired.has(k)&&!tiles.has(k)){perfMeasure('terrain',()=>buildTile(k,d));work++}
+ }
+ if(work>0){reconcileTiles();if(prof)applyPerfVisibility()}
  if(vegetationQueue.length&&buildQueue.length<35){
   const job=vegetationQueue.shift();
-  if(job&&!vegetationTiles.has(job.key))makeVegetationTile(job);
+  if(job&&!vegetationTiles.has(job.key)){
+   perfMeasure('trees',()=>makeVegetationTile(job));
+   const t=vegetationTiles.get(job.key);if(t)t.group.visible=perfTreesEnabled;
+  }
  }
  if(rockQueue.length&&buildQueue.length<30&&frame%2===0){
   const job=rockQueue.shift();
-  if(job&&!rockTiles.has(job.key))createRockTile(job);
+  if(job&&!rockTiles.has(job.key))perfMeasure('rocks',()=>createRockTile(job));
  }
- if(active&&(anchorRefreshBudget>0||frame%6===0))refreshObjectAnchors();
- if(active&&++frame%12===0){planTerrain();if(frame%60===0)refreshGroundCover();$('region').textContent=regionName(player.x,player.z);$('coords').textContent=`${Math.round(player.x).toLocaleString()} E · ${Math.round(player.z).toLocaleString()} N · ${Math.round(player.y).toLocaleString()} m elevation`;$('movement').textContent=player.fly?'FLYING':'WALKING';$('speedtext').textContent=config.speed+' km/h';$('chunks').textContent=tiles.size+' terrain tiles · '+buildQueue.length+' queued';$('surfaceDebug').textContent=groundSampleCount?'Surface error max '+groundSampleMaxError.toFixed(1)+' m · avg '+(groundSampleErrorSum/groundSampleCount).toFixed(1)+' m':'Surface alignment checking…';if($('mapbox').classList.contains('open'))renderMap()}renderer.render(scene,camera);if(!buildQueue.length&&$('loading').textContent.startsWith('Generating'))$('loading').textContent='World ready · seed '+config.seed;}
+ if(active&&(anchorRefreshBudget>0||frame%6===0))perfMeasure('anchors',()=>refreshObjectAnchors());
+ if(active&&++frame%12===0){
+  planTerrain();
+  if(frame%60===0)perfMeasure('cover',()=>refreshGroundCover());
+  $('region').textContent=regionName(player.x,player.z);
+  $('coords').textContent=`${Math.round(player.x).toLocaleString()} E · ${Math.round(player.z).toLocaleString()} N · ${Math.round(player.y).toLocaleString()} m elevation`;
+  $('movement').textContent=player.fly?'FLYING':'WALKING';
+  $('speedtext').textContent=config.speed+' km/h';
+  $('chunks').textContent=tiles.size+' terrain tiles · '+buildQueue.length+' queued';
+  $('surfaceDebug').textContent=groundSampleCount?'Surface error max '+groundSampleMaxError.toFixed(1)+' m · avg '+(groundSampleErrorSum/groundSampleCount).toFixed(1)+' m':'Surface alignment checking…';
+  if($('mapbox').classList.contains('open'))renderMap();
+ }
+ if(prof){
+  const t=performance.now();
+  renderer.render(scene,camera);
+  perfStats.elapsed.render+=performance.now()-t;
+  perfStats.ops.render++;
+  perfStats.cpu.push(performance.now()-cpuStart);
+  if(perfStats.cpu.length>180)perfStats.cpu.shift();
+  reportPerf(performance.now());
+ }else renderer.render(scene,camera);
+ if(!buildQueue.length&&$('loading').textContent.startsWith('Generating'))$('loading').textContent='World ready · seed '+config.seed;
+}
 function setSeed(){config.seed=$('seed').value.trim()||'HORIZON-01';seedNumber=seedHash(config.seed);clearVegetation();clearRocks();for(const k of [...tiles.keys()])deleteTile(k);lastUpdateX=Infinity;mapDirty=true;reposition(0,0);$('loading').textContent='Generating your landscape…';toast('Seed: '+config.seed)}
 $('start').onclick=()=>{active=true;$('intro').classList.add('hidden');if(matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()};$('helpBtn').onclick=()=>{$('intro').classList.remove('hidden');active=false;document.exitPointerLock?.()};$('settingsBtn').onclick=()=>{$('panel').classList.toggle('open');if($('panel').classList.contains('open'))document.exitPointerLock?.()};$('mapBtn').onclick=()=>{$('mapbox').classList.toggle('open');if($('mapbox').classList.contains('open')){renderMap();document.exitPointerLock?.()}};$('closeMap').onclick=()=>$('mapbox').classList.remove('open');$('view').addEventListener('click',()=>{if(active&&!$('panel').classList.contains('open')&&!$('mapbox').classList.contains('open')&&matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()});document.addEventListener('mousemove',e=>{if(document.pointerLockElement===$('view')){player.yaw-=e.movementX*.002;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-e.movementY*.002))}});document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;keys.add(e.code);if(['Space','ArrowDown','ArrowUp'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='KeyF')setFly(!player.fly);if(e.code==='KeyM')$('mapBtn').click();if(e.code==='KeyG')$('settingsBtn').click();if(e.code==='Escape')document.exitPointerLock?.()});document.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>keys.clear());
-$('groundCoverVisible').onchange=e=>{showGroundCover=e.target.checked;$('groundCoverOut').textContent=showGroundCover?'On':'Off';for(const t of tiles.values())if(t.cover)t.cover.visible=showGroundCover};$('rockVisible').onchange=e=>{showRocks=e.target.checked;$('rockVisibleOut').textContent=showRocks?'On':'Off';for(const t of rockTiles.values())t.group.visible=showRocks};$('inspectTree').onclick=inspectTreeNearCrosshair;$('rootDebug').onchange=e=>{setRootMarkersVisible(e.target.checked);$('rootOut').textContent=e.target.checked?'On':'Off';toast(e.target.checked?'X-ray roots: yellow dots at bases, magenta poles':'Tree root markers hidden')};$('collisions').onchange=e=>{config.collisions=e.target.checked;$('collisionOut').textContent=config.collisions?'On':'Off';toast(config.collisions?'Scenery collisions enabled':'Scenery collisions disabled')};$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';clearVegetation();clearRocks();for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{let r=e.target.getBoundingClientRect();reposition(((e.clientX-r.left)/r.width-.5)*20000,(.5-(e.clientY-r.top)/r.height)*20000)};
+$('groundCoverVisible').onchange=e=>{showGroundCover=e.target.checked;$('groundCoverOut').textContent=showGroundCover?'On':'Off';$('perfCover').checked=showGroundCover;applyPerfVisibility()};$('rockVisible').onchange=e=>{showRocks=e.target.checked;$('rockVisibleOut').textContent=showRocks?'On':'Off';$('perfRocks').checked=showRocks;applyPerfVisibility()};$('inspectTree').onclick=inspectTreeNearCrosshair;$('rootDebug').onchange=e=>{setRootMarkersVisible(e.target.checked);$('rootOut').textContent=e.target.checked?'On':'Off';toast(e.target.checked?'X-ray roots: yellow dots at bases, magenta poles':'Tree root markers hidden')};$('collisions').onchange=e=>{config.collisions=e.target.checked;$('collisionOut').textContent=config.collisions?'On':'Off';toast(config.collisions?'Scenery collisions enabled':'Scenery collisions disabled')};$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';clearVegetation();clearRocks();for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{let r=e.target.getBoundingClientRect();reposition(((e.clientX-r.left)/r.width-.5)*20000,(.5-(e.clientY-r.top)/r.height)*20000)};
 function bindHold(id,value){const el=$(id);el.addEventListener('pointerdown',e=>{e.preventDefault();verticalTouch=value;el.setPointerCapture(e.pointerId)});el.addEventListener('pointerup',()=>verticalTouch=0);el.addEventListener('pointercancel',()=>verticalTouch=0)}bindHold('upBtn',1);bindHold('downBtn',-1);$('flyBtn').onclick=()=>setFly(!player.fly);const joy=$('joystick');function moveJoy(e){const r=joy.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),mag=Math.max(1,Math.hypot(dx,dy)),m=Math.min(mag,42);touchVector.x=dx/mag*m/42;touchVector.y=dy/mag*m/42;$('stick').style.transform=`translate(${touchVector.x*37}px,${touchVector.y*37}px)`}joy.addEventListener('pointerdown',e=>{joy.setPointerCapture(e.pointerId);moveJoy(e)});joy.addEventListener('pointermove',e=>{if(joy.hasPointerCapture(e.pointerId))moveJoy(e)});function releaseJoy(){touchVector.x=touchVector.y=0;$('stick').style.transform=''}joy.addEventListener('pointerup',releaseJoy);joy.addEventListener('pointercancel',releaseJoy);$('view').addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;touchLook={id:e.pointerId,x:e.clientX,y:e.clientY};$('view').setPointerCapture(e.pointerId)});$('view').addEventListener('pointermove',e=>{if(!touchLook||e.pointerId!==touchLook.id)return;player.yaw-=(e.clientX-touchLook.x)*.004;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-(e.clientY-touchLook.y)*.004));touchLook.x=e.clientX;touchLook.y=e.clientY});$('view').addEventListener('pointerup',()=>touchLook=null);window.addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()});
 seedNumber=seedHash(config.seed);player.x=0;player.z=0;player.y=terrain(0,0)+220;updateCamera();planTerrain(true);$('region').textContent=regionName(player.x,player.z);loop();
 </script>
