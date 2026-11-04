@@ -19,7 +19,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 3.9</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 3.10</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="perfBtn" class="chip">▥ Perf</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div id="perfPanel" class="glass profiler">
 <h2>Live performance <button id="perfClose" class="chip" style="float:right;padding:3px 8px">×</button></h2>
@@ -39,7 +39,7 @@
 </div><div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span><br><span id="surfaceDebug" style="font-size:10px;opacity:.8">Surface alignment checking…</span><br><span id="treeInspectStatus" style="font-size:10px;color:#fff2a7">Tree inspection: none</span></div></div>
 <div id="toast" class="toast"></div>
-<div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><button id="findStream" class="action" style="width:100%;margin:5px 0 13px">Inspect drainage map</button><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Detailed nearby trees <output id="treeModelsOut">On</output></label><input id="treeModels" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare layered conifers and branched broadleaf silhouettes against the original models. Distant trees use the lightweight originals.</p><label>Richer nearby tree crowns <output id="treeCrownsOut">On</output></label><input id="treeCrowns" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Additional low-poly foliage and branching within about 900 m. Switch off to compare with Alpha 3.1 trees.</p><label>Varied tree silhouettes <output id="treeVarOut">On</output></label><input id="treeVariants" type="checkbox" checked><label>Varied shrubs <output id="shrubVarOut">On</output></label><input id="shrubVariants" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare deterministic shape variants with Alpha 3.0 trees and shrubs. Detailed variants apply nearby; distant trees remain simple.</p><label>Dense nearby undergrowth <output id="undergrowthOut">On</output></label><input id="undergrowth" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Add clustered grasses, short plants and fern-like foliage on suitable ground close to the camera. Turn off to compare the Alpha 3.2 ground cover.</p><label>Experimental 3D rivers <output id="streamOut">Off</output></label><input id="streamsVisible" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Off by default: Alpha 3.5 landscape restored. Experimental 3D carving is incomplete and can create unnatural trenches. Use the map's Drainage mode to inspect the network without changing terrain.</p><label>Terrain surface mode</label><select id="surfaceMode" style="width:100%;margin-bottom:9px;padding:9px;background:#1c3439;color:#eef7f2;border:1px solid #668184;border-radius:9px"><option value="multi" selected>Multiscale ground (Alpha 3.5)</option><option value="textured">Textured ground (Alpha 3.4)</option><option value="original">Original ground (Alpha 3.3)</option></select><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare broader, less repetitive terrain texture against Alpha 3.4 and the original terrain. No extra terrain geometry.</p><label>Natural grass and small plants <output id="smallPlantsOut">On</output></label><input id="smallPlants" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Replace triangular ground-cover spikes with thin blades and branched foliage. Turn off for Alpha 3.4 plant shapes.</p><label>Natural terrain colors <output id="naturalOut">On</output></label><input id="naturalColors" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare visibly darker green and warmer earth patches against the original colors. Uses the same working terrain shader.</p><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Vegetation collisions <output id="collisionOut">On</output></label><input id="collisions" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Trees and rocks block movement, including in flight. Turn off to pass through scenery.</p><label>Tree root diagnostic <output id="rootOut">Off</output></label><input id="rootDebug" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Draw magenta poles and yellow root dots through the terrain (X-ray view). If a dot is behind the foreground ridge, its tree can look like it floats even though it is rooted.</p><button id="inspectTree" class="action secondary" style="width:100%;margin-top:8px">Inspect tree near crosshair</button><p style="margin-top:5px;font-size:11px;color:var(--muted)">Center the crosshair directly on the visible foliage. This selects trees by the visible canopy outline rather than unreliable triangle raycasting.</p><label>Show shrubs and ground cover <output id="groundCoverOut">On</output></label><input id="groundCoverVisible" type="checkbox" checked><label>Show scattered rocks <output id="rockVisibleOut">On</output></label><input id="rockVisible" type="checkbox" checked><p style="margin-top:3px;font-size:11px;color:var(--muted)">Hide each category independently to identify which objects appear detached.</p><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
+<div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><button id="findStream" class="action" style="width:100%;margin:5px 0 13px">Inspect drainage map</button><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Detailed nearby trees <output id="treeModelsOut">On</output></label><input id="treeModels" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare layered conifers and branched broadleaf silhouettes against the original models. Distant trees use the lightweight originals.</p><label>Richer nearby tree crowns <output id="treeCrownsOut">On</output></label><input id="treeCrowns" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Additional low-poly foliage and branching within about 900 m. Switch off to compare with Alpha 3.1 trees.</p><label>Varied tree silhouettes <output id="treeVarOut">On</output></label><input id="treeVariants" type="checkbox" checked><label>Varied shrubs <output id="shrubVarOut">On</output></label><input id="shrubVariants" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare deterministic shape variants with Alpha 3.0 trees and shrubs. Detailed variants apply nearby; distant trees remain simple.</p><label>Adaptive visibility detail <output id="visibilityOut">On</output></label><input id="visibilityDetail" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Prioritize terrain ahead of your view and travel direction; adjust small-plant detail for altitude, apparent size and speed. Turn off to compare with Alpha 3.9.</p><label>Dense nearby undergrowth <output id="undergrowthOut">On</output></label><input id="undergrowth" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Add clustered grasses, short plants and fern-like foliage on suitable ground close to the camera. Turn off to compare the Alpha 3.2 ground cover.</p><label>Experimental 3D rivers <output id="streamOut">Off</output></label><input id="streamsVisible" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Off by default: Alpha 3.5 landscape restored. Experimental 3D carving is incomplete and can create unnatural trenches. Use the map's Drainage mode to inspect the network without changing terrain.</p><label>Terrain surface mode</label><select id="surfaceMode" style="width:100%;margin-bottom:9px;padding:9px;background:#1c3439;color:#eef7f2;border:1px solid #668184;border-radius:9px"><option value="multi" selected>Multiscale ground (Alpha 3.5)</option><option value="textured">Textured ground (Alpha 3.4)</option><option value="original">Original ground (Alpha 3.3)</option></select><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare broader, less repetitive terrain texture against Alpha 3.4 and the original terrain. No extra terrain geometry.</p><label>Natural grass and small plants <output id="smallPlantsOut">On</output></label><input id="smallPlants" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Replace triangular ground-cover spikes with thin blades and branched foliage. Turn off for Alpha 3.4 plant shapes.</p><label>Natural terrain colors <output id="naturalOut">On</output></label><input id="naturalColors" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare visibly darker green and warmer earth patches against the original colors. Uses the same working terrain shader.</p><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Vegetation collisions <output id="collisionOut">On</output></label><input id="collisions" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Trees and rocks block movement, including in flight. Turn off to pass through scenery.</p><label>Tree root diagnostic <output id="rootOut">Off</output></label><input id="rootDebug" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Draw magenta poles and yellow root dots through the terrain (X-ray view). If a dot is behind the foreground ridge, its tree can look like it floats even though it is rooted.</p><button id="inspectTree" class="action secondary" style="width:100%;margin-top:8px">Inspect tree near crosshair</button><p style="margin-top:5px;font-size:11px;color:var(--muted)">Center the crosshair directly on the visible foliage. This selects trees by the visible canopy outline rather than unreliable triangle raycasting.</p><label>Show shrubs and ground cover <output id="groundCoverOut">On</output></label><input id="groundCoverVisible" type="checkbox" checked><label>Show scattered rocks <output id="rockVisibleOut">On</output></label><input id="rockVisible" type="checkbox" checked><p style="margin-top:3px;font-size:11px;color:var(--muted)">Hide each category independently to identify which objects appear detached.</p><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
 <div id="mapbox" class="glass mapbox"><div class="maphead"><b id="mapTitle">REGIONAL MAP</b><button id="closeMap" class="chip" style="padding:3px 7px">×</button></div><div style="display:flex;gap:5px;margin-bottom:8px"><button id="mapLandscape" class="chip" style="flex:1">Landscape</button><button id="mapDrainage" class="chip" style="flex:1">Drainage</button></div><canvas id="mapCanvas" width="256" height="256"></canvas><div id="drainageNav" style="display:none;gap:5px;align-items:center;justify-content:center;margin-top:7px"><button id="drainWest" class="chip">← W</button><button id="drainNorth" class="chip">↑ N</button><button id="drainSouth" class="chip">↓ S</button><button id="drainEast" class="chip">E →</button></div><div id="mapFoot" class="mapfoot">20 × 20 km · north is up<br>Click a point to teleport · dotted rings every 2.5 km</div><div id="drainageStats" class="mapfoot" style="display:none"></div></div>
 <div class="mobile"><div id="joystick" class="touchpad"><div class="stick" id="stick"></div></div><div class="mobbuttons"><button id="upBtn">↑</button><button id="flyBtn">✈</button><button id="downBtn">↓</button></div></div>
 <div class="footnote">Procedural terrain · browser-rendered · no server required</div>
@@ -899,28 +899,90 @@ function createGroundCover(tile,detail=1){
  cover.visible=showGroundCover;
  tile.group.add(cover);tile.cover=cover;tile.coverDetail=detail;
 }
+// Alpha 3.10 perceptual LOD: evaluate the observer, not just radial distance.
+// World generation and placement remain deterministic; only representation
+// and job priority change. No per-object work is performed in the frame loop.
+let adaptiveVisibility=true,visibilityLast={altitude:0,groundDetail:0,groundBase:0,viewLead:0,motionLead:0};
+function visibilityContext(){
+ const ground=terrain(player.x,player.z);
+ const altitude=Math.max(0,player.y-ground);
+ const movingSpeed=config.speed*(player.fly?1:.36)/3.6;
+ const vFov=72*Math.PI/180,viewH=Math.max(1,renderer.domElement.clientHeight||innerHeight);
+ const pixelsPerRadian=viewH/(2*Math.tan(vFov/2));
+ const forwardX=-Math.sin(player.yaw)*Math.max(.12,Math.cos(player.pitch));
+ const forwardZ=-Math.cos(player.yaw)*Math.max(.12,Math.cos(player.pitch));
+ const travelX=streamDirX,travelZ=streamDirZ;
+ return {altitude,movingSpeed,pixelsPerRadian,forwardX,forwardZ,travelX,travelZ};
+}
+function projectedSizePx(size,distance,ctx){
+ return size*ctx.pixelsPerRadian/Math.max(1,distance);
+}
+function tileVisibility(tile,ctx){
+ const {x,z,size}=tile.d,cx=x+size/2,cz=z+size/2;
+ const dx=cx-player.x,dz=cz-player.z;
+ const horizontal=Math.hypot(dx,dz);
+ const nearestX=Math.max(0,Math.abs(dx)-size/2);
+ const nearestZ=Math.max(0,Math.abs(dz)-size/2);
+ const nearestHorizontal=Math.hypot(nearestX,nearestZ);
+ // Approximate vertical separation with camera height above local ground.
+ // This avoids expensive terrain queries per tile and suppresses distant
+ // ground cover when flying high.
+ const viewDistance=Math.hypot(nearestHorizontal,ctx.altitude);
+ const look=(dx*ctx.forwardX+dz*ctx.forwardZ)/Math.max(1,horizontal);
+ const travel=(dx*ctx.travelX+dz*ctx.travelZ)/Math.max(1,horizontal);
+ return {distance:nearestHorizontal,viewDistance,look,travel,horizontal};
+}
+function groundDetailForTile(tile,ctx){
+ const {size}=tile.d;
+ if(size>256)return 0;
+ const vis=tileVisibility(tile,ctx);
+ if(!adaptiveVisibility)
+  return vis.distance>=325?0:(denseUndergrowth&&vis.distance<185?2:1);
+ // Two-stage materialization: nearby cover remains available even to a
+ // walking observer looking sideways; high-altitude microgeometry does not.
+ const basePixels=projectedSizePx(1.8,vis.viewDistance,ctx);
+ const nearPixels=projectedSizePx(1.1,vis.viewDistance,ctx);
+ const slow=ctx.movingSpeed<8;
+ const detailThreshold=ctx.movingSpeed>45?7.5:ctx.movingSpeed>20?5.8:3.9;
+ const viewRelevant=vis.look>-.25||vis.distance<45||vis.horizontal<size;
+ const old=tile.coverDetail||0;
+ // Hysteresis limits LOD toggling near threshold boundaries.
+ const detailMargin=old===2?.78:1.16;
+ const baseMargin=old>=1?.75:1.12;
+ if(denseUndergrowth&&vis.distance<225&&viewRelevant&&
+    nearPixels>detailThreshold*detailMargin&&
+    (slow||ctx.altitude<125||nearPixels>9))return 2;
+ if(vis.distance<370&&basePixels>1.7*baseMargin&&
+    (vis.look>-.6||vis.distance<80||ctx.altitude<45))return 1;
+ return 0;
+}
 function refreshGroundCover(){
- // Work is limited per update to keep high-speed flight responsive.
- let built=0;
- const candidates=[];
+ // Batch job cost is bounded; prioritize the immediate view and movement
+ // path, but keep a ring near the player so turning does not reveal holes.
+ let built=0,detailCount=0,baseCount=0;
+ const ctx=visibilityContext(),candidates=[];
  for(const tile of tiles.values()){
-  const {x,z,size}=tile.d;
-  const dx=Math.max(0,Math.abs(player.x-(x+size/2))-size/2);
-  const dz=Math.max(0,Math.abs(player.z-(z+size/2))-size/2);
-  const distance=Math.hypot(dx,dz);
-  const wanted=size>256||distance>=325?0:(denseUndergrowth&&distance<185?2:1);
+  const wanted=groundDetailForTile(tile,ctx);
+  const vis=tileVisibility(tile,ctx);
   if(!wanted){
    if(tile.cover){tile.group.remove(tile.cover);tile.cover=null;tile.coverDetail=0;}
    continue;
   }
-  if(!tile.cover||tile.coverDetail!==wanted)candidates.push({tile,wanted,distance});
+  if(wanted===2)detailCount++;else baseCount++;
+  if(!tile.cover||tile.coverDetail!==wanted){
+   const importance=(vis.look>.15?55:0)+(vis.travel>.55?35:0);
+   candidates.push({tile,wanted,score:vis.viewDistance-importance});
+  }
  }
- candidates.sort((a,b)=>a.distance-b.distance);
+ candidates.sort((a,b)=>a.score-b.score);
  for(const {tile,wanted} of candidates){
   if(built>=3)break;
   if(tile.cover){tile.group.remove(tile.cover);tile.cover=null;}
   createGroundCover(tile,wanted);built++;
  }
+ visibilityLast.altitude=ctx.altitude;
+ visibilityLast.groundDetail=detailCount;
+ visibilityLast.groundBase=baseCount;
 }
 // Rock meshes stream independently of terrain tiles and use a fixed world lattice.
 // Unlike earlier versions, terrain refinement cannot add/remove a patch of rocks.
@@ -1393,7 +1455,9 @@ function planTerrain(force=false){
  lastUpdateX=player.x;lastUpdateZ=player.z;lastUpdateAt=now;
  desired.clear();
  const root=32768,lead=Math.min(3200,Math.max(600,streamSpeed*15));
+ visibilityLast.motionLead=lead;
  const aheadX=player.x+streamDirX*lead,aheadZ=player.z+streamDirZ*lead;
+ visibilityLast.viewLead=adaptiveVisibility?Math.min(2000,900+streamSpeed*5):0;
  function visit(x,z,size){
   const cx=x+size/2,cz=z+size/2;
   const dx=Math.max(0,Math.abs(player.x-cx)-size/2),dz=Math.max(0,Math.abs(player.z-cz)-size/2);
@@ -1412,7 +1476,16 @@ function planTerrain(force=false){
  const rx=Math.floor(player.x/root)*root,rz=Math.floor(player.z/root)*root;
  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)visit(rx+i*root,rz+j*root,root);
  buildQueue=[...desired.entries()].filter(([k])=>!tiles.has(k)).sort((a,b)=>{
-  function priority(d){return Math.min(d.dist,d.futureDist*.8)+(d.size<=256?350:0)-(d.size>=1024?1400:0)}
+  function priority(d){
+   const baseline=Math.min(d.dist,d.futureDist*.8)+(d.size<=256?350:0)-(d.size>=1024?1400:0);
+   if(!adaptiveVisibility)return baseline;
+   const dx=d.x+d.size/2-player.x,dz=d.z+d.size/2-player.z;
+   const direction=(-Math.sin(player.yaw)*dx-Math.cos(player.yaw)*dz)/Math.max(1,Math.hypot(dx,dz));
+   const inView=direction>.55;
+   // Job-order bias only: do not change tile bounds, tessellation or seam
+   // stitching until the adaptive system is benchmarked on device.
+   return baseline-(inView?Math.min(950,d.size*.65):0);
+  }
   return priority(a[1])-priority(b[1]);
  });
  reconcileTiles();
@@ -1762,6 +1835,7 @@ function reportPerf(now){
   'Vegetation '+vegetationTiles.size+' tiles · '+vegetationQueue.length+' queued\n'+
   'Rocks '+rockTiles.size+' tiles · '+rockQueue.length+' queued\n'+
   'River segments '+streamTiles.size+' · '+streamQueue.length+' queued · '+drainageRegions.size+' drainage regions\n'+
+  'Adaptive visibility '+(adaptiveVisibility?'on':'off')+' · altitude '+Math.round(visibilityLast.altitude)+' m · ground detail '+visibilityLast.groundDetail+' / base '+visibilityLast.groundBase+' tiles\n'+
   'Trees '+num(treeCount)+' · rocks '+num(rockCount)+' · ground '+num(coverCount)+'\n'+
   Object.keys(perfStats.elapsed).map(k=>k+': '+perfStats.elapsed[k].toFixed(1)+' ms / '+perfStats.ops[k]+' operations').join('\n')+
   '\nWebGL geometries '+renderer.info.memory.geometries+' · textures '+renderer.info.memory.textures;
@@ -1832,7 +1906,7 @@ function loop(){
 }
 function setSeed(){config.seed=$('seed').value.trim()||'HORIZON-01';seedNumber=seedHash(config.seed);clearVegetation();clearRocks();clearStreams();for(const k of [...tiles.keys()])deleteTile(k);lastUpdateX=Infinity;mapDirty=true;reposition(0,0);$('loading').textContent='Generating your landscape…';toast('Seed: '+config.seed)}
 $('start').onclick=()=>{active=true;$('intro').classList.add('hidden');if(matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()};$('helpBtn').onclick=()=>{$('intro').classList.remove('hidden');active=false;document.exitPointerLock?.()};$('settingsBtn').onclick=()=>{$('panel').classList.toggle('open');if($('panel').classList.contains('open'))document.exitPointerLock?.()};$('mapBtn').onclick=()=>{$('mapbox').classList.toggle('open');if($('mapbox').classList.contains('open')){renderMap();document.exitPointerLock?.()}};$('closeMap').onclick=()=>$('mapbox').classList.remove('open');$('view').addEventListener('click',()=>{if(active&&!$('panel').classList.contains('open')&&!$('mapbox').classList.contains('open')&&matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()});document.addEventListener('mousemove',e=>{if(document.pointerLockElement===$('view')){player.yaw-=e.movementX*.002;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-e.movementY*.002))}});document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;keys.add(e.code);if(['Space','ArrowDown','ArrowUp'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='KeyF')setFly(!player.fly);if(e.code==='KeyM')$('mapBtn').click();if(e.code==='KeyG')$('settingsBtn').click();if(e.code==='Escape')document.exitPointerLock?.()});document.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>keys.clear());
-$('perfResolution').oninput=e=>{renderResolutionScale=(+e.target.value)/100;$('perfResolutionOut').textContent=e.target.value+'%';updateRenderResolution();resetPerfStats()};$('undergrowth').onchange=e=>{setDenseUndergrowth(e.target.checked);$('undergrowthOut').textContent=e.target.checked?'On':'Off'};$('treeCrowns').onchange=e=>{switchTreeCrowns(e.target.checked);$('treeCrownsOut').textContent=e.target.checked?'On':'Off'};$('treeVariants').onchange=e=>{switchTreeVariants(e.target.checked);$('treeVarOut').textContent=e.target.checked?'On':'Off'};$('shrubVariants').onchange=e=>{switchShrubVariants(e.target.checked);$('shrubVarOut').textContent=e.target.checked?'On':'Off'};$('treeModels').onchange=e=>{switchTreeModels(e.target.checked);$('treeModelsOut').textContent=e.target.checked?'On':'Off'};$('streamsVisible').onchange=e=>{toggleStreams(e.target.checked);$('streamOut').textContent=e.target.checked?'On':'Off'};$('findStream').onclick=openDrainageInspection;$('surfaceMode').onchange=e=>setTerrainSurfaceMode(e.target.value);$('smallPlants').onchange=e=>{setNaturalSmallPlants(e.target.checked);$('smallPlantsOut').textContent=e.target.checked?'On':'Off'};$('naturalColors').onchange=e=>{switchNaturalColors(e.target.checked);$('naturalOut').textContent=e.target.checked?'On':'Off'};$('groundCoverVisible').onchange=e=>{showGroundCover=e.target.checked;$('groundCoverOut').textContent=showGroundCover?'On':'Off';$('perfCover').checked=showGroundCover;applyPerfVisibility()};$('rockVisible').onchange=e=>{showRocks=e.target.checked;$('rockVisibleOut').textContent=showRocks?'On':'Off';$('perfRocks').checked=showRocks;applyPerfVisibility()};$('inspectTree').onclick=inspectTreeNearCrosshair;$('rootDebug').onchange=e=>{setRootMarkersVisible(e.target.checked);$('rootOut').textContent=e.target.checked?'On':'Off';toast(e.target.checked?'X-ray roots: yellow dots at bases, magenta poles':'Tree root markers hidden')};$('collisions').onchange=e=>{config.collisions=e.target.checked;$('collisionOut').textContent=config.collisions?'On':'Off';toast(config.collisions?'Scenery collisions enabled':'Scenery collisions disabled')};$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';clearVegetation();clearRocks();clearStreams();for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{if(mapMode==='drainage'){
+$('perfResolution').oninput=e=>{renderResolutionScale=(+e.target.value)/100;$('perfResolutionOut').textContent=e.target.value+'%';updateRenderResolution();resetPerfStats()};$('visibilityDetail').onchange=e=>{adaptiveVisibility=e.target.checked;$('visibilityOut').textContent=e.target.checked?'On':'Off';lastUpdateX=Infinity;planTerrain(true);refreshGroundCover()};$('undergrowth').onchange=e=>{setDenseUndergrowth(e.target.checked);$('undergrowthOut').textContent=e.target.checked?'On':'Off'};$('treeCrowns').onchange=e=>{switchTreeCrowns(e.target.checked);$('treeCrownsOut').textContent=e.target.checked?'On':'Off'};$('treeVariants').onchange=e=>{switchTreeVariants(e.target.checked);$('treeVarOut').textContent=e.target.checked?'On':'Off'};$('shrubVariants').onchange=e=>{switchShrubVariants(e.target.checked);$('shrubVarOut').textContent=e.target.checked?'On':'Off'};$('treeModels').onchange=e=>{switchTreeModels(e.target.checked);$('treeModelsOut').textContent=e.target.checked?'On':'Off'};$('streamsVisible').onchange=e=>{toggleStreams(e.target.checked);$('streamOut').textContent=e.target.checked?'On':'Off'};$('findStream').onclick=openDrainageInspection;$('surfaceMode').onchange=e=>setTerrainSurfaceMode(e.target.value);$('smallPlants').onchange=e=>{setNaturalSmallPlants(e.target.checked);$('smallPlantsOut').textContent=e.target.checked?'On':'Off'};$('naturalColors').onchange=e=>{switchNaturalColors(e.target.checked);$('naturalOut').textContent=e.target.checked?'On':'Off'};$('groundCoverVisible').onchange=e=>{showGroundCover=e.target.checked;$('groundCoverOut').textContent=showGroundCover?'On':'Off';$('perfCover').checked=showGroundCover;applyPerfVisibility()};$('rockVisible').onchange=e=>{showRocks=e.target.checked;$('rockVisibleOut').textContent=showRocks?'On':'Off';$('perfRocks').checked=showRocks;applyPerfVisibility()};$('inspectTree').onclick=inspectTreeNearCrosshair;$('rootDebug').onchange=e=>{setRootMarkersVisible(e.target.checked);$('rootOut').textContent=e.target.checked?'On':'Off';toast(e.target.checked?'X-ray roots: yellow dots at bases, magenta poles':'Tree root markers hidden')};$('collisions').onchange=e=>{config.collisions=e.target.checked;$('collisionOut').textContent=config.collisions?'On':'Off';toast(config.collisions?'Scenery collisions enabled':'Scenery collisions disabled')};$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';clearVegetation();clearRocks();clearStreams();for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{if(mapMode==='drainage'){
   const rect=e.target.getBoundingClientRect(),u=(e.clientX-rect.left)/rect.width,v=(e.clientY-rect.top)/rect.height;
   const x=(drainInspectX+u)*HYDRO_SIZE,z=(drainInspectZ+1-v)*HYDRO_SIZE;
   const reg=drainageRegion(drainInspectX,drainInspectZ);
