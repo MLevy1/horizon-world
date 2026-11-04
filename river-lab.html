@@ -43,8 +43,9 @@ input[type=checkbox]{accent-color:#88d1b0}
   <div id="testreadout">Preparing test geometry…</div>
   <div id="help">Drag to orbit · Pinch to zoom · Two-finger drag to pan · Reset perspective with a view button. This test does not change Horizon's world.</div>
 </div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
 <script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as THREE from 'three';
 import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js';
 const $=id=>document.getElementById(id),root=$('scene');
 try{
