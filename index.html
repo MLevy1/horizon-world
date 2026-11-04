@@ -30,7 +30,7 @@
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 3.16</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 3.17</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="perfBtn" class="chip">▥ Perf</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div id="perfPanel" class="glass profiler">
 <h2>Live performance <button id="perfClose" class="chip" style="float:right;padding:3px 8px">×</button></h2>
@@ -50,7 +50,7 @@
 </div><div class="cross"></div>
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span><br><span id="surfaceDebug" style="font-size:10px;opacity:.8">Surface alignment checking…</span><br><span id="treeInspectStatus" style="font-size:10px;color:#fff2a7">Tree inspection: none</span></div></div>
 <div id="toast" class="toast"></div>
-<div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><button id="findStream" class="action" style="width:100%;margin:5px 0 13px">Inspect drainage map</button><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Detailed nearby trees <output id="treeModelsOut">On</output></label><input id="treeModels" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare layered conifers and branched broadleaf silhouettes against the original models. Distant trees use the lightweight originals.</p><label>Richer nearby tree crowns <output id="treeCrownsOut">On</output></label><input id="treeCrowns" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Additional low-poly foliage and branching within about 900 m. Switch off to compare with Alpha 3.1 trees.</p><label>Varied tree silhouettes <output id="treeVarOut">On</output></label><input id="treeVariants" type="checkbox" checked><label>Varied shrubs <output id="shrubVarOut">On</output></label><input id="shrubVariants" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare deterministic shape variants with Alpha 3.0 trees and shrubs. Detailed variants apply nearby; distant trees remain simple.</p><label>Smooth ground-cover transitions <output id="smoothCoverOut">On</output></label><input id="smoothCover" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Prepare vegetation before approaching it, then dither-fade individual plants in and out. Turn off to compare with Alpha 3.10.</p><label>Adaptive visibility detail <output id="visibilityOut">On</output></label><input id="visibilityDetail" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Prioritize terrain ahead of your view and travel direction; adjust small-plant detail for altitude, apparent size and speed. Turn off to compare with Alpha 3.9.</p><label>Dense nearby undergrowth <output id="undergrowthOut">On</output></label><input id="undergrowth" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Add clustered grasses, short plants and fern-like foliage on suitable ground close to the camera. Turn off to compare the Alpha 3.2 ground cover.</p><label>Selected landscape waterways <output id="streamOut">Off</output></label><input id="streamsVisible" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Alpha 3.16 pilot: only plausible ocean-draining watershed channels, shallow banks, gently tapering starts. Off by default to preserve the stable landscape. Steep or mismatched stretches are intentionally omitted.</p><button id="findNaturalRiver" class="action" style="width:100%;margin-bottom:10px">Find test waterway</button><label>Terrain surface mode</label><select id="surfaceMode" style="width:100%;margin-bottom:9px;padding:9px;background:#1c3439;color:#eef7f2;border:1px solid #668184;border-radius:9px"><option value="multi" selected>Multiscale ground (Alpha 3.5)</option><option value="textured">Textured ground (Alpha 3.4)</option><option value="original">Original ground (Alpha 3.3)</option></select><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare broader, less repetitive terrain texture against Alpha 3.4 and the original terrain. No extra terrain geometry.</p><label>Natural grass and small plants <output id="smallPlantsOut">On</output></label><input id="smallPlants" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Replace triangular ground-cover spikes with thin blades and branched foliage. Turn off for Alpha 3.4 plant shapes.</p><label>Natural terrain colors <output id="naturalOut">On</output></label><input id="naturalColors" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare visibly darker green and warmer earth patches against the original colors. Uses the same working terrain shader.</p><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Vegetation collisions <output id="collisionOut">On</output></label><input id="collisions" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Trees and rocks block movement, including in flight. Turn off to pass through scenery.</p><label>Tree root diagnostic <output id="rootOut">Off</output></label><input id="rootDebug" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Draw magenta poles and yellow root dots through the terrain (X-ray view). If a dot is behind the foreground ridge, its tree can look like it floats even though it is rooted.</p><button id="inspectTree" class="action secondary" style="width:100%;margin-top:8px">Inspect tree near crosshair</button><p style="margin-top:5px;font-size:11px;color:var(--muted)">Center the crosshair directly on the visible foliage. This selects trees by the visible canopy outline rather than unreliable triangle raycasting.</p><label>Show shrubs and ground cover <output id="groundCoverOut">On</output></label><input id="groundCoverVisible" type="checkbox" checked><label>Show scattered rocks <output id="rockVisibleOut">On</output></label><input id="rockVisible" type="checkbox" checked><p style="margin-top:3px;font-size:11px;color:var(--muted)">Hide each category independently to identify which objects appear detached.</p><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
+<div id="panel" class="glass panel"><h2>World settings</h2><p>Changes are applied to the live procedural landscape.</p><button id="findStream" class="action" style="width:100%;margin:5px 0 13px">Inspect drainage map</button><label>View distance <output id="viewOut">16 km</output></label><input id="viewDistance" type="range" min="4" max="24" step="2" value="16"><label>Detailed nearby trees <output id="treeModelsOut">On</output></label><input id="treeModels" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare layered conifers and branched broadleaf silhouettes against the original models. Distant trees use the lightweight originals.</p><label>Richer nearby tree crowns <output id="treeCrownsOut">On</output></label><input id="treeCrowns" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Additional low-poly foliage and branching within about 900 m. Switch off to compare with Alpha 3.1 trees.</p><label>Varied tree silhouettes <output id="treeVarOut">On</output></label><input id="treeVariants" type="checkbox" checked><label>Varied shrubs <output id="shrubVarOut">On</output></label><input id="shrubVariants" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare deterministic shape variants with Alpha 3.0 trees and shrubs. Detailed variants apply nearby; distant trees remain simple.</p><label>Smooth ground-cover transitions <output id="smoothCoverOut">On</output></label><input id="smoothCover" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Prepare vegetation before approaching it, then dither-fade individual plants in and out. Turn off to compare with Alpha 3.10.</p><label>Adaptive visibility detail <output id="visibilityOut">On</output></label><input id="visibilityDetail" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Prioritize terrain ahead of your view and travel direction; adjust small-plant detail for altitude, apparent size and speed. Turn off to compare with Alpha 3.9.</p><label>Dense nearby undergrowth <output id="undergrowthOut">On</output></label><input id="undergrowth" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Add clustered grasses, short plants and fern-like foliage on suitable ground close to the camera. Turn off to compare the Alpha 3.2 ground cover.</p><label>Selected landscape waterways <output id="streamOut">Off</output></label><input id="streamsVisible" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Alpha 3.17 pilot: complete ocean-draining channels, with terrain valleys and water built from the same smoothed centerlines. Off by default; only geographically compatible channels are generated.</p><button id="findNaturalRiver" class="action" style="width:100%;margin-bottom:10px">Find test waterway</button><label>Terrain surface mode</label><select id="surfaceMode" style="width:100%;margin-bottom:9px;padding:9px;background:#1c3439;color:#eef7f2;border:1px solid #668184;border-radius:9px"><option value="multi" selected>Multiscale ground (Alpha 3.5)</option><option value="textured">Textured ground (Alpha 3.4)</option><option value="original">Original ground (Alpha 3.3)</option></select><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare broader, less repetitive terrain texture against Alpha 3.4 and the original terrain. No extra terrain geometry.</p><label>Natural grass and small plants <output id="smallPlantsOut">On</output></label><input id="smallPlants" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Replace triangular ground-cover spikes with thin blades and branched foliage. Turn off for Alpha 3.4 plant shapes.</p><label>Natural terrain colors <output id="naturalOut">On</output></label><input id="naturalColors" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Compare visibly darker green and warmer earth patches against the original colors. Uses the same working terrain shader.</p><label>Terrain detail <output id="detailOut">Balanced</output></label><input id="detail" type="range" min="16" max="40" step="8" value="24"><label>Vegetation collisions <output id="collisionOut">On</output></label><input id="collisions" type="checkbox" checked><p style="margin-top:2px;font-size:11px;color:var(--muted)">Trees and rocks block movement, including in flight. Turn off to pass through scenery.</p><label>Tree root diagnostic <output id="rootOut">Off</output></label><input id="rootDebug" type="checkbox"><p style="margin-top:2px;font-size:11px;color:var(--muted)">Draw magenta poles and yellow root dots through the terrain (X-ray view). If a dot is behind the foreground ridge, its tree can look like it floats even though it is rooted.</p><button id="inspectTree" class="action secondary" style="width:100%;margin-top:8px">Inspect tree near crosshair</button><p style="margin-top:5px;font-size:11px;color:var(--muted)">Center the crosshair directly on the visible foliage. This selects trees by the visible canopy outline rather than unreliable triangle raycasting.</p><label>Show shrubs and ground cover <output id="groundCoverOut">On</output></label><input id="groundCoverVisible" type="checkbox" checked><label>Show scattered rocks <output id="rockVisibleOut">On</output></label><input id="rockVisible" type="checkbox" checked><p style="margin-top:3px;font-size:11px;color:var(--muted)">Hide each category independently to identify which objects appear detached.</p><label>Travel speed <output id="speedOut">65 km/h</output></label><input id="speed" type="range" min="10" max="450" value="65" step="5"><label>Vertical exaggeration <output id="heightOut">1.0×</output></label><input id="heightScale" type="range" min="0.5" max="2" value="1" step="0.1"><div class="divider"></div><label>World seed</label><input id="seed" type="text" value="HORIZON-01" maxlength="32"><button id="applySeed" class="action" style="margin-top:8px;width:100%">Generate this seed</button><div class="divider"></div><h2>Teleport to coordinates (meters)</h2><div class="two"><div><label>East / X</label><input id="teleX" type="number" value="0"></div><div><label>North / Z</label><input id="teleZ" type="number" value="0"></div></div><button id="teleport" class="action" style="width:100%;margin-top:10px">Teleport</button><div class="divider"></div><div class="two"><button class="action secondary" id="resetPosition">Return to start</button><button class="action secondary" id="randomSpot">Discover location</button></div><p style="margin-top:15px">A procedural exploration prototype. Construction, excavation and transportation are planned extensions, not yet active.</p></div>
 <div id="mapbox" class="glass mapbox"><div class="maphead"><b id="mapTitle">REGIONAL MAP</b><button id="closeMap" class="chip" style="padding:3px 7px">×</button></div><div class="mapmodes" style="display:flex;gap:5px;margin-bottom:8px"><button id="mapLandscape" class="chip" style="flex:1">Landscape</button><button id="mapDrainage" class="chip" style="flex:1">Drainage</button><button id="mapWatershed" class="chip" style="flex:1">Watershed</button><button id="mapRegional" class="chip" style="flex:1">Regional</button></div><canvas id="mapCanvas" width="256" height="256"></canvas><div class="explorerTools" id="explorerTools" style="display:none"><button class="chip" id="watershedOut">− Zoom</button><button class="chip" id="watershedReset">Overview</button><button class="chip" id="watershedIn">+ Zoom</button><button class="chip" id="regionalDrill" style="display:none">Inspect local</button></div><div id="drainageNav" style="display:none;gap:5px;align-items:center;justify-content:center;margin-top:7px"><button id="drainWest" class="chip">← W</button><button id="drainNorth" class="chip">↑ N</button><button id="drainSouth" class="chip">↓ S</button><button id="drainEast" class="chip">E →</button></div><div id="mapFoot" class="mapfoot">20 × 20 km · north is up<br>Click a point to teleport · dotted rings every 2.5 km</div><div id="drainageStats" class="mapfoot" style="display:none"></div><div id="watershedLegend" class="mapfoot" style="display:none">Gray: runoff · turquoise: tributary · blue: trunk · yellow: selected downstream path · green: modeled ocean outlet · orange: unresolved macro outlet/border. Drag to pan · tap a channel to trace · gray runoff, cyan tributary, blue trunk, yellow selection · green sea outlet, orange unresolved boundary. No 3D water.</div></div>
 <div class="mobile"><div id="joystick" class="touchpad"><div class="stick" id="stick"></div></div><div class="mobbuttons"><button id="upBtn">↑</button><button id="flyBtn">✈</button><button id="downBtn">↓</button></div></div>
 <div class="footnote">Procedural terrain · browser-rendered · no server required</div>
@@ -208,46 +208,104 @@ function riverbedHeight(raw,river){
 // fixed in world space and never depends on camera distance or travel speed.
 const naturalRiverCache=new Map();
 const NATURAL_RIVER_THRESHOLD=90;
+const NATURAL_VALLEY_MAX_CUT=14;
 function naturalRiverWidth(acc){
- return 1.2+Math.sqrt(Math.max(0,acc))*.34; // half-width in metres
+ return 1.2+Math.sqrt(Math.max(0,acc))*.34; // water half width, metres
 }
 function naturalRivers(ix,iz){
  const key=watershedKey(ix,iz);
  if(naturalRiverCache.has(key))return naturalRiverCache.get(key);
- const w=watershedAt(ix*2,iz*2),bins=new Map(),segments=[];
- const N=w.N,S=w.S;
+ const w=watershedAt(ix*2,iz*2),N=w.N,S=w.S;
+ const bins=new Map(),segments=[],byId=new Map();
+ const candidate=new Uint8Array(w.C),status=new Int8Array(w.C);
+ // First classify every edge independently. Acceptance is later based on
+ // whether the ENTIRE downstream path reaches the ocean using valid edges.
+ // A rejected edge disqualifies its upstream branches, so no blue ribbons
+ // abruptly stop in the middle of a hillside.
  for(let id=0;id<w.C;id++){
   const down=w.parent[id],a=w.acc[id];
   if(down<0||a<NATURAL_RIVER_THRESHOLD||!w.ocean[id]||w.base[id]<2)continue;
-  const h0=w.base[id],h1=Math.max(0,w.base[down]),isCoast=w.base[down]<=0;
+  const h0=w.base[id],h1=Math.max(0,w.base[down]);
   const x0=w.ox+(id%N+.5)*S,z0=w.oz+(Math.floor(id/N)+.5)*S;
   const x1=w.ox+(down%N+.5)*S,z1=w.oz+(Math.floor(down/N)+.5)*S;
   const length=Math.hypot(x1-x0,z1-z0);
-  if(isCoast&&h0>32)continue;
-  if(!isCoast&&h1>h0+2)continue;
-  if(Math.abs(h0-h1)/length>.23)continue;
-  // Coarse priority flooding can follow a line across a local hill or canyon.
-  // Reject those edges rather than excavating a deep artificial trench.
-  let mismatch=false;
-  for(const t of [.2,.4,.6,.8]){
-   const xx=x0+(x1-x0)*t,zz=z0+(z1-z0)*t;
-   const desired=h0+(h1-h0)*t;
-   if(Math.abs(baseTerrain(xx,zz)-desired)>8){mismatch=true;break}
+  if(w.base[down]<=0&&h0>32)continue;
+  if(w.base[down]>0&&h1>h0+2)continue;
+  if(Math.abs(h0-h1)/length>.30)continue;
+  let incompatible=false;
+  for(const t of [.125,.25,.375,.5,.625,.75,.875]){
+   const x=x0+(x1-x0)*t,z=z0+(z1-z0)*t;
+   const model=h0+(h1-h0)*t;
+   if(Math.abs(baseTerrain(x,z)-model)>12){incompatible=true;break}
   }
-  if(mismatch)continue;
-  const width0=naturalRiverWidth(a),width1=naturalRiverWidth(w.acc[down]);
-  const seg={id,down,x0,z0,x1,z1,h0,h1,width0,width1,width:Math.max(width0,width1),head:false,isCoast,acc:a};
-  segments.push(seg);
-  const xMin=Math.max(0,Math.floor((Math.min(x0,x1)-55-w.ox)/S));
-  const xMax=Math.min(N-1,Math.floor((Math.max(x0,x1)+55-w.ox)/S));
-  const zMin=Math.max(0,Math.floor((Math.min(z0,z1)-55-w.oz)/S));
-  const zMax=Math.min(N-1,Math.floor((Math.max(z0,z1)+55-w.oz)/S));
-  for(let z=zMin;z<=zMax;z++)for(let x=xMin;x<=xMax;x++){
-   const k=z*N+x,arr=bins.get(k)||[];arr.push(seg);bins.set(k,arr);
+  if(!incompatible)candidate[id]=1;
+ }
+ function connectsToSea(id){
+  if(w.base[id]<=0)return true;
+  if(status[id]!==0)return status[id]>0;
+  const down=w.parent[id];
+  if(down<0||!candidate[id]){status[id]=-1;return false}
+  // Downstream nodes are always distinct in the priority-flood graph.
+  const good=connectsToSea(down);
+  status[id]=good?1:-1;
+  return good;
+ }
+ const incoming=new Map();
+ for(let id=0;id<w.C;id++)if(candidate[id]&&connectsToSea(id)){
+  const down=w.parent[id],arr=incoming.get(down)||[];
+  arr.push(id);incoming.set(down,arr);
+ }
+ // Smooth a whole selected chain rather than smoothing isolated segments.
+ // Adjacent cubic sections meet at exactly the same graph vertex.
+ function nodePosition(id){
+  return {x:w.ox+(id%N+.5)*S,z:w.oz+(Math.floor(id/N)+.5)*S};
+ }
+ function bestUpstream(id){
+  const list=incoming.get(id);if(!list||!list.length)return -1;
+  let winner=list[0];
+  for(const child of list)if(w.acc[child]>w.acc[winner])winner=child;
+  return winner;
+ }
+ const kept=new Set();
+ for(const [down,children] of incoming)for(const id of children)kept.add(id);
+ for(const id of kept){
+  const down=w.parent[id],p0=nodePosition(id),p1=nodePosition(down);
+  const up=bestUpstream(id),next=w.parent[down];
+  const prev=up>=0?nodePosition(up):p0;
+  const after=next>=0?nodePosition(next):p1;
+  const control0={x:p0.x+(p1.x-prev.x)*.20,z:p0.z+(p1.z-prev.z)*.20};
+  const control1={x:p1.x-(after.x-p0.x)*.20,z:p1.z-(after.z-p0.z)*.20};
+  const width0=naturalRiverWidth(w.acc[id]),width1=naturalRiverWidth(w.acc[down]);
+  const head=up<0,samples=[],length=Math.hypot(p1.x-p0.x,p1.z-p0.z);
+  const steps=Math.max(10,Math.ceil(length/10));
+  for(let k=0;k<=steps;k++){
+   const t=k/steps,u=1-t;
+   const x=u*u*u*p0.x+3*u*u*t*control0.x+3*u*t*t*control1.x+t*t*t*p1.x;
+   const z=u*u*u*p0.z+3*u*u*t*control0.z+3*u*t*t*control1.z+t*t*t*p1.z;
+   const model=w.base[id]+(Math.max(0,w.base[down])-w.base[id])*t-.08;
+   const y=Math.min(model,baseTerrain(x,z)+.12);
+   const taper=head?Math.min(1,.08+.92*t/.76):1;
+   const width=(width0+(width1-width0)*t)*taper;
+   samples.push({x,z,y,width});
+  }
+  const seg={id,down,head,acc:w.acc[id],samples,
+   x0:p0.x,z0:p0.z,x1:p1.x,z1:p1.z,width:Math.max(width0,width1)};
+  segments.push(seg);byId.set(id,seg);
+  // Index short sampled edges into 128m cells, including valley shoulders.
+  // Only local edges are queried during terrain/vegetation construction.
+  for(let k=1;k<samples.length;k++){
+   const a=samples[k-1],b=samples[k],edge={a,b,seg};
+   const bank=Math.max(35,Math.max(a.width,b.width)*5+20);
+   const x0=Math.max(0,Math.floor((Math.min(a.x,b.x)-bank-w.ox)/S));
+   const x1=Math.min(N-1,Math.floor((Math.max(a.x,b.x)+bank-w.ox)/S));
+   const z0=Math.max(0,Math.floor((Math.min(a.z,b.z)-bank-w.oz)/S));
+   const z1=Math.min(N-1,Math.floor((Math.max(a.z,b.z)+bank-w.oz)/S));
+   for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++){
+    const key=z*N+x,list=bins.get(key)||[];
+    list.push(edge);bins.set(key,list);
+   }
   }
  }
- const receiving=new Set(segments.map(seg=>seg.down));
- for(const seg of segments)seg.head=!receiving.has(seg.id);
  const data={w,segments,bins};
  if(naturalRiverCache.size>=3)naturalRiverCache.clear();
  naturalRiverCache.set(key,data);
@@ -262,27 +320,28 @@ function naturalRiverAt(x,z){
  const candidates=rivers.bins.get(bz*w.N+bx);
  if(!candidates)return null;
  let nearest=null,best=Infinity;
- for(const seg of candidates){
-  const dx=seg.x1-seg.x0,dz=seg.z1-seg.z0;
-  const t=Math.max(0,Math.min(1,((x-seg.x0)*dx+(z-seg.z0)*dz)/(dx*dx+dz*dz)));
-  const dist=Math.hypot(x-seg.x0-dx*t,z-seg.z0-dz*t);
-  const width=seg.width0+(seg.width1-seg.width0)*t;
-  const bank=Math.max(22,width*3.5);
-  if(dist>=bank||dist/bank>=best)continue;
-  // Clamp local water to ground near the centerline to avoid floating.
-  const projected=seg.h0+(seg.h1-seg.h0)*t-.16;
-  const water=Math.min(projected,baseTerrain(x,z)+.10);
-  nearest={distance:dist,width,bank,water};
-  best=dist/bank;
+ for(const edge of candidates){
+  const a=edge.a,b=edge.b,dx=b.x-a.x,dz=b.z-a.z;
+  const den=dx*dx+dz*dz;
+  if(den<.001)continue;
+  const t=Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.z)*dz)/den));
+  const distance=Math.hypot(x-a.x-dx*t,z-a.z-dz*t);
+  const width=a.width+(b.width-a.width)*t;
+  const bank=Math.max(35,width*5+20);
+  if(distance>=bank||distance/bank>=best)continue;
+  nearest={distance,width,bank,water:a.y+(b.y-a.y)*t};
+  best=distance/bank;
  }
  return nearest;
 }
 function naturalRiverbed(raw,river){
  if(!river||raw<0)return raw;
- // Maximum cut of 2.2m even on inconsistent coarse terrain. No giant chasms.
- const influence=1-smoothRange(river.width*.65,river.bank,river.distance);
- const target=river.water-.85;
- return raw-Math.min(2.2,Math.max(0,raw-target))*influence;
+ // The same sampled water profile drives the channel and both banks.
+ // Shallow central bed, wide shoulders and a bounded excavation avoid
+ // the narrow artificial trenches seen in Alpha 3.8.
+ const falloff=1-smoothRange(river.width*.85,river.bank,river.distance);
+ const bed=river.water-.85;
+ return raw-Math.min(NATURAL_VALLEY_MAX_CUT,Math.max(0,raw-bed))*falloff;
 }
 function terrain(x,z){
  const raw=baseTerrain(x,z);
@@ -1695,20 +1754,19 @@ const streamWaterMaterial=new THREE.MeshPhongMaterial({
 });
 function streamCellKey(ix,iz){return regionKey(ix,iz)}
 function makeNaturalRibbon(seg){
- const length=Math.hypot(seg.x1-seg.x0,seg.z1-seg.z0);
- const steps=Math.max(8,Math.ceil(length/5)),p=[],indices=[];
- const dx=(seg.x1-seg.x0)/length,dz=(seg.z1-seg.z0)/length;
- for(let k=0;k<=steps;k++){
-  const t=k/steps,cx=seg.x0+(seg.x1-seg.x0)*t,cz=seg.z0+(seg.z1-seg.z0)*t;
-  const projected=seg.h0+(seg.h1-seg.h0)*t-.06;
-  const y=Math.min(projected,baseTerrain(cx,cz)+.12);
-  // Source headwaters grow from a barely perceptible thread, not a sudden
-  // full-width blue rectangle at the drainage accumulation threshold.
-  const nominal=seg.width0+(seg.width1-seg.width0)*t;
-  const taper=seg.head?Math.min(1,.12+.88*t/.65):1;
-  const width=nominal*taper;
-  for(const side of [-1,1])p.push(cx+side*(-dz)*width,y,cz+side*dx*width);
-  if(k){const a=k*2;indices.push(a-2,a,a-1,a-1,a,a+1)}
+ const samples=seg.samples,p=[],indices=[];
+ for(let k=0;k<samples.length;k++){
+  const a=samples[k],before=samples[Math.max(0,k-1)],after=samples[Math.min(samples.length-1,k+1)];
+  let dx=after.x-before.x,dz=after.z-before.z;
+  const mag=Math.max(.001,Math.hypot(dx,dz));dx/=mag;dz/=mag;
+  // A water vertex and its riverbed use the same world-space centerline.
+  // Slightly lower margins avoid floating ribbons on sloping valley sides.
+  for(const side of [-1,1]){
+   const x=a.x+side*(-dz)*a.width,z=a.z+side*dx*a.width;
+   const y=Math.min(a.y+.07,baseTerrain(x,z)+.14);
+   p.push(x,y,z);
+  }
+  if(k){const j=k*2;indices.push(j-2,j,j-1,j-1,j,j+1)}
  }
  const geo=new THREE.BufferGeometry();
  geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
