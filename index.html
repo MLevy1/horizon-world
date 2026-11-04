@@ -216,6 +216,9 @@ function findVisibleTerrainMesh(x,z){
  return null;
 }
 function displayedGroundHeight(x,z){
+ // Limit triangle intersection work to the near field on mobile.
+ // Far scenery is approximate until the player approaches it.
+ if(Math.hypot(x-player.x,z-player.z)>550)return terrain(x,z);
  const mesh=findVisibleTerrainMesh(x,z);
  if(!mesh)return terrain(x,z);
  groundRayOrigin.set(x,10000,z);
