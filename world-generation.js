@@ -30,8 +30,9 @@ export function valleyProfile(raw,feature){
   const maturity=source===undefined?1:ramp(100,1100,source);
   const requiredCut=Math.max(0,raw-(feature.water-depth));
   const sourceCut=.3+maxCut*maturity*maturity;
-  const channelCut=d<=width && maturity>.98
-    ?Math.max(maxCut,requiredCut+.25)
+  const fullCut=Math.max(maxCut,requiredCut+.25);
+  const channelCut=d<=width
+    ?sourceCut+Math.max(0,fullCut-sourceCut)*maturity*maturity*maturity
     :sourceCut;
   const inner=channelBed(raw,{
     ...feature,depth,bankWidth,shoulder
