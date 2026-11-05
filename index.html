@@ -1972,16 +1972,17 @@ function makePilotWaterTexture(){
 }
 const labPilotTexture=makePilotWaterTexture();
 const labPilotWaterMaterial=new THREE.MeshPhongMaterial({
- color:0x4699af,map:labPilotTexture,side:THREE.DoubleSide,
- vertexColors:true,transparent:true,opacity:.86,
- shininess:60,specular:0xb0d3de,depthWrite:false
+ color:0x8cdee8,map:labPilotTexture,side:THREE.DoubleSide,
+ vertexColors:true,transparent:true,opacity:.94,
+ emissive:0x173f4a,emissiveIntensity:.22,
+ shininess:48,specular:0xa3d7df,depthWrite:false
 });
 function makeLabWaterRibbon(seg){
  const samples=seg.samples,p=[],indices=[],uvs=[],colors=[],waterline=.09;
  // A shared cross-section supports narrow headwater channels and broad reaches
  // without stretching one texture tile across an entire pond-width surface.
  const across=24,stride=across+1;
- const start=samples.findIndex(a=>a.width*2>=.65);
+ const start=samples.findIndex(a=>a.width*2>=.25);
  const first=start<0?samples.length:start;
  for(let k=first;k<samples.length;k++){
   const a=samples[k],before=samples[Math.max(0,k-1)],after=samples[Math.min(samples.length-1,k+1)];
@@ -2000,9 +2001,10 @@ function makeLabWaterRibbon(seg){
    // Keep water level across the width; the terrain is carved by channelBed().
    p.push(x,waterY,z);
    const fullWidth=left+right;
-   const emergence=Math.max(0,Math.min(1,(fullWidth-.6)/1.0));
+   const emergence=Math.max(0,Math.min(1,(fullWidth-.25)/1.35));
    const alpha=emergence*emergence*(3-2*emergence);
-   colors.push(1,1,1,.72+.28*alpha);
+   // Keep the bed legible but avoid exposing a nearly black channel below.
+   colors.push(1,1,1,.84+.16*alpha);
    uvs.push(side/12,chainV/22);
    if(k>first&&j>0){
     const row=(k-first)*stride,here=row+j,above=here-stride;
