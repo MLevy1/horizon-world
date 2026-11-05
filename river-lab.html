@@ -26,7 +26,7 @@ input[type=checkbox]{accent-color:#88d1b0}select{background:#223c43;border:1px s
 .geometrybar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.geometrybar label{display:flex;align-items:center;gap:6px}
 details{border:1px solid #64858b66;padding:8px;border-radius:9px;margin-top:8px;font-size:12px}
 details summary{cursor:pointer;font-size:13px}.sliders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;margin-top:9px}
-.sliders label{display:flex;flex-direction:column;gap:2px}.sliders output{color:#9fe6cf}input[type=range]{width:100%;accent-color:#95d8bd}
+.sliders label,.pondSettings label{display:flex;flex-direction:column;gap:2px}.pondSettings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;margin-top:10px;padding-top:8px;border-top:1px solid #64858b66}.pondSettings output{color:#9fe6cf}.sliders output{color:#9fe6cf}input[type=range]{width:100%;accent-color:#95d8bd}
 #profileCanvas{max-width:100%;height:auto;margin-top:6px;border-radius:6px;background:#0d242a}
 #help{font-size:11px;color:#a9c3c3;margin-top:5px}#debugreadout{font-size:11px;line-height:1.45;color:#91d6bd;margin-top:4px}
 #error{display:none;position:fixed;top:84px;left:12px;right:12px;background:#692c32;border-radius:10px;padding:12px;z-index:10}
@@ -61,7 +61,14 @@ details summary{cursor:pointer;font-size:13px}.sliders{display:grid;grid-templat
 <label>Shoulder width <output id="shoulderValue"></output><input id="shoulder" type="range" min="2" max="25" step=".5" value="11"></label>
 <label>Headwater development distance <output id="headLengthValue"></output><input id="headLength" type="range" min="250" max="2000" step="50" value="1000"></label><label>Width growth exponent <output id="headPowerValue"></output><input id="headPower" type="range" min="1" max="4" step=".25" value="2.5"></label>
 <label>Outlet flare <output id="outletLengthValue"></output><input id="outletLength" type="range" min="20" max="100" step="5" value="65"></label>
-</div><canvas id="profileCanvas" width="560" height="144"></canvas>
+</div>
+<div id="pondControls" class="pondSettings">
+<label>Maximum pond half-width <output id="pondRadiusValue"></output><input id="pondRadius" type="range" min="50" max="150" step="5" value="100"></label>
+<label>Pond level adjustment <output id="pondLevelOffsetValue"></output><input id="pondLevelOffset" type="range" min="-1" max=".7" step=".05" value="0"></label>
+<label>Shoreline blending <output id="pondShoreValue"></output><input id="pondShore" type="range" min="5" max="35" step="1" value="13"></label>
+<label>Basin depth <output id="pondDepthValue"></output><input id="pondDepth" type="range" min="1" max="5" step=".25" value="2.4"></label>
+</div>
+<canvas id="profileCanvas" width="560" height="144"></canvas>
 </details>
 <div id="testreadout">Preparing test geometry…</div><div id="debugreadout" aria-live="polite"></div>
   <div id="help">Drag to orbit · Pinch to zoom · Two-finger drag to pan · Reset perspective with a view button. This test does not change Horizon's world.</div>
@@ -91,15 +98,15 @@ scene.add(new THREE.HemisphereLight(0xddeefb,0x5f7150,2.1));
 const sun=new THREE.DirectionalLight(0xfff5d4,2.0);sun.position.set(-80,140,-110);scene.add(sun);
 const PLANE_MIN=-195,PLANE_MAX=265,TERRAIN_CELLS=184,RIVER_STEPS=216;
 const GROWTH_END=1180,GROWTH_JUNCTIONS=[100,450,850];
-const POND_INLET=480,POND_JOIN=520,POND_TAIL=850;
+const POND_INLET=500,POND_JOIN=520,POND_TAIL=850;
 const pondScene=()=>geom.scene==='pond';
-const pondLevel=()=>5.5-(POND_JOIN+180)*.009;
+const pondLevel=()=>5.5-(POND_JOIN+180)*.009+geom.pondLevelOffset;
 const pondCenter=z=>centerX(POND_INLET)+5*Math.sin((z-POND_INLET)/125);
 function pondRadius(z){
  if(z<POND_INLET||z>POND_TAIL)return 0;
  const t=(z-POND_INLET)/(POND_TAIL-POND_INLET);
  const base=geom.width*.5;
- const bulge=100*Math.pow(Math.max(0,Math.sin(Math.PI*t)),1.25);
+ const bulge=geom.pondRadius*Math.pow(Math.max(0,Math.sin(Math.PI*t)),1.25);
  const taper=1-smooth(t/.45);
  return Math.max(.05,base*taper+bulge);
 }
@@ -107,10 +114,10 @@ function pondGround(x,z,raw){
  const radius=pondRadius(z);
  if(radius<=0)return raw;
  const d=Math.abs(x-pondCenter(z));
- const rise=1.05,blend=13;
+ const rise=1.05,blend=geom.pondShore;
  if(d<radius){
   const u=d/Math.max(.001,radius);
-  const depth=2.4*Math.pow(Math.max(0,1-u*u),1.3);
+  const depth=geom.pondDepth*Math.pow(Math.max(0,1-u*u),1.3);
   return Math.min(raw,pondLevel()-.06-depth);
  }
  if(d<radius+blend){
@@ -125,7 +132,7 @@ const sceneEnd=()=>pondScene()?POND_JOIN:growthScene()?GROWTH_END:(hasOutlet()?P
 const RIVER_START=-180,RIVER_END=180,POND_END=250;
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t)};
 const mix=(a,b,t)=>a+(b-a)*t;
-const geom={width:11,depth:1.1,rise:.8,bankWidth:3,shoulder:11,headLength:1000,headPower:2.5,outletLength:30,mode:'blunt',source:'taper',scene:'pond'};
+const geom={width:11,depth:1.1,rise:.8,bankWidth:3,shoulder:11,headLength:1000,headPower:2.5,outletLength:30,mode:'blunt',source:'taper',scene:'pond',pondRadius:100,pondShore:13,pondDepth:2.4,pondLevelOffset:0};
 const longHead=()=>geom.scene==='long'&&hasHead();
 const headStart=()=>longHead()?RIVER_START-geom.headLength:RIVER_START;
 const terrainStart=()=>headStart()-25;
@@ -151,8 +158,11 @@ const centerY=z=>{
  if(pondScene()){
   if(z>=POND_JOIN)return pondLevel();
   if(z>=POND_JOIN-120){
-   const t=(POND_JOIN-z)/120;
-   return pondLevel()+.009*120*(2*t*t-t*t*t);
+   // Hermite grade: natural upstream slope, horizontal at the pond level.
+   const t=(z-(POND_JOIN-120))/120;
+   const start=5.5-((POND_JOIN-120)+180)*.009;
+   const h00=2*t*t*t-3*t*t+1,h10=t*t*t-2*t*t+t,h01=-2*t*t*t+3*t*t;
+   return h00*start+h10*(-.009*120)+h01*pondLevel();
   }
  }
  const base=5.5-(((growthScene()||pondScene())?z:Math.min(z,180))+180)*.009;
@@ -521,7 +531,13 @@ function rebuildGeometry(){
  lines.visible=$('shores').checked;
  drawCrossSection();audit();
 }
+const POND_PARAMS=['pondRadius','pondLevelOffset','pondShore','pondDepth'];
 function syncUI(){
+ $('pondControls').style.display=pondScene()?'grid':'none';
+ for(const key of POND_PARAMS){
+  $(key).value=geom[key];
+  $(key+'Value').textContent=Number(geom[key]).toFixed(key==='pondLevelOffset'||key==='pondDepth'?2:0)+' m';
+ }
  $('sceneMode').value=geom.scene;
  $('headLength').min=geom.scene==='long'?250:15;
  $('headLength').max=geom.scene==='long'?2000:90;
@@ -571,6 +587,7 @@ $('preset').onchange=e=>{
 };
 $('endMode').onchange=e=>{geom.mode=e.target.value;syncUI();rebuildGeometry()};
 $('headSource').onchange=e=>{geom.source=e.target.value;rebuildGeometry()};
+for(const key of POND_PARAMS)$(key).onchange=e=>{geom[key]=Number(e.target.value);syncUI();rebuildGeometry()};
 for(const key of PARAMS)$(key).onchange=e=>{
  geom[key]=Number(e.target.value);syncUI();rebuildGeometry();
  if(key==='headLength'&&geom.scene==='long')view('top');
@@ -597,7 +614,7 @@ function audit(){
  (longHead()&&geom.source==='runoff'?
  ' Width at 25/50/75% downstream: '+[.25,.5,.75].map(t=>(geom.width*Math.pow(t,geom.headPower)).toFixed(2)).join(' / ')+' m. ':'')+
  (stagedWater()?' Water begins '+(waterStartZ()-headStart()).toFixed(0)+' m downstream; first texture '+(thresholdZ(STAGED.textureWidth)-headStart()).toFixed(0)+' m; full opacity '+(thresholdZ(STAGED.fullWidth)-headStart()).toFixed(0)+' m.':'')+
- (pondScene()?' River-to-pond prototype: separate level basin at '+pondLevel().toFixed(2)+' m, shoreline 480–850 m, 40 m inlet overlap; pond has independent water geometry. ':'')+
+ (pondScene()?' River-to-pond prototype: separate level basin at '+pondLevel().toFixed(2)+' m, shoreline '+POND_INLET+'–'+POND_TAIL+' m, '+(POND_JOIN-POND_INLET)+' m inlet overlap; pond has independent water geometry. ':'')+
  (growthScene()?' Stream-to-river prototype: tributary confluences at 100, 450, 850 m; continuous channel width '+GROWTH_JUNCTIONS.map(z=>growthWidth(z).toFixed(1)).join(' / ')+' m at junctions. ':'')+
  ' No fluid simulation.';
  const color=land.geometry.getAttribute('color'),uv=water.geometry.getAttribute('uv');
