@@ -432,7 +432,10 @@ function naturalRivers(ix,iz){
     labPond=true;maxDepression=Math.max(maxDepression,pond.depression);
    }
    width=Math.max(leftWidth,rightWidth);
-   samples.push({x,z,y,width,leftWidth,rightWidth,
+   // Only a genuine sea-connected terminal reach fades into ocean water.
+   const seaMouth=w.base[down]<=0;
+   const mouthFade=seaMouth?Math.max(0,Math.min(1,(1-t)*length/95)):1;
+   samples.push({x,z,y,width,leftWidth,rightWidth,mouthFade,
     chainDistance:upstreamDistance+t*length,flowDistance:upstreamDistance+t*length});
   }
   const seg={id,down,head,acc:w.acc[id],chainRoot,upstreamDistance,labPond,depression:maxDepression,samples,
@@ -2008,22 +2011,28 @@ function makePilotWaterTexture(){
 }
 const labPilotTexture=makePilotWaterTexture();
 const labPilotWaterMaterial=new THREE.MeshPhongMaterial({
- color:0x32839c,map:labPilotTexture,side:THREE.DoubleSide,
- shininess:46,specular:0xa4cbd6,depthWrite:true
+ // Preserve recognizable blue water while fading only true headwaters/mouths.
+ color:0x8acfe0,map:labPilotTexture,side:THREE.DoubleSide,
+ vertexColors:true,transparent:true,opacity:.98,depthWrite:false,
+ emissive:0x145268,emissiveIntensity:.16,
+ shininess:46,specular:0xa4cbd6
 });
 function makeLabWaterRibbon(seg){
- const samples=seg.samples,p=[],indices=[],uvs=[],waterline=.09;
+ const samples=seg.samples,p=[],indices=[],uvs=[],colors=[],waterline=.09;
  // A shared cross-section supports narrow headwater channels and broad reaches
  // without stretching one texture tile across an entire pond-width surface.
  const across=8,stride=across+1;
- const start=samples.findIndex(a=>a.width*2>=.65);
+ // Smallest trickles emerge continuously, without a fixed minimum visible width.
+ const start=samples.findIndex(a=>a.width>.012);
  const first=start<0?samples.length:start;
  for(let k=first;k<samples.length;k++){
   const a=samples[k],before=samples[Math.max(0,k-1)],after=samples[Math.min(samples.length-1,k+1)];
   let dx=after.x-before.x,dz=after.z-before.z;
   const mag=Math.max(.001,Math.hypot(dx,dz));dx/=mag;dz/=mag;
-  const left=Math.max(.01,a.leftWidth??a.width)*.92;
-  const right=Math.max(.01,a.rightWidth??a.width)*.92;
+  const left=Math.max(.012,a.leftWidth??a.width)*.92;
+  const right=Math.max(.012,a.rightWidth??a.width)*.92;
+  const emergence=Math.max(0,Math.min(1,(a.flowDistance??0)/350));
+  const alpha=(emergence*emergence*(3-2*emergence))*(a.mouthFade??1);
   const chainV=Number.isFinite(a.flowDistance)?a.flowDistance:k-first;
   for(let j=0;j<=across;j++){
    const t=j/across,side=-left+(left+right)*t;
@@ -2038,6 +2047,7 @@ function makeLabWaterRibbon(seg){
    p.push(x,y,z);
    // Repeating metres-based UVs avoid stretching the texture as a reach widens.
    uvs.push(side/12,chainV/22);
+   colors.push(1,1,1,alpha);
    if(k>first&&j>0){
     const row=(k-first)*stride,here=row+j,above=here-stride;
     indices.push(above-1,here-1,above,above,here-1,here);
@@ -2047,6 +2057,7 @@ function makeLabWaterRibbon(seg){
  const g=new THREE.BufferGeometry();
  g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
  g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+ g.setAttribute('color',new THREE.Float32BufferAttribute(colors,4));
  g.setIndex(indices);
  // One normal field across river and widened sections; no lighting split at joins.
  const normals=new Float32Array(p.length);
@@ -2077,7 +2088,7 @@ function makeNaturalRibbon(seg){
  return geo;
 }
 function buildStream(ix,iz,key){
- const group=new THREE.Group(),positions=[],indices=[],uvs=[],pilotChains=new Map();
+ const group=new THREE.Group(),positions=[],indices=[],uvs=[],colors=[],pilotChains=new Map();
  // A 4.096km streaming cell collects only selected river edges intersecting
  // that cell. The SAME absolute-world geometry is generated for each edge.
  // Segment ownership is assigned by its midpoint to avoid duplicate meshes.
@@ -2112,11 +2123,12 @@ function buildStream(ix,iz,key){
   const flush=()=>{
    if(run.length<2){run=[];return}
    const geo=makeLabWaterRibbon({samples:run,head:true});
-   const a=geo.getAttribute('position'),idx=geo.getIndex(),uv=geo.getAttribute('uv');
+   const a=geo.getAttribute('position'),idx=geo.getIndex(),uv=geo.getAttribute('uv'),rgba=geo.getAttribute('color');
    const start=positions.length/3;
    for(let i=0;i<a.count;i++){
     positions.push(a.getX(i),a.getY(i),a.getZ(i));
     uvs.push(uv.getX(i),uv.getY(i));
+    colors.push(rgba.getX(i),rgba.getY(i),rgba.getZ(i),rgba.getW(i));
    }
    for(let i=0;i<idx.count;i++)indices.push(idx.getX(i)+start);
    geo.dispose();run=[];
@@ -2135,7 +2147,11 @@ function buildStream(ix,iz,key){
   geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
   geo.setIndex(indices);
   geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
-  geo.computeVertexNormals();geo.computeBoundingSphere();
+  geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,4));
+  const normals=new Float32Array(positions.length);
+  for(let i=0;i<normals.length;i+=3)normals[i+1]=1;
+  geo.setAttribute('normal',new THREE.BufferAttribute(normals,3));
+  geo.computeBoundingSphere();
   const mesh=new THREE.Mesh(geo,labPilotWaterMaterial);
   mesh.frustumCulled=true;group.add(mesh);
  }
