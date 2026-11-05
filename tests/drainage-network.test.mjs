@@ -5,7 +5,7 @@ import {solveDrainageDomain,crossesOldMacroBoundary,domainOfMacro,domainOfWorld}
 test('one drainage graph traverses former macro boundaries',()=>{
   const N=32,S=128;
   const w=solveDrainageDomain({ix:0,iz:0,N,S,
-    height:(x,z)=>Math.max(0,300-x*.085)+Math.abs(z-N*S*.5)*.002});
+    height:(x,z)=>Math.max(0,300-x*.085)+Math.abs(z-N*S*.5)*.25});
   let seam=0,seaConnected=0;
   for(let id=0;id<w.C;id++){
     if(crossesOldMacroBoundary(w,id)){
