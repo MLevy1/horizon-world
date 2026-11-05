@@ -76,6 +76,7 @@ details summary{cursor:pointer;font-size:13px}.sliders{display:grid;grid-templat
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
+import {channelBed} from './geography.js';
 import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js';
 const $=id=>document.getElementById(id),root=$('scene');
 function setControlsOpen(open){
@@ -289,16 +290,8 @@ function channelAt(x,z){
  return {distance:dist,riverZ:nearest,water,width:half,depth:channelDepth(nearest),rise:bankRise(nearest),bankWidth:pondScene()?mix(geom.bankWidth,geom.bankWidth*2.1,mouthProgress(nearest)):growthScene()?2+growthWidth(nearest)*.18:Math.max(.28,geom.bankWidth*bankGrowth(nearest)),shoulder:pondScene()?mix(geom.shoulder,geom.shoulder*1.5,mouthProgress(nearest)):growthScene()?6+growthWidth(nearest)*.6:Math.max(1.2,geom.shoulder*bankGrowth(nearest))};
 }
 function profileHeight(d,c,base){
- const bedHalf=c.width*.54;
- const riverEdge=c.width;
- const bankEnd=riverEdge+c.bankWidth;
- const shoulderEnd=bankEnd+c.shoulder;
- // Bed -> submerged slope -> waterline -> exposed bank -> shoulder.
- if(d<=bedHalf)return c.water-c.depth;
- if(d<=riverEdge)return mix(c.water-c.depth,c.water-.015,smooth((d-bedHalf)/Math.max(.001,riverEdge-bedHalf)));
- if(d<=bankEnd)return mix(c.water-.015,c.water+c.rise,smooth((d-riverEdge)/Math.max(.001,c.bankWidth)));
- if(d<=shoulderEnd)return mix(c.water+c.rise,base,smooth((d-bankEnd)/Math.max(.001,c.shoulder)));
- return base;
+ // Alpha 4 shared profile: the same channel incision is used in the world.
+ return channelBed(base,{...c,distance:d},Infinity);
 }
 function groundHeight(x,z,c=channelAt(x,z)){
  const base=baseHeight(x,z);
