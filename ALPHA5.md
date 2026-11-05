@@ -1,6 +1,6 @@
 # Alpha 5: geography-first world-generation replacement
 
-**Alpha 5.1 experimental preview. Do not merge without visual and performance validation.**
+**Alpha 5.2 experimental preview. Do not merge without visual and performance validation.**
 
 ## The dependency order
 
@@ -45,6 +45,17 @@ height queries. Drainage regions are an implementation detail, not hydrological 
 - Unit tests check internal triangulation continuity, upward triangle winding,
   deterministic coordinates, and riverbed submersion in steep relief.
 - The test location X 10,929 / Z 458 remains a mandatory visual benchmark.
+
+## New in Alpha 5.2
+
+- Fix floating ground cover: tile-owned grass/shrub placement now interpolates the actual adaptive triangles instead of using obsolete regular-grid vertex IDs.
+- Extend near-field root reanchoring for larger rocks and trees and widen watercourse vegetation exclusion.
+- Water no longer begins abruptly at a 0.65 m visual threshold. The mesh begins as a trickle and its opacity grows gradually through the first 350 m of contributing flow.
+- Sea-connected terminal river reaches fade over their last ~95 m into the receiving ocean surface, avoiding an exposed rectangle at the mouth.
+- Retain a mostly opaque blue river tint while using per-vertex fades, to avoid the near-black water regression in Alpha 4.4.
+- Regression tests exercise adaptive triangle height interpolation for ground-cover placement.
+
+**Known gaps:** Ocean mouth treatment is a visual overlap, not a true shared river/ocean contour triangulation. True river and lake basins, cross-LOD seam stitching and hydrological domain routing remain unfinished.
 
 ## Still required before replacing live world
 
