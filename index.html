@@ -75,6 +75,11 @@
  #panel.open{left:12px;right:12px;width:auto;max-width:none}
  #mapbox.open .mapSelection.has-selection{flex-direction:column;align-items:stretch}
 }
+
+/* Zoom controls belong only to maps that actually implement zoom. */
+#mapbox.open #explorerTools{display:none!important}
+#mapbox.open[data-map-mode="watershed"] #explorerTools,
+#mapbox.open[data-map-mode="regional"] #explorerTools{display:flex!important}
 </style>
 <!-- HORIZON_VERSION: 4.1.1 -->
 </head>
@@ -3103,7 +3108,7 @@ function selectedMarker(){
  ctx.strokeStyle='#fff0a0';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,8,0,2*Math.PI);ctx.moveTo(x-12,y);ctx.lineTo(x-5,y);ctx.moveTo(x+5,y);ctx.lineTo(x+12,y);ctx.stroke();ctx.restore();
 }
 const priorRenderMap=renderMap;
-renderMap=function(){priorRenderMap();selectedMarker()};
+renderMap=function(){$('mapbox').dataset.mapMode=mapMode;priorRenderMap();selectedMarker()};
 function resetMapScroll(){ $('mapbox').scrollTop=0; }
 for(const id of ['mapLandscape','mapDrainage','mapWatershed','mapRegional']){
  $(id).addEventListener('click',resetMapScroll);
