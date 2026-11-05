@@ -2701,9 +2701,36 @@ function drawWatershedMap(){
   if(a>=32){if(w.ocean[id])counts.resolved++;else counts.unresolved++}
   const tx=to%N,tz=Math.floor(to/N);
   ctx.beginPath();ctx.moveTo(px(x+.5),py(z+.5));ctx.lineTo(px(tx+.5),py(tz+.5));
-  ctx.strokeStyle=a>=180?'#57c3ff':a>=32?'#72e0e1':'#b0b8aa';
+  // Gray shows potential terrain-derived flow; blue overlay below shows actual generated 3D water.
+  ctx.strokeStyle=a>=180?'#7797a0':a>=32?'#859c9a':'#a0a9a1';
   ctx.lineWidth=(a>=180?1.5:a>=32?1:.55)*Math.sqrt(explorerZoom);
   ctx.stroke();
+ }
+ // Render the same filtered, spatially smoothed reaches used in the 3D world.
+ // The watershed's gray network is only *potential* runoff and is not a water promise.
+ const physical=naturalWaterwaysEnabled?naturalRivers(w.ix,w.iz):null;
+ if(physical){
+  ctx.save();
+  ctx.strokeStyle='#45ddf4';
+  ctx.lineWidth=Math.max(1.4,2.1*Math.sqrt(explorerZoom));
+  ctx.lineCap='round';ctx.lineJoin='round';
+  for(const seg of physical.segments){
+   const points=seg.samples;
+   if(!points.length)continue;
+   if(Math.max(seg.x0,seg.x1)<w.ox+view.x0*w.S-200||
+      Math.min(seg.x0,seg.x1)>w.ox+view.x1*w.S+200||
+      Math.max(seg.z0,seg.z1)<w.oz+view.z0*w.S-200||
+      Math.min(seg.z0,seg.z1)>w.oz+view.z1*w.S+200)continue;
+   ctx.beginPath();
+   for(let k=0;k<points.length;k+=3){
+    const p=points[k],x=(p.x-w.ox)/w.S,z=(p.z-w.oz)/w.S;
+    if(k===0)ctx.moveTo(px(x),py(z));else ctx.lineTo(px(x),py(z));
+   }
+   const tail=points[points.length-1];
+   ctx.lineTo(px((tail.x-w.ox)/w.S),py((tail.z-w.oz)/w.S));
+   ctx.stroke();
+  }
+  ctx.restore();
  }
  if(selected){
   // Contributing network: muted amber. Selected downstream path: vivid gold.
@@ -2740,7 +2767,8 @@ function drawWatershedMap(){
  if(playerX>=0&&playerX<=W&&playerY>=0&&playerY<=H){
   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(playerX,playerY,4,0,Math.PI*2);ctx.fill();
  }
- $('mapTitle').textContent='WATERSHED EXPLORER';
+ $('mapTitle').textContent='WATERSHED EXPLORER · MAP VS WORLD';
+ $('watershedLegend').textContent='Gray: potential terrain drainage (not necessarily visible water). Bright cyan: waterways actually generated in the 3D world. Gold: traced drainage network. Green: ocean outlet. Orange: unresolved outer boundary.';
  $('drainageNav').style.display='flex';
  $('explorerTools').style.display='flex';
  $('regionalDrill').style.display='none';
@@ -2769,7 +2797,7 @@ function drawWatershedMap(){
   'Basin: '+w.stats.trunks+' trunk, '+w.stats.tributaries+' tributary, '+w.stats.minor+
   ' runoff links · '+w.stats.seaOutlets+' modeled sea outlets, '+w.stats.landOutlets+
   ' unresolved boundary outlets · '+w.stats.uphill+' uphill links.'+extra+
-  ' Estimates use a 128 m drainage grid; water permanence is not modeled.';
+  ' 3D rendered reaches: '+(physical?physical.segments.length:0)+'. Gray drainage routes are not guaranteed to have visible water. The local 128 m solver cannot yet join every regional outlet.';
 }
 function regionDiagnostics(region){
  if(!region)return {segmentCount:0,lakeCount:0,landExit:0,seaExit:0,uphill:0,issues:[],outlets:[]};
