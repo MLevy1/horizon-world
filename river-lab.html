@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Horizon — River Geometry Lab 1.9.1</title>
+<title>Horizon — River Geometry Lab 1.9.2</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#10232b;color:#eff8f2}
 *{box-sizing:border-box}body{margin:0;overflow:hidden}canvas{display:block}
@@ -35,7 +35,7 @@ details summary{cursor:pointer;font-size:13px}.sliders{display:grid;grid-templat
 </head>
 <body>
 <div id="scene"></div>
-<div id="header"><div><h1>HORIZON · RIVER LAB</h1><small>CONTROLLED GEOMETRY TEST · 1.9.1</small></div><a href="./index.html">Return to Horizon</a></div>
+<div id="header"><div><h1>HORIZON · RIVER LAB</h1><small>CONTROLLED GEOMETRY TEST · 1.9.2</small></div><a href="./index.html">Return to Horizon</a></div>
 <div id="error" role="alert"></div>
 <div id="controls" class="panel collapsed">
   <button id="panelToggle" type="button" aria-expanded="false" aria-controls="options">⚙ Show River Lab controls</button>
@@ -414,6 +414,7 @@ const movingWaterMaterial=new THREE.MeshPhongMaterial({
  color:0x4699af,map:riverTexture,vertexColors:true,transparent:true,side:THREE.DoubleSide,shininess:78,specular:0xc7e2eb,depthWrite:false
 });
 function createWater(){
+ if(pondScene())return createUnifiedRiverPond();
  const pos=[],idx=[],uvs=[],colors=[],grouper=[];
  const begin=waterStartZ(),end=sceneEnd();
  const span=end-begin,active=!stagedWater()||span>=STAGED.minRun;
@@ -443,36 +444,67 @@ function createWater(){
  const mesh=new THREE.Mesh(g,[plainWaterMaterial,movingWaterMaterial]);
  mesh.renderOrder=2;scene.add(mesh);return mesh;
 }
-// Separate standing-water mesh: a level basin surface with its own shoreline.
-// The river stops at the pond inlet. The basin banks blend over 20m.
-// Use the river's exact material and texture phase at the mouth.
-// The lake's 24 transverse subdivisions prevent texture stretching.
-const pondWaterMaterial=movingWaterMaterial;
-function createPondWater(){
- if(!pondScene())return null;
- const pos=[],uv=[],rgba=[],idx=[],steps=350,across=24;
- for(let i=0;i<=steps;i++){
-  const z=mix(POND_INLET,POND_TAIL,i/steps),p=pondBounds(z);
-  const margin=Math.min(.55,p.width*.10),left=p.left+margin,right=p.right-margin;
-  for(let j=0;j<=across;j++){
-   const x=mix(left,right,j/across);
-   pos.push(x,pondLevel()+.105,z);
-   // Width is 11 m at the inlet; both end vertices match river U=0,1.
-   uv.push((x-left)/Math.max(1,geom.width),(z-headStart())/22);
-   rgba.push(1,1,1,1);
-   if(i>0&&j>0){
-    const k=i*(across+1)+j,prev=k-(across+1);
-    idx.push(prev-1,prev,k-1,k-1,prev,k);
+// River → pond is ONE surface. The former two meshes had different
+// vertex normals, triangulation, and Phong responses at the mouth, creating
+// a visually obvious seam despite equal edge positions and matching UVs.
+// Every cross-section uses the same 25-vertex layout and one material.
+const joinedFlowMaterial=movingWaterMaterial.clone();
+joinedFlowMaterial.color.setHex(0x378fa5);
+joinedFlowMaterial.specular.setHex(0x668f9e);
+joinedFlowMaterial.shininess=34;
+const joinedPlainMaterial=plainWaterMaterial.clone();
+joinedPlainMaterial.color.setHex(0x378fa5);
+joinedPlainMaterial.specular.setHex(0x668f9e);
+joinedPlainMaterial.shininess=34;
+function createUnifiedRiverPond(){
+ const pos=[],uv=[],rgba=[],idx=[],across=24;
+ const upstream=Math.ceil((POND_INLET-headStart())/1.2),downstream=350;
+ let rows=0;
+ // Never duplicate the join row. Its coordinates, UVs and normals are
+ // shared by all triangles on either side of the river mouth.
+ for(let section=0;section<2;section++){
+  const steps=section===0?upstream:downstream;
+  for(let i=section===0?0:1;i<=steps;i++){
+   const z=section===0?mix(headStart(),POND_INLET,i/steps):mix(POND_INLET,POND_TAIL,i/steps);
+   let left,right,y;
+   if(section===0){
+    const l=waterPosition(z,-1),r=waterPosition(z,1);
+    left=l[0];right=r[0];y=(l[1]+r[1])*.5;
+   }else{
+    const p=pondBounds(z),margin=Math.min(.55,p.width*.10);
+    left=p.left+margin;right=p.right-margin;y=pondLevel()+.105;
    }
+   const zLeft=section===0?waterPosition(z,-1)[2]:z;
+   const zRight=section===0?waterPosition(z,1)[2]:z;
+   for(let j=0;j<=across;j++){
+    const t=j/across,x=mix(left,right,t),zz=mix(zLeft,zRight,t);
+    pos.push(x,y,zz);
+    // On the last river row and first pond row, UVs are identical.
+    // The texture's transverse spatial frequency stays nearly constant
+    // as the lake widens rather than stretching to the full lake width.
+    uv.push((x-left)/Math.max(1,geom.width),(z-headStart())/22);
+    rgba.push(1,1,1,1);
+    if(rows&&j){
+     const k=rows*(across+1)+j,p=k-(across+1);
+     // Upward winding (river & pond had opposite winding previously).
+     idx.push(p-1,k-1,p,p,k-1,k);
+    }
+   }
+   rows++;
   }
  }
  const g=geometry(pos,idx);
  g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
  g.setAttribute('color',new THREE.Float32BufferAttribute(rgba,4));
- const mesh=new THREE.Mesh(g,pondWaterMaterial);
+ // A single smooth surface normal prevents a lighting discontinuity
+ // where the gently sloping river becomes level pond water.
+ const normals=new Float32Array(pos.length);
+ for(let k=0;k<normals.length;k+=3){normals[k]=0;normals[k+1]=1;normals[k+2]=0}
+ g.setAttribute('normal',new THREE.BufferAttribute(normals,3));
+ const mesh=new THREE.Mesh(g,joinedFlowMaterial);
  mesh.renderOrder=2;scene.add(mesh);return mesh;
 }
-let land=createTerrain(),water=createWater(),pondWater=createPondWater();
+let land=createTerrain(),water=createWater(),pondWater=null;
 const pondGroundMaterial=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});
 const terrainMaterials={
  solid:new THREE.MeshBasicMaterial({color:0x83a879,side:THREE.DoubleSide}),
@@ -503,9 +535,11 @@ lines.visible=true;scene.add(lines);
 let wireframe=false;
 let waterMotion=true,waterTextureEnabled=true;
 function setWaterAppearance(){
- water.material=waterTextureEnabled?[plainWaterMaterial,movingWaterMaterial]:[plainWaterMaterial,plainWaterMaterial];
- if(pondWater)pondWater.material=waterTextureEnabled?movingWaterMaterial:plainWaterMaterial;
+ water.material=pondScene()?
+  (waterTextureEnabled?joinedFlowMaterial:joinedPlainMaterial):
+  (waterTextureEnabled?[plainWaterMaterial,movingWaterMaterial]:[plainWaterMaterial,plainWaterMaterial]);
  plainWaterMaterial.wireframe=wireframe;movingWaterMaterial.wireframe=wireframe;
+ joinedFlowMaterial.wireframe=wireframe;joinedPlainMaterial.wireframe=wireframe;
 }
 $('motion').onchange=e=>{waterMotion=e.target.checked};
 $('texture').onchange=e=>{waterTextureEnabled=e.target.checked;setWaterAppearance()};
@@ -562,7 +596,7 @@ function rebuildGeometry(){
  if(land){scene.remove(land);land.geometry.dispose()}
  if(water){scene.remove(water);water.geometry.dispose()}
  if(pondWater){scene.remove(pondWater);pondWater.geometry.dispose()}
- land=createTerrain();water=createWater();pondWater=createPondWater();
+ land=createTerrain();water=createWater();pondWater=null;
  land.material.dispose();land.material=selectedTerrainMaterial();
  land.material.wireframe=wireframe;water.visible=$('water').checked;
  if(pondWater)pondWater.visible=$('water').checked;
@@ -663,7 +697,7 @@ function audit(){
  (longHead()&&geom.source==='runoff'?
  ' Width at 25/50/75% downstream: '+[.25,.5,.75].map(t=>(geom.width*Math.pow(t,geom.headPower)).toFixed(2)).join(' / ')+' m. ':'')+
  (stagedWater()?' Water begins '+(waterStartZ()-headStart()).toFixed(0)+' m downstream; first texture '+(thresholdZ(STAGED.textureWidth)-headStart()).toFixed(0)+' m; full opacity '+(thresholdZ(STAGED.fullWidth)-headStart()).toFixed(0)+' m.':'')+
- (pondScene()?' River-to-pond prototype: textured water matching inlet material and UV phase; no straight end-of-pond shore tint; independent asymmetric basin at '+pondLevel().toFixed(2)+' m. ':'')+
+ (pondScene()?' River-to-pond prototype: one continuous river-and-pond water mesh (no separate inlet seam), unified surface normals and shading, independent asymmetric sand/gravel basin at '+pondLevel().toFixed(2)+' m. ':'')+
  (growthScene()?' Stream-to-river prototype: tributary confluences at 100, 450, 850 m; continuous channel width '+GROWTH_JUNCTIONS.map(z=>growthWidth(z).toFixed(1)).join(' / ')+' m at junctions. ':'')+
  ' No fluid simulation.';
  const color=land.geometry.getAttribute('color'),uv=water.geometry.getAttribute('uv');
