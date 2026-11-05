@@ -2548,7 +2548,9 @@ function openWatershedInspection(){
  drainInspectX=Math.floor(focus.x/MACRO_SIZE)*2;
  drainInspectZ=Math.floor(focus.z/MACRO_SIZE)*2;
  const w=explorerMacro();
- explorerZoom=1;explorerCX=DRAINAGE_N/2;explorerCZ=DRAINAGE_N/2;explorerSkipClick=false;
+ explorerZoom=2;
+ explorerCX=(focus.x-w.ox)/w.S;explorerCZ=(focus.z-w.oz)/w.S;
+ explorerClamp();explorerSkipClick=false;
  watershedSelection=null;
  $('panel').classList.remove('open');
  $('mapbox').classList.add('open');
@@ -2708,6 +2710,7 @@ function drawWatershedMap(){
    (coarse.distance/1000).toFixed(1)+' km, destination '+coarse.outlet+
    '. Inferred only: the two resolutions are not yet geometrically stitched.';
  }
+ const longestRun=physical?.segments.reduce((best,seg)=>Math.max(best,seg.samples.at(-1)?.flowDistance||0),0)||0;
  const extra=selected?
   ' Selected channel: '+km(selected.distance)+' downstream · '+selected.drop.toFixed(0)+' m total drop'+
   ' · '+selected.areaKm2.toFixed(2)+' km² contributing area'+
@@ -2718,7 +2721,7 @@ function drawWatershedMap(){
   'Basin: '+w.stats.trunks+' trunk, '+w.stats.tributaries+' tributary, '+w.stats.minor+
   ' runoff links · '+w.stats.seaOutlets+' modeled sea outlets, '+w.stats.landOutlets+
   ' unresolved boundary outlets · '+w.stats.uphill+' uphill links.'+extra+
-  ' 3D rendered reaches: '+(physical?physical.segments.length:0)+'. Gray drainage routes are not guaranteed to have visible water. The local 128 m solver cannot yet join every regional outlet.';
+  ' 3D generated edges: '+(physical?physical.segments.length:0)+' · longest connected main-stem run: '+(longestRun/1000).toFixed(1)+' km. Gray runoff paths are not necessarily rivers. Outer 32.8 km drainage-domain boundaries remain unresolved.';
 }
 function regionDiagnostics(region){
  if(!region)return {segmentCount:0,lakeCount:0,landExit:0,seaExit:0,uphill:0,issues:[],outlets:[]};
