@@ -1,0 +1,32 @@
+name: Alpha 4 integrated browser smoke
+on:
+  push:
+    branches: [alpha4-unified-drainage-430]
+    paths:
+      - 'index.html'
+      - 'drainage-network.js'
+      - 'geography.js'
+      - 'tests/browser-smoke.mjs'
+      - '.github/workflows/alpha4-browser-smoke.yml'
+  workflow_dispatch:
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - name: Serve app and test mobile runtime
+        run: |
+          python3 -m http.server 8123 >/tmp/horizon-server.log 2>&1 &
+          node tests/browser-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: alpha4-mobile-smoke
+          path: alpha4-mobile-smoke.png
+          if-no-files-found: ignore
