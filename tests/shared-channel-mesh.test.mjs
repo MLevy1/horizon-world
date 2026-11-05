@@ -23,11 +23,11 @@ test('riverbank and water share one shoreline contour',()=>{
  const shared=make();
  assert.ok(shared.stats.waterTriangles>0,'wet polygons should be triangulated');
  assert.ok(shared.stats.contourEdges>0,'shoreline should cross rendered triangles');
+ assert.ok(shared.stats.waterTriangles<shared.stats.triangles*2,'water should occupy a local corridor');
  const terrainXY=new Set();
  const g=shared.terrain.positions;
  for(let i=0;i<g.length;i+=3)terrainXY.add(g[i].toFixed(7)+','+g[i+2].toFixed(7));
  const water=shared.water.positions;
- const seam=water.filter(()=>false);void seam;
  // Every water vertex (including generated shoreline crossings) must have a
  // matching horizontal terrain vertex. No independently laid-down ribbon.
  for(let i=0;i<water.length;i+=3){
