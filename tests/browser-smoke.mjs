@@ -14,6 +14,7 @@ try{
  // Rendering is expected to be heavier than before; fail fast on JS exceptions.
  await page.waitForTimeout(6000);
  assert.deepEqual(faults,[],'Uncaught errors while generating world');
+ await page.locator('#start').click({timeout:30000});
  // Settings remains reachable and scrollable at iPhone viewport.
  await page.locator('#settingsBtn').click();
  assert.equal(await page.locator('#panel').evaluate(e=>e.classList.contains('open')),true);
