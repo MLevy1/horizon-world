@@ -178,10 +178,10 @@ function bindMap(){
   $('helpOpen').onclick=()=>$('helpPanel').classList.remove('hidden');
   $('helpClose').onclick=()=>$('helpPanel').classList.add('hidden');
 }
-$('start').addEventListener('click',async()=>{
+export async function startWorld(){
   const btn=$('start'),status=$('status');btn.disabled=true;status.textContent='Generating broad geography and drainage…';
   try{await new Promise(resolve=>setTimeout(resolve,40));world=createWorld(42);
     status.textContent='Building final terrain and forest…';await new Promise(resolve=>setTimeout(resolve,40));
     buildScene();bindMotion();bindMap();$('intro').classList.add('hidden');active=true;lastTime=performance.now();requestAnimationFrame(frame);
-  }catch(err){console.error(err);status.textContent='Unable to start world: '+err.message;btn.disabled=false}
-});
+  }catch(err){console.error(err);status.textContent='Unable to start world: '+err.message;btn.disabled=false;throw err}
+}

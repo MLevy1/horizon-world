@@ -32,12 +32,44 @@ h1,h2{margin:0 0 12px}h1{letter-spacing:.12em;font-size:27px}h2{font-size:20px}p
 </head>
 <body>
 <canvas id="scene"></canvas>
-<header id="top"><div class="brand"><b>HORIZON</b><small>VERSION 0.1.0 · NEW FOUNDATION</small></div><nav class="controls"><button id="mapOpen" class="control" type="button">Map</button><button id="helpOpen" class="control" type="button">Help</button></nav></header>
+<header id="top"><div class="brand"><b>HORIZON</b><small>VERSION 0.1.1 · NEW FOUNDATION</small></div><nav class="controls"><button id="mapOpen" class="control" type="button">Map</button><button id="helpOpen" class="control" type="button">Help</button></nav></header>
 <div id="reticle">+</div><div id="hud"><b>Unexplored</b><div id="coords">X 0 · Z 0</div><small id="heightLabel">Terrain initializing</small><small id="stats">8 km terrain region</small></div>
 <div id="joystick"><div id="stick"></div></div><div id="vertical"><button id="rise" aria-label="Fly up">↑</button><button id="descend" aria-label="Fly down">↓</button></div><div id="speed"><button class="control" id="speedButton">65 km/h</button></div>
-<div id="intro" class="dialog"><section class="panel"><h1>HORIZON <span style="font-size:13px;letter-spacing:0">0.1.0</span></h1><p>A fresh beginning. One deterministic 8 × 8 km test region, with coastlines, terrain, and forest.</p><p>Drainage is calculated <strong>before</strong> the final landscape. The channels are visible on the map, but <strong>river water is deliberately not rendered yet</strong>. We will add it only after its geometry is validated.</p><button id="start" type="button">Enter world</button><div id="status" role="status"></div><small>Touch: drag to look, left circle to move, arrows to rise or descend. Desktop: WASD, drag to look, Q/E to fly vertically.</small></section></div>
+<div id="intro" class="dialog"><section class="panel"><h1>HORIZON <span style="font-size:13px;letter-spacing:0">0.1.1</span></h1><p>A fresh beginning. One deterministic 8 × 8 km test region, with coastlines, terrain, and forest.</p><p>Drainage is calculated <strong>before</strong> the final landscape. The channels are visible on the map, but <strong>river water is deliberately not rendered yet</strong>. We will add it only after its geometry is validated.</p><button id="start" type="button">Enter world</button><div id="status" role="status"></div><small>Touch: drag to look, left circle to move, arrows to rise or descend. Desktop: WASD, drag to look, Q/E to fly vertically.</small></section></div>
 <div id="mapPanel" class="dialog hidden"><section class="panel"><div class="row"><h2>Terrain & drainage</h2><button class="btn" id="mapClose">Close</button></div><canvas id="map" width="384" height="384"></canvas><div id="mapCoords">Tap to inspect coordinates</div><div class="row"><small>Blue: calculated drainage, not yet 3D water. White dot: position.</small><button class="btn" id="mapTravel">Travel here</button></div></section></div>
 <div id="helpPanel" class="dialog hidden"><section class="panel"><div class="row"><h2>About v0.1</h2><button class="btn" id="helpClose">Close</button></div><p>This is intentionally a smaller foundation, not a reconstruction of the old game's features.</p><p><strong>World pipeline:</strong> broad geography → connected drainage → final ground → rendering and vegetation. The drainage graph does not depend on terrain meshes or camera movement.</p><p>The map exposes the computed drainage network before any attempt is made to draw river water. The world is finite by design in this version.</p><p><strong>Flight:</strong> drag to look; joystick or WASD to move; up/down buttons or E/Q for elevation; Speed button to change between 65 and 330 km/h.</p></section></div>
-<script>window.addEventListener('error',e=>{let s=document.getElementById('status');if(s)s.textContent='Unable to initialize: '+(e.message||'required file failed to load');},true);window.addEventListener('unhandledrejection',e=>{let s=document.getElementById('status');if(s)s.textContent='Startup error: '+(e.reason?.message||e.reason);});</script>
-<script type="module" src="./app.js?v=0.1.0"></script>
+<script>
+/* Plain JavaScript owns the start button; it works even if module imports fail. */
+const startButton=document.getElementById('start');
+const statusLabel=document.getElementById('status');
+let starting=false;
+function reportStartupError(message){
+  statusLabel.textContent='Unable to start: '+message;
+  startButton.disabled=false;starting=false;
+}
+window.addEventListener('error',e=>{
+  if(!document.getElementById('intro').classList.contains('hidden'))
+    reportStartupError(e.message||'A game file failed to load');
+},true);
+window.addEventListener('unhandledrejection',e=>{
+  if(!document.getElementById('intro').classList.contains('hidden'))
+    reportStartupError(e.reason?.message||String(e.reason));
+});
+startButton.addEventListener('click',async()=>{
+  if(starting)return;
+  starting=true;startButton.disabled=true;
+  statusLabel.textContent='Loading Three.js and the world module…';
+  try{
+    const module=await Promise.race([
+      import('./app.js?v=0.1.1'),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error('3D engine loading timed out. Check your connection and retry.')),18000))
+    ]);
+    statusLabel.textContent='Generating world…';
+    await module.startWorld();
+  }catch(error){
+    console.error('Horizon startup:',error);
+    reportStartupError(error?.message||String(error));
+  }
+});
+</script>
 </body></html>
