@@ -132,7 +132,7 @@
  const failed=message=>{
   if(window.__horizonReady)return;
   const el=status();if(!el)return;
-  el.textContent='Unable to load Alpha 5.2.1: '+message+'. Reload this page to retry.';
+  el.textContent='Unable to load Alpha 5.3.0: '+message+'. Reload this page to retry.';
   el.style.display='block';el.style.color='#ffd1b4';
  };
  window.addEventListener('error',event=>{
