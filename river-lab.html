@@ -92,7 +92,7 @@ function channelWidth(z){
   // A wide pool continues the river rather than stopping at a planar edge.
   const mouth=mix(normal,Math.max(21,geom.width*2.4),smooth((180-(RIVER_START+360-geom.outletLength))/geom.outletLength));
   const outline=t<.28?mix(mouth,Math.max(30,geom.width*3.6),smooth(t/.28)):
-    Math.max(.045,Math.max(30,geom.width*3.6)*Math.sqrt(Math.max(0,1-Math.pow((t-.28)/.72,2))));
+    Math.max(.045,Math.max(30,geom.width*3.6)*(1-smooth((t-.28)/.72)));
   return Math.max(.045,outline);
  }
  if(hasOutlet()&&z>RIVER_END-geom.outletLength){
@@ -102,12 +102,12 @@ function channelWidth(z){
 }
 function channelDepth(z){
  const head=hasHead()?mix(.05,1,smooth((z-RIVER_START)/geom.headLength)):1;
- const pond=hasOutlet()&&z>180?mix(1,.4,smooth((z-180)/(POND_END-180))):1;
+ const pond=hasOutlet()&&z>180?mix(1,.03,smooth((z-180)/(POND_END-180))):1;
  return geom.depth*head*pond;
 }
 function bankRise(z){
  const head=hasHead()?mix(.03,1,smooth((z-RIVER_START)/geom.headLength)):1;
- const pond=hasOutlet()&&z>180?mix(1,.1,smooth((z-180)/(POND_END-180))):1;
+ const pond=hasOutlet()&&z>180?mix(1,.015,smooth((z-180)/(POND_END-180))):1;
  return geom.rise*head*pond;
 }
 function baseHeight(x,z){
@@ -315,12 +315,13 @@ function drawCrossSection(){
  ctx.fillText('Waterline',W-85,py(c.water)-7);
 }
 function rebuildGeometry(){
- if(land){scene.remove(land);land.geometry.dispose();land.material.dispose()}
+ if(land){scene.remove(land);land.geometry.dispose()}
  if(water){scene.remove(water);water.geometry.dispose()}
  land=createTerrain();water=createWater();
  land.material.dispose();land.material=terrainMaterials[$('terrainMode').value];
  land.material.wireframe=wireframe;water.visible=$('water').checked;
  setWaterAppearance();
+ for(const child of lines.children){child.geometry.dispose();child.material.dispose()}
  lines.clear();
  for(const side of [-1,1]){
   const points=[];
