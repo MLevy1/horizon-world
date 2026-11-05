@@ -1,7 +1,7 @@
 name: Geography regression
 on:
   push:
-    branches: [alpha4-unified-geography]
+    branches: [main, alpha4-unified-geography]
   pull_request:
     paths:
       - 'geography.js'
