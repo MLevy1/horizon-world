@@ -25,7 +25,10 @@ try{
  await page.locator('#mapTitle').waitFor({state:'visible'});
  await page.locator('#mapCanvas').click({position:{x:140,y:140},timeout:100000});
  const stats=await page.locator('#drainageStats').textContent();
- assert.ok(stats.includes('3D rendered reaches:'),stats);
+ assert.ok(stats.includes('longest connected main-stem run:'),stats);
+ const length=Number(stats.match(/longest connected main-stem run: ([0-9.]+) km/)?.[1]||0);
+ assert.ok(length>0,'Expected at least one nonzero continuous modeled river run');
+ console.log('Measured longest connected river (km):',length);
  await page.screenshot({path:'alpha4-mobile-smoke.png',fullPage:false});
  assert.deepEqual(faults,[],'Browser runtime errors');
  console.log(JSON.stringify({elapsedSeconds:(Date.now()-begin)/1000,version,stats:stats.slice(0,180)}));
