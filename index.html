@@ -298,7 +298,8 @@ function naturalRivers(ix,iz){
   const up=bestUpstream(id),next=w.parent[down];
   const prev=up>=0?nodePosition(up):p0;
   const after=next>=0?nodePosition(next):p1;
-  const tangent0=nodeTangent(id),tangent1=nodeTangent(down);
+  const tangent0=nodeTangent(id),tangent1=w.parent[down]>=0?
+   nodeTangent(down):{x:(p1.x-p0.x)/length,z:(p1.z-p0.z)/length};
   const control0={x:p0.x+tangent0.x*length*.30,z:p0.z+tangent0.z*length*.30};
   const control1={x:p1.x-tangent1.x*length*.30,z:p1.z-tangent1.z*length*.30};
   const width0=naturalRiverWidth(w.acc[id]),width1=naturalRiverWidth(w.acc[down]);
@@ -312,7 +313,7 @@ function naturalRivers(ix,iz){
    w.acc[down]>=150&&Math.abs(w.level[down]-w.base[down])<7&&
    upstreamDistance>650;
   const pondHalfWidth=labPond?Math.min(33,Math.max(width0,width1)+7+depression*2):0;
-  const steps=Math.max(16,Math.ceil(length/(labPilotEnabled?3.5:10)));
+  const steps=Math.max(16,Math.ceil(length/(labPilotEnabled?6:10)));
   for(let k=0;k<=steps;k++){
    const t=k/steps,u=1-t;
    const x=u*u*u*p0.x+3*u*u*t*control0.x+3*u*t*t*control1.x+t*t*t*p1.x;
@@ -1540,7 +1541,7 @@ function tileContaining(wx,wz){
 function buildTile(key,d){
  // Narrow, carved channels need denser near-field triangles, otherwise a
  // 10m triangle can cover a 6m river. Only affected terrain tiles are refined.
- if(d.size<=256&&tileHasDrainage(d))d.segments=Math.max(d.segments||config.detail,naturalWaterwaysEnabled?56:80);
+ if(d.size<=256&&tileHasDrainage(d))d.segments=Math.max(d.segments||config.detail,naturalWaterwaysEnabled?(labPilotEnabled?80:56):80);
  const {x,z,size}=d,N=d.segments||config.detail,step=size/N,vertices=[],uvs=[],colors=[],naturalColors=[],indices=[];
  const neighbors=[
   tileContaining(x+size/2,z-.02),tileContaining(x+size+.02,z+size/2),
@@ -1873,7 +1874,7 @@ const labPilotWaterMaterial=new THREE.MeshPhongMaterial({
  shininess:46,specular:0xa4cbd6,depthWrite:true
 });
 function makeLabWaterRibbon(seg){
- const samples=seg.samples,p=[],indices=[],uvs=[],step=2,waterline=.09;
+ const samples=seg.samples,p=[],indices=[],uvs=[],waterline=.09;
  let distance=0;
  // High resolution longitudinally, shared source positions and a stable
  // waterbed relation. A dry swale remains at the extreme upstream tip.
@@ -1896,7 +1897,11 @@ function makeLabWaterRibbon(seg){
  const g=new THREE.BufferGeometry();
  g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
  g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
- g.setIndex(indices);g.computeVertexNormals();g.computeBoundingSphere();
+ g.setIndex(indices);
+ const normals=new Float32Array(p.length);
+ for(let i=0;i<normals.length;i+=3){normals[i+1]=1}
+ g.setAttribute('normal',new THREE.BufferAttribute(normals,3));
+ g.computeBoundingSphere();
  return g;
 }
 function streamCellKey(ix,iz){return regionKey(ix,iz)}
@@ -2001,6 +2006,7 @@ function findNearbyStream(){
   $('labPilotOut').textContent='Watershed '+macro;
   if(labPilotMacro!==macro){
    labPilotMacro=macro;
+   naturalRiverCache.clear();
    clearVegetation();clearRocks();clearStreams();
    for(const key of [...tiles.keys()])deleteTile(key);
    lastUpdateX=Infinity;mapDirty=true;
@@ -2018,7 +2024,7 @@ function clearStreams(){
 }
 function toggleStreams(on){
  if(naturalWaterwaysEnabled===on)return;
- if(!on&&labPilotEnabled){labPilotEnabled=false;labPilotMacro=null;$('labPilot').checked=false;$('labPilotOut').textContent='Off'}
+ if(!on&&labPilotEnabled){labPilotEnabled=false;labPilotMacro=null;naturalRiverCache.clear();$('labPilot').checked=false;$('labPilotOut').textContent='Off'}
 
  naturalWaterwaysEnabled=on;showStreams=on;
  clearVegetation();clearRocks();clearStreams();
@@ -2030,6 +2036,7 @@ function toggleStreams(on){
 function toggleLabPilot(on){
  if(labPilotEnabled===on)return;
  labPilotEnabled=on;labPilotMacro=null;
+ naturalRiverCache.clear();
  $('labPilotOut').textContent=on?'Choose watershed':'Off';
  if(on&&!naturalWaterwaysEnabled){
   $('streamsVisible').checked=true;$('streamOut').textContent='On';
@@ -2841,7 +2848,7 @@ function loop(){
  }else renderer.render(scene,camera);
  if(!buildQueue.length&&$('loading').textContent.startsWith('Generating'))$('loading').textContent='World ready · seed '+config.seed;
 }
-function setSeed(){labPilotMacro=null;if(labPilotEnabled)$('labPilotOut').textContent='Choose watershed';regionalCache.clear();regionalSelection=null;watershedCache.clear();watershedSelection=null;explorerZoom=1;explorerCX=64;explorerCZ=64;config.seed=$('seed').value.trim()||'HORIZON-01';seedNumber=seedHash(config.seed);clearVegetation();clearRocks();clearStreams();for(const k of [...tiles.keys()])deleteTile(k);lastUpdateX=Infinity;mapDirty=true;reposition(0,0);$('loading').textContent='Generating your landscape…';toast('Seed: '+config.seed)}
+function setSeed(){naturalRiverCache.clear();labPilotMacro=null;if(labPilotEnabled)$('labPilotOut').textContent='Choose watershed';regionalCache.clear();regionalSelection=null;watershedCache.clear();watershedSelection=null;explorerZoom=1;explorerCX=64;explorerCZ=64;config.seed=$('seed').value.trim()||'HORIZON-01';seedNumber=seedHash(config.seed);clearVegetation();clearRocks();clearStreams();for(const k of [...tiles.keys()])deleteTile(k);lastUpdateX=Infinity;mapDirty=true;reposition(0,0);$('loading').textContent='Generating your landscape…';toast('Seed: '+config.seed)}
 $('start').onclick=()=>{active=true;$('intro').classList.add('hidden');if(matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()};$('helpBtn').onclick=()=>{$('intro').classList.remove('hidden');active=false;document.exitPointerLock?.()};$('settingsBtn').onclick=()=>{$('panel').classList.toggle('open');if($('panel').classList.contains('open'))document.exitPointerLock?.()};$('mapBtn').onclick=()=>{$('mapbox').classList.toggle('open');if($('mapbox').classList.contains('open')){renderMap();document.exitPointerLock?.()}};$('closeMap').onclick=()=>$('mapbox').classList.remove('open');$('view').addEventListener('click',()=>{if(active&&!$('panel').classList.contains('open')&&!$('mapbox').classList.contains('open')&&matchMedia('(pointer:fine)').matches)$('view').requestPointerLock?.()});document.addEventListener('mousemove',e=>{if(document.pointerLockElement===$('view')){player.yaw-=e.movementX*.002;player.pitch=Math.max(-1.52,Math.min(1.52,player.pitch-e.movementY*.002))}});document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;keys.add(e.code);if(['Space','ArrowDown','ArrowUp'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='KeyF')setFly(!player.fly);if(e.code==='KeyM')$('mapBtn').click();if(e.code==='KeyG')$('settingsBtn').click();if(e.code==='Escape')document.exitPointerLock?.()});document.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>keys.clear());
 $('perfResolution').oninput=e=>{renderResolutionScale=(+e.target.value)/100;$('perfResolutionOut').textContent=e.target.value+'%';updateRenderResolution();resetPerfStats()};$('smoothCover').onchange=e=>{
  smoothGroundCover=e.target.checked;$('smoothCoverOut').textContent=e.target.checked?'On':'Off';
