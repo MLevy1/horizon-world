@@ -2213,8 +2213,15 @@ function buildStream(ix,iz,key){
  streamTiles.set(key,{group,ix,iz,selected,ponds});
 }
 function planStreams(force=false){
- // Terrain tiles now carry their own water surface, so avoid duplicate ribbons.
+ // All visible rivers in Alpha 5.4 belong to the same terrain tiles as their
+ // riverbed and banks. Never enqueue a second independent water renderer.
  streamQueue=[];
+ for(const [key,e] of streamTiles){
+  scene.remove(e.group);
+  for(const mesh of e.group.children)mesh.geometry?.dispose();
+  streamTiles.delete(key);
+ }
+ return;
  if(!naturalWaterwaysEnabled||labPilotEnabled&&!labPilotMacro)return;
  if(!force&&Math.hypot(player.x-lastStreamX,player.z-lastStreamZ)<230)return;
  lastStreamX=player.x;lastStreamZ=player.z;
