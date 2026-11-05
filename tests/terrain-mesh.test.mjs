@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {channelAwareGrid} from '../terrain-mesh.js';
+import {channelAwareGrid,channelAwareHeight} from '../terrain-mesh.js';
 
 function audit(mesh){
  const edgeCounts=new Map(),{positions,indices}=mesh;
@@ -59,4 +59,30 @@ test('world-aligned samples are deterministic',()=>{
  // Interior samples should resolve sub-metre channel features.
  const zs=a.coords.filter(([x,z])=>Math.abs(z-630)<1).map(p=>p[1]);
  assert.ok(zs.length>20);
+});
+
+test('ground cover samples the actual adaptive mesh, not obsolete regular-grid IDs',()=>{
+ const mesh=channelAwareGrid({
+  x:0,z:0,size:32,segments:8,subdivision:8,
+  ground:(x,z)=>50+x*.4+z*.2,
+  nearChannel:(x,z,pad)=>Math.abs(x-16)<2+pad
+ });
+ for(const [x,z] of [[2.3,4.7],[14.12,17.33],[16.02,20.91],[29.45,22.07],[31.999,31.999]]){
+  const y=channelAwareHeight(mesh,x,z);
+  assert.notEqual(y,null);
+  assert.ok(Math.abs(y-(50+x*.4+z*.2))<.0001,
+   'plant at '+x+','+z+' must match displayed triangles');
+ }
+});
+test('adaptive terrain heights remain bounded for nonlinear banks',()=>{
+ const mesh=channelAwareGrid({
+  x:-32,z:-32,size:32,segments:8,subdivision:8,
+  ground:(x,z)=>100-5*Math.exp(-Math.pow((x+16)/2,2))+Math.sin(z*.08),
+  nearChannel:(x,z,pad)=>Math.abs(x+16)<2+pad
+ });
+ for(let x=-31.5;x<-1;x+=.85)for(let z=-31.5;z<-1;z+=1.12){
+  const h=channelAwareHeight(mesh,x,z);
+  assert.ok(h!==null&&Number.isFinite(h),'missing interior height '+x+','+z);
+  assert.ok(h>90&&h<105,'spurious floating-ground height');
+ }
 });
