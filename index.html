@@ -1794,6 +1794,59 @@ const streamWaterMaterial=new THREE.MeshPhongMaterial({
  color:0x317a91,side:THREE.DoubleSide,shininess:85,specular:0x9ed4d9,
  transparent:false,depthWrite:true
 });
+// Shared procedurally generated river texture from the River Lab approach.
+// Once built it scrolls on the GPU; it does not rebuild the water mesh.
+function makePilotWaterTexture(){
+ const W=128,H=128,values=new Uint8Array(W*H*4);
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+  const u=x/W,v=y/H;
+  const a=Math.sin(u*13+v*23+Math.sin(v*11)),b=Math.sin(u*26-v*39);
+  const c=Math.sin(u*57+v*87+Math.sin(u*8)*2);
+  const glint=Math.pow(Math.max(0,.48+.25*a+.18*b+.11*c),4);
+  const i=(y*W+x)*4;
+  values[i]=Math.round(Math.min(255,150+glint*70));
+  values[i+1]=Math.round(Math.min(255,175+glint*55));
+  values[i+2]=Math.round(Math.min(255,185+glint*52));
+  values[i+3]=255;
+ }
+ const tex=new THREE.DataTexture(values,W,H,THREE.RGBAFormat);
+ tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+ tex.magFilter=THREE.LinearFilter;
+ tex.minFilter=THREE.LinearMipmapLinearFilter;
+ tex.generateMipmaps=true;tex.colorSpace=THREE.SRGBColorSpace;tex.needsUpdate=true;
+ return tex;
+}
+const labPilotTexture=makePilotWaterTexture();
+const labPilotWaterMaterial=new THREE.MeshPhongMaterial({
+ color:0x32839c,map:labPilotTexture,side:THREE.DoubleSide,
+ shininess:46,specular:0xa4cbd6,depthWrite:true
+});
+function makeLabWaterRibbon(seg){
+ const samples=seg.samples,p=[],indices=[],uvs=[],step=2,waterline=.09;
+ let distance=0;
+ // High resolution longitudinally, shared source positions and a stable
+ // waterbed relation. A dry swale remains at the extreme upstream tip.
+ const start=seg.head?samples.findIndex(a=>a.width*2>=.65):0;
+ const first=Math.max(0,start);
+ for(let k=first;k<samples.length;k++){
+  const a=samples[k],before=samples[Math.max(0,k-1)],after=samples[Math.min(samples.length-1,k+1)];
+  let dx=after.x-before.x,dz=after.z-before.z;
+  const mag=Math.max(.001,Math.hypot(dx,dz));dx/=mag;dz/=mag;
+  if(k>first)distance+=Math.hypot(a.x-samples[k-1].x,a.z-samples[k-1].z);
+  const width=Math.max(.32,a.width*.92);
+  for(let side=-1;side<=1;side+=2){
+   const x=a.x+side*(-dz)*width,z=a.z+side*dx*width;
+   p.push(x,Math.min(a.y+waterline,baseTerrain(x,z)+.14),z);
+   uvs.push(side<0?0:1,distance/22);
+  }
+  if(k>first){const j=(k-first)*2;indices.push(j-2,j,j-1,j-1,j,j+1)}
+ }
+ const g=new THREE.BufferGeometry();
+ g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
+ g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+ g.setIndex(indices);g.computeVertexNormals();g.computeBoundingSphere();
+ return g;
+}
 function streamCellKey(ix,iz){return regionKey(ix,iz)}
 function makeNaturalRibbon(seg){
  const samples=seg.samples,p=[],indices=[];
@@ -2687,6 +2740,7 @@ function loop(){
  perfStats.lastFrame=now;
  const cpuStart=now,dt=Math.min(clock.getDelta(),.055);
  if(active)update(dt);
+ if(labPilotEnabled&&labPilotMacro)labPilotTexture.offset.y=(labPilotTexture.offset.y-dt*.022)%1;
  let work=0;
  while(buildQueue.length&&work<2){
   const [k,d]=buildQueue.shift();
