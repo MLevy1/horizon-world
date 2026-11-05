@@ -373,7 +373,7 @@ function naturalRivers(ix,iz){
    samples.push({x,z,y,width,leftWidth,rightWidth,
     chainDistance:upstreamDistance+t*length,flowDistance:upstreamDistance+t*length});
   }
-  const seg={id,down,head,acc:w.acc[id],upstreamDistance,labPond,depression:maxDepression,samples,
+  const seg={id,down,head,acc:w.acc[id],chainRoot,upstreamDistance,labPond,depression:maxDepression,samples,
    x0:p0.x,z0:p0.z,x1:p1.x,z1:p1.z,width:Math.max(width0,width1)};
   segments.push(seg);byId.set(id,seg);
   // Index short sampled edges into 128m cells, including valley shoulders.
@@ -391,7 +391,7 @@ function naturalRivers(ix,iz){
    }
   }
  }
- const data={w,segments,bins,headwaters:[...kept].filter(id=>bestUpstream(id)<0).length,
+ const data={w,segments,bins,byId,headwaters:[...kept].filter(id=>bestUpstream(id)<0).length,
   ponds:pondSites.length,pondSites};
  if(naturalRiverCache.size>=8)naturalRiverCache.clear();
  naturalRiverCache.set(key,data);
@@ -1961,7 +1961,7 @@ function makeNaturalRibbon(seg){
  return geo;
 }
 function buildStream(ix,iz,key){
- const group=new THREE.Group(),positions=[],indices=[],uvs=[];
+ const group=new THREE.Group(),positions=[],indices=[],uvs=[],pilotChains=new Map();
  // A 4.096km streaming cell collects only selected river edges intersecting
  // that cell. The SAME absolute-world geometry is generated for each edge.
  // Segment ownership is assigned by its midpoint to avoid duplicate meshes.
@@ -1975,16 +1975,44 @@ function buildStream(ix,iz,key){
   for(const seg of naturalRivers(mi,mz).segments){
    const mx=(seg.x0+seg.x1)/2,mz0=(seg.z0+seg.z1)/2;
    if(mx<x0||mx>=x1||mz0<z0||mz0>=z1)continue;
-   const geo=labPilotEnabled?makeLabWaterRibbon(seg):makeNaturalRibbon(seg);
-   const a=geo.getAttribute('position'),idx=geo.getIndex(),start=positions.length/3;
-   for(let i=0;i<a.count;i++)positions.push(a.getX(i),a.getY(i),a.getZ(i));
    if(labPilotEnabled){
-    const uv=geo.getAttribute('uv');
-    for(let i=0;i<uv.count;i++)uvs.push(uv.getX(i),uv.getY(i));
+    const list=pilotChains.get(seg.chainRoot)||[];
+    list.push(seg);pilotChains.set(seg.chainRoot,list);
+    selected++;if(seg.labPond)ponds++;
+    continue;
+   }
+   const geo=makeNaturalRibbon(seg),a=geo.getAttribute('position'),idx=geo.getIndex(),start=positions.length/3;
+   for(let i=0;i<a.count;i++)positions.push(a.getX(i),a.getY(i),a.getZ(i));
+   for(let i=0;i<idx.count;i++)indices.push(idx.getX(i)+start);
+   geo.dispose();selected++;
+  }
+ }
+ // Main-stem and tributary branches are built as continuous triangle
+ // strips across all consecutive 128m drainage edges in the streaming
+ // cell. A new run starts only when graph connectivity actually breaks.
+ if(labPilotEnabled)for(const chain of pilotChains.values()){
+  chain.sort((a,b)=>a.upstreamDistance-b.upstreamDistance);
+  let run=[],last=null;
+  const flush=()=>{
+   if(run.length<2){run=[];return}
+   const geo=makeLabWaterRibbon({samples:run,head:true});
+   const a=geo.getAttribute('position'),idx=geo.getIndex(),uv=geo.getAttribute('uv');
+   const start=positions.length/3;
+   for(let i=0;i<a.count;i++){
+    positions.push(a.getX(i),a.getY(i),a.getZ(i));
+    uvs.push(uv.getX(i),uv.getY(i));
    }
    for(let i=0;i<idx.count;i++)indices.push(idx.getX(i)+start);
-   geo.dispose();selected++;if(seg.labPond)ponds++;
+   geo.dispose();run=[];
+  };
+  for(const seg of chain){
+   if(last&&last.down!==seg.id)flush();
+   // A shared node is stored once, so there is no duplicate water
+   // edge or hard normal seam between consecutive graph links.
+   run.push(...seg.samples.slice(run.length?1:0));
+   last=seg;
   }
+  flush();
  }
  if(indices.length){
   const geo=new THREE.BufferGeometry();
