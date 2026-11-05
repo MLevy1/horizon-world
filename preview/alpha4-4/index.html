@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Horizon Alpha 4.4.0 — Landscape Explorer</title>
+<title>Horizon Alpha 4.4.1 — Landscape Explorer</title>
 <style>
 :root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;--line:rgba(255,255,255,.15);--surface:rgba(17,28,32,.85);--muted:#adb9b7}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8aafc5;color:#f5f8f7}canvas#view{display:block;width:100%;height:100%;touch-action:none}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:2px solid #bce4ba;outline-offset:2px}.glass{background:var(--surface);backdrop-filter:blur(18px);border:1px solid var(--line);box-shadow:0 12px 40px #07141930}.brand{position:absolute;top:18px;left:20px;pointer-events:none;text-shadow:0 1px 6px #243b4588}.brand b{letter-spacing:.2em;font-size:13px;font-weight:800}.brand span{display:block;letter-spacing:.12em;font-size:10px;color:#e1ebeb;margin-top:5px}.topright{position:absolute;right:18px;top:17px;display:flex;gap:8px}.chip{border:1px solid var(--line);padding:9px 12px;background:var(--surface);color:white;border-radius:11px;font-size:12px;backdrop-filter:blur(12px)}.chip:hover{background:#35494a}.hud{position:absolute;bottom:20px;left:20px;padding:12px 15px;border-radius:13px;min-width:225px;font-size:12px;pointer-events:none}.hud strong{font-size:14px;letter-spacing:.03em}.hud .minor{color:#bed1cb;line-height:1.8;margin-top:4px;font-variant-numeric:tabular-nums}.hud .mode{color:#b4e5c6}.cross{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:17px;height:17px;pointer-events:none;opacity:.8}.cross:before,.cross:after{content:"";position:absolute;background:#fff;box-shadow:0 1px 4px #0008}.cross:before{width:1px;height:17px;left:8px}.cross:after{height:1px;width:17px;top:8px}.panel{position:absolute;right:18px;top:68px;width:min(330px,calc(100vw - 36px));padding:17px;border-radius:17px;max-height:calc(100vh - 95px);overflow:auto;display:none}.panel.open{display:block}.panel h2{margin:0 0 5px;font-size:15px}.panel p{color:var(--muted);font-size:12px;line-height:1.5;margin:0 0 15px}.panel label{font-size:12px;color:#dfece7;display:flex;justify-content:space-between;align-items:center;margin:15px 0 6px}.panel output{color:#b7debb;font-variant-numeric:tabular-nums}.panel input[type=range]{width:100%;accent-color:#a9d5ae}.panel input[type=number],.panel input[type=text]{padding:9px;color:white;width:100%;background:#142528;border-radius:9px;border:1px solid var(--line)}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.action{border:1px solid #6a9987;background:#446858;color:white;padding:10px 12px;border-radius:9px;font-size:12px}.action.secondary{background:#243839;border-color:var(--line)}.action:hover{filter:brightness(1.15)}.divider{height:1px;background:var(--line);margin:17px 0}.mapbox{position:absolute;bottom:20px;right:18px;border-radius:15px;padding:11px;width:234px;display:none}.mapbox.open{display:block}
 .mapbox.explorer{position:fixed;inset:0;width:100%;height:100%;height:100dvh;max-height:none;z-index:14;box-sizing:border-box;border-radius:0;display:flex;flex-direction:column;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));overflow-y:auto;overscroll-behavior:contain;background:#142b2ff2}
@@ -81,11 +81,11 @@
 #mapbox.open[data-map-mode="watershed"] #explorerTools,
 #mapbox.open[data-map-mode="regional"] #explorerTools{display:flex!important}
 </style>
-<!-- HORIZON_VERSION: 4.4.0 -->
+<!-- HORIZON_VERSION: 4.4.1 -->
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 4.4.0</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 4.4.1</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="perfBtn" class="chip">▥ Perf</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div id="perfPanel" class="glass profiler">
 <h2>Live performance <button id="perfClose" class="chip" style="float:right;padding:3px 8px">×</button></h2>
@@ -106,7 +106,7 @@
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span><br><span id="surfaceDebug" style="font-size:10px;opacity:.8">Surface alignment checking…</span><br><span id="treeInspectStatus" style="font-size:10px;color:#fff2a7">Tree inspection: none</span></div></div>
 <div id="toast" class="toast"></div>
 <div id="panel" class="glass panel">
-<div class="newHead"><h2>World settings <small>4.4.0</small></h2><button id="closeSettings" class="chip">×</button></div>
+<div class="newHead"><h2>World settings <small>4.4.1</small></h2><button id="closeSettings" class="chip">×</button></div>
 <p>Controls for exploring the world.</p>
 <section class="simpleSection"><h3>Exploration</h3>
 <label>View distance <output id="simpleViewOut">16 km</output></label><input id="simpleView" type="range" min="4" max="24" step="2" value="16">
@@ -123,7 +123,7 @@
 </div>
 <div id="mapbox" class="glass mapbox"><div class="maphead"><b id="mapTitle">REGIONAL MAP</b><button id="closeMap" class="chip" style="padding:3px 7px">×</button></div><div class="mapmodes" style="display:flex;gap:5px;margin-bottom:8px"><button id="mapLandscape" class="chip" style="flex:1">Landscape</button><button id="mapDrainage" class="chip" style="flex:1">Drainage</button><button id="mapWatershed" class="chip" style="flex:1">Watershed</button><button id="mapRegional" class="chip" style="flex:1">Regional</button></div><canvas id="mapCanvas" width="256" height="256"></canvas><div class="explorerTools" id="explorerTools" style="display:none"><button class="chip" id="watershedOut">− Zoom</button><button class="chip" id="watershedReset">Overview</button><button class="chip" id="watershedIn">+ Zoom</button><button class="chip" id="regionalDrill" style="display:none">Inspect local</button></div><div id="mapSelection" class="mapSelection" style="display:none"><div><strong>Selected map location</strong><div id="mapSelectCoords"></div><div id="mapHoverCoords">Tap the map to select a location</div></div><div class="mapActions"><button id="mapTravel" class="action">Travel here</button><button id="mapCopy" class="chip">Copy X, Z</button></div></div><div id="drainageNav" style="display:none;gap:5px;align-items:center;justify-content:center;margin-top:7px"><button id="drainWest" class="chip">← W</button><button id="drainNorth" class="chip">↑ N</button><button id="drainSouth" class="chip">↓ S</button><button id="drainEast" class="chip">E →</button></div><div id="mapFoot" class="mapfoot">20 × 20 km · north is up<br>Click a point to teleport · dotted rings every 2.5 km</div><div id="drainageStats" class="mapfoot" style="display:none"></div><div id="watershedLegend" class="mapfoot" style="display:none">Gray: runoff · turquoise: tributary · blue: trunk · yellow: selected downstream path · green: modeled ocean outlet · orange: unresolved macro outlet/border. Drag to pan · tap a channel to trace · gray runoff, cyan tributary, blue trunk, yellow selection · green sea outlet, orange unresolved boundary. No 3D water.</div></div>
 <div class="mobile"><div id="joystick" class="touchpad"><div class="stick" id="stick"></div></div><div class="mobbuttons"><button id="upBtn">↑</button><button id="flyBtn">✈</button><button id="downBtn">↓</button></div></div>
-<div class="footnote">Horizon Alpha 4.4.0 · unified geography · browser-rendered</div>
+<div class="footnote">Horizon Alpha 4.4.1 · unified geography · browser-rendered</div>
 <div id="intro" class="intro"><div class="glass introcard"><div class="eyebrow">A WORLD BEYOND THE HORIZON</div><h1>Go somewhere.</h1><p>A seed-generated landscape for exploration. Follow ridgelines, cross valleys, find coastlines, and survey the world before anything has been built.</p><div class="tips"><div class="tip"><b>Move</b><span><span class="kbd">W</span> <span class="kbd">A</span> <span class="kbd">S</span> <span class="kbd">D</span> · mouse to look</span></div><div class="tip"><b>Explore vertically</b><span><span class="kbd">Space</span> up · <span class="kbd">Shift</span> down</span></div><div class="tip"><b>Change mode</b><span><span class="kbd">F</span> flying / walking</span></div><div class="tip"><b>Navigation</b><span><span class="kbd">M</span> map · <span class="kbd">G</span> settings</span></div></div><button id="start" class="start">Enter the world →</button><div class="status" id="loading">Generating your landscape…</div></div></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
@@ -1972,16 +1972,17 @@ function makePilotWaterTexture(){
 }
 const labPilotTexture=makePilotWaterTexture();
 const labPilotWaterMaterial=new THREE.MeshPhongMaterial({
- color:0x4699af,map:labPilotTexture,side:THREE.DoubleSide,
- vertexColors:true,transparent:true,opacity:.86,
- shininess:60,specular:0xb0d3de,depthWrite:false
+ color:0x8cdee8,map:labPilotTexture,side:THREE.DoubleSide,
+ vertexColors:true,transparent:true,opacity:.94,
+ emissive:0x173f4a,emissiveIntensity:.22,
+ shininess:48,specular:0xa3d7df,depthWrite:false
 });
 function makeLabWaterRibbon(seg){
  const samples=seg.samples,p=[],indices=[],uvs=[],colors=[],waterline=.09;
  // A shared cross-section supports narrow headwater channels and broad reaches
  // without stretching one texture tile across an entire pond-width surface.
  const across=24,stride=across+1;
- const start=samples.findIndex(a=>a.width*2>=.65);
+ const start=samples.findIndex(a=>a.width*2>=.25);
  const first=start<0?samples.length:start;
  for(let k=first;k<samples.length;k++){
   const a=samples[k],before=samples[Math.max(0,k-1)],after=samples[Math.min(samples.length-1,k+1)];
@@ -2000,9 +2001,10 @@ function makeLabWaterRibbon(seg){
    // Keep water level across the width; the terrain is carved by channelBed().
    p.push(x,waterY,z);
    const fullWidth=left+right;
-   const emergence=Math.max(0,Math.min(1,(fullWidth-.6)/1.0));
+   const emergence=Math.max(0,Math.min(1,(fullWidth-.25)/1.35));
    const alpha=emergence*emergence*(3-2*emergence);
-   colors.push(1,1,1,.72+.28*alpha);
+   // Keep the bed legible but avoid exposing a nearly black channel below.
+   colors.push(1,1,1,.84+.16*alpha);
    uvs.push(side/12,chainV/22);
    if(k>first&&j>0){
     const row=(k-first)*stride,here=row+j,above=here-stride;
