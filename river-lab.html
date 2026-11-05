@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Horizon — River Geometry Lab 1.5</title>
+<title>Horizon — River Geometry Lab 1.5.1</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#10232b;color:#eff8f2}
 *{box-sizing:border-box}body{margin:0;overflow:hidden}canvas{display:block}
@@ -10,7 +10,12 @@
 #header{position:fixed;top:calc(env(safe-area-inset-top) + 8px);left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;pointer-events:none;z-index:5}
 #header >*{pointer-events:auto}h1{margin:0;font-size:15px;letter-spacing:1.6px}small{font-size:11px;color:#bbd4ce}
 .panel{background:#142b32e8;border:1px solid #76919580;box-shadow:0 6px 24px #0006;backdrop-filter:blur(12px);border-radius:14px;padding:11px}
-#controls{position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:6;max-width:700px;margin:auto}
+#controls{position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:6;max-width:700px;margin:auto;max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 110px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#panelToggle{width:100%;text-align:left;font-weight:600;min-height:38px}
+#controls.collapsed{left:auto;right:12px;width:auto;max-width:calc(100vw - 24px);padding:5px;overflow:visible}
+#controls.collapsed > :not(#panelToggle){display:none}
+#controls.collapsed #panelToggle{width:auto;padding:9px 14px;white-space:nowrap}
+@media(min-width:750px){#controls.collapsed{left:auto;right:16px;transform:none;width:auto}}
 .buttons{display:flex;gap:6px;flex-wrap:wrap}.buttons button{flex:1;min-width:72px}
 button,a{border-radius:9px;border:1px solid #64858b;background:#223c43;color:#eff8f2;font:inherit;font-size:13px;padding:10px 8px;text-align:center;text-decoration:none;cursor:pointer}
 button:focus-visible,a:focus-visible{outline:2px solid #9beec4}button.active{background:#4e767a}
@@ -30,9 +35,10 @@ details summary{cursor:pointer;font-size:13px}.sliders{display:grid;grid-templat
 </head>
 <body>
 <div id="scene"></div>
-<div id="header"><div><h1>HORIZON · RIVER LAB</h1><small>CONTROLLED GEOMETRY TEST · 1.5</small></div><a href="./index.html">Return to Horizon</a></div>
+<div id="header"><div><h1>HORIZON · RIVER LAB</h1><small>CONTROLLED GEOMETRY TEST · 1.5.1</small></div><a href="./index.html">Return to Horizon</a></div>
 <div id="error" role="alert"></div>
-<div id="controls" class="panel">
+<div id="controls" class="panel collapsed">
+  <button id="panelToggle" type="button" aria-expanded="false" aria-controls="options">⚙ Show River Lab controls</button>
   <div class="buttons">
     <button id="bank" class="active">Walk bank</button>
     <button id="aerial">Flyover</button>
@@ -65,6 +71,14 @@ details summary{cursor:pointer;font-size:13px}.sliders{display:grid;grid-templat
 import * as THREE from 'three';
 import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js';
 const $=id=>document.getElementById(id),root=$('scene');
+function setControlsOpen(open){
+ const panel=$('controls'),button=$('panelToggle');
+ panel.classList.toggle('collapsed',!open);
+ button.setAttribute('aria-expanded',String(open));
+ button.textContent=open?'▾ Hide controls':'⚙ Show River Lab controls';
+ if(open)panel.scrollTop=0;
+}
+$('panelToggle').onclick=()=>setControlsOpen($('controls').classList.contains('collapsed'));
 try{
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xa5c9d4);scene.fog=new THREE.Fog(0xa5c9d4,320,850);
 const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,8000);
@@ -339,8 +353,8 @@ function view(name){
  for(const id of ['bank','aerial','top','section'])$(id).classList.toggle('active',id===name);
  $('headwaterView').classList.toggle('active',name==='headwater');
 }
-for(const id of ['bank','aerial','top','section'])$(id).onclick=()=>view(id);
-$('headwaterView').onclick=()=>view('headwater');
+for(const id of ['bank','aerial','top','section'])$(id).onclick=()=>{view(id);setControlsOpen(false)};
+$('headwaterView').onclick=()=>{view('headwater');setControlsOpen(false)};
 $('water').onchange=e=>water.visible=e.target.checked;
 $('wire').onchange=e=>{wireframe=e.target.checked;for(const material of Object.values(terrainMaterials))material.wireframe=wireframe;plainWaterMaterial.wireframe=wireframe;movingWaterMaterial.wireframe=wireframe};
 $('grid').onchange=e=>{axis.visible=e.target.checked};
