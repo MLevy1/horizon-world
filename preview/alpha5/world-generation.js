@@ -23,13 +23,17 @@ export function valleyProfile(raw,feature){
   const bankWidth=Math.max(1.5,feature.bankWidth??width*.65);
   const shoulder=Math.max(4,feature.shoulder??width*2.1);
   const maxCut=Math.max(14,feature.maxCut??14);
-  // The occupied channel must be genuinely submerged. A fixed excavation
-  // cap previously left the *ground above the water* where relief was high.
-  // Outside the wetted channel retain bounded earthworks.
+  // A river source is a shallow drainage swale first, NOT a narrow version
+  // of a fully excavated canyon. Source distance is measured along the
+  // connected drainage graph, not restarted at each 128 m simulation edge.
+  const source=feature.flowDistance;
+  const maturity=source===undefined?1:ramp(100,1100,source);
   const requiredCut=Math.max(0,raw-(feature.water-depth));
+  const sourceCut=.3+maxCut*maturity*maturity;
+  const fullCut=Math.max(maxCut,requiredCut+.25);
   const channelCut=d<=width
-    ?Math.max(maxCut,requiredCut+0.25)
-    :maxCut;
+    ?sourceCut+Math.max(0,fullCut-sourceCut)*maturity*maturity*maturity
+    :sourceCut;
   const inner=channelBed(raw,{
     ...feature,depth,bankWidth,shoulder
   },channelCut);
@@ -37,10 +41,10 @@ export function valleyProfile(raw,feature){
   // with almost no valley, rather than carving an artificial long trench.
   const valleyHalfWidth=Math.max(width+bankWidth+shoulder,
     (8+Math.sqrt(flow)*3.2)*Math.min(1,Math.max(.14,width/2)),
-    Math.min(240,requiredCut*3));
+    Math.min(240,requiredCut*3)*maturity);
   const channelEdge=width+bankWidth;
   const basinFloor=feature.water+Math.max(.5,depth*.7);
-  const valleyCut=Math.max(0,Math.min(maxCut*.85,raw-basinFloor));
+  const valleyCut=Math.max(0,Math.min(maxCut*.85,raw-basinFloor))*maturity;
   const valleyWeight=1-ramp(channelEdge,valleyHalfWidth,d);
   const valley=raw-valleyCut*.58*valleyWeight;
   return Math.min(raw,inner,valley);
@@ -63,7 +67,8 @@ export function createWorldGenerator({broadHeight,drainageAt}){
     const shoreDistance=feature.distance-feature.width;
     const bankWidth=Math.max(1.5,feature.bankWidth??feature.width*.65);
     const wetness=1-ramp(-.5,bankWidth*2,shoreDistance);
-    const underwater=shoreDistance<=0;
+    const sourceReady=feature.flowDistance===undefined||feature.flowDistance>=1080;
+    const underwater=sourceReady&&shoreDistance<=0&&ground<feature.water+.025;
     // Water follows a solved, gently descending river elevation.
     // Its level cannot be deduced from render tiles or snapped to their edges.
     const waterElevation=underwater?feature.water+(feature.surfaceOffset??.08):null;
