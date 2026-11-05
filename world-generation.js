@@ -23,13 +23,21 @@ export function valleyProfile(raw,feature){
   const bankWidth=Math.max(1.5,feature.bankWidth??width*.65);
   const shoulder=Math.max(4,feature.shoulder??width*2.1);
   const maxCut=Math.max(14,feature.maxCut??14);
+  // The occupied channel must be genuinely submerged. A fixed excavation
+  // cap previously left the *ground above the water* where relief was high.
+  // Outside the wetted channel retain bounded earthworks.
+  const requiredCut=Math.max(0,raw-(feature.water-depth));
+  const channelCut=d<=width
+    ?Math.max(maxCut,requiredCut+0.25)
+    :maxCut;
   const inner=channelBed(raw,{
     ...feature,depth,bankWidth,shoulder
-  },maxCut);
+  },channelCut);
   // Valley width scales with watershed accumulation. Tiny headwaters start
   // with almost no valley, rather than carving an artificial long trench.
   const valleyHalfWidth=Math.max(width+bankWidth+shoulder,
-    (8+Math.sqrt(flow)*3.2)*Math.min(1,Math.max(.14,width/2)));
+    (8+Math.sqrt(flow)*3.2)*Math.min(1,Math.max(.14,width/2)),
+    Math.min(240,requiredCut*3));
   const channelEdge=width+bankWidth;
   const basinFloor=feature.water+Math.max(.5,depth*.7);
   const valleyCut=Math.max(0,Math.min(maxCut*.85,raw-basinFloor));
