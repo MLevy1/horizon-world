@@ -45,7 +45,7 @@ details summary{cursor:pointer;font-size:13px}.sliders{display:grid;grid-templat
     <label><input type="checkbox" id="grid"> Reference lines</label>
     <label><input type="checkbox" id="shores" checked> Banks</label><label>Terrain <select id="terrainMode"><option value="solid" selected>Solid / unlit</option><option value="colors">Colors / unlit</option><option value="shaded">Lit</option><option value="normals">Normals</option></select></label>
   </div>
-  <div class="geometrybar"><label>Scene <select id="sceneMode"><option value="long" selected>Long headwater (km)</option><option value="short">Original 360 m test</option></select></label><label>Preset <select id="preset"><option value="river">Small river</option><option value="stream" selected>Small stream</option><option value="incised">Incised channel</option><option value="lowland">Broad lowland</option></select></label><label>Endpoints <select id="endMode"><option value="both" selected>Headwater + pond</option><option value="head">Headwater only</option><option value="outlet">Pond only</option><option value="blunt">Blunt (comparison)</option></select></label><label>Headwater source <select id="headSource"><option value="spring" selected>Spring pool</option><option value="seep">Diffuse seep</option><option value="runoff" selected>Gradual runoff</option><option value="taper">Old taper (compare)</option></select></label></div>
+  <div class="geometrybar"><button id="headwaterView">Inspect headwater</button><label>Scene <select id="sceneMode"><option value="long" selected>Long headwater (km)</option><option value="short">Original 360 m test</option></select></label><label>Preset <select id="preset"><option value="river">Small river</option><option value="stream" selected>Small stream</option><option value="incised">Incised channel</option><option value="lowland">Broad lowland</option></select></label><label>Endpoints <select id="endMode"><option value="both" selected>Headwater + pond</option><option value="head">Headwater only</option><option value="outlet">Pond only</option><option value="blunt">Blunt (comparison)</option></select></label><label>Headwater source <select id="headSource"><option value="spring" selected>Spring pool</option><option value="seep">Diffuse seep</option><option value="runoff" selected>Gradual runoff</option><option value="taper">Old taper (compare)</option></select></label></div>
 <details id="geometryPanel"><summary>River geometry settings</summary>
 <div class="sliders">
 <label>Water width <output id="widthValue"></output><input id="width" type="range" min="2" max="20" step=".2" value="9.2"></label>
@@ -330,13 +330,16 @@ function view(name){
  bank:{pos:[29,centerY(-65)+3,-65],target:[centerX(-65),centerY(-65),-65]},
  aerial:geom.scene==='long'?{pos:[160,600,headStart()+geom.headLength*.5],target:[0,centerY(headStart()+geom.headLength*.5),headStart()+geom.headLength*.5]}:{pos:[100,80,95],target:[centerX(20),centerY(20),20]},
  top:geom.scene==='long'?{pos:[.1,Math.max(750,geom.headLength*1.25),headStart()+geom.headLength*.5],target:[0,centerY(headStart()+geom.headLength*.5),headStart()+geom.headLength*.5]}:{pos:[.1,260,0],target:[0,0,0]},
- section:{pos:[38,centerY(0)+5,0],target:[centerX(0),centerY(0),0]}
+ section:{pos:[38,centerY(0)+5,0],target:[centerX(0),centerY(0),0]},
+ headwater:{pos:[centerX(headStart()+geom.headLength*.67)+28,centerY(headStart()+geom.headLength*.67)+20,headStart()+geom.headLength*.67-32],
+ target:[centerX(headStart()+geom.headLength*.67),centerY(headStart()+geom.headLength*.67),headStart()+geom.headLength*.67]}
  };
  const v=views[name];camera.position.set(...v.pos);controls.target.set(...v.target);
  camera.up.set(0,1,0);controls.update();
  for(const id of Object.keys(views))$(id).classList.toggle('active',id===name);
 }
 for(const id of ['bank','aerial','top','section'])$(id).onclick=()=>view(id);
+$('headwaterView').onclick=()=>view('headwater');
 $('water').onchange=e=>water.visible=e.target.checked;
 $('wire').onchange=e=>{wireframe=e.target.checked;for(const material of Object.values(terrainMaterials))material.wireframe=wireframe;plainWaterMaterial.wireframe=wireframe;movingWaterMaterial.wireframe=wireframe};
 $('grid').onchange=e=>{axis.visible=e.target.checked};
@@ -391,15 +394,16 @@ function rebuildGeometry(){
  drawCrossSection();audit();
 }
 function syncUI(){
- for(const key of PARAMS){
-  $(key).value=geom[key];
-  $(key+'Value').textContent=Number(geom[key]).toFixed(key==='headPower'?2:key==='width'||key==='depth'||key==='rise'||key==='bankWidth'||key==='shoulder'?1:0)+(key==='headPower'?' ×':' m');
- }
  $('sceneMode').value=geom.scene;
  $('headLength').min=geom.scene==='long'?250:15;
  $('headLength').max=geom.scene==='long'?2000:90;
  $('headLength').step=geom.scene==='long'?50:5;
  $('headPower').disabled=geom.scene!=='long';
+ $('headSource').querySelector('option[value="runoff"]').disabled=geom.scene!=='long';
+ for(const key of PARAMS){
+  $(key).value=geom[key];
+  $(key+'Value').textContent=Number(geom[key]).toFixed(key==='headPower'?2:key==='width'||key==='depth'||key==='rise'||key==='bankWidth'||key==='shoulder'?1:0)+(key==='headPower'?' ×':' m');
+ }
  $('endMode').value=geom.mode;
  $('headSource').value=geom.source;
  $('headSource').disabled=!hasHead();
@@ -429,6 +433,7 @@ $('endMode').onchange=e=>{geom.mode=e.target.value;syncUI();rebuildGeometry()};
 $('headSource').onchange=e=>{geom.source=e.target.value;rebuildGeometry()};
 for(const key of PARAMS)$(key).onchange=e=>{
  geom[key]=Number(e.target.value);syncUI();rebuildGeometry();
+ if(key==='headLength'&&geom.scene==='long')view('top');
 };
 function audit(){
  let count=0,minDepth=Infinity,maxDepth=-Infinity,uphill=0;
@@ -449,6 +454,8 @@ function audit(){
  ' land triangles · '+uphill+' uphill steps. Sampled water clearance '+minDepth.toFixed(2)+
  '–'+maxDepth.toFixed(2)+' m. '+(hasHead()?(longHead()&&geom.source==='runoff'?'Headwater develops over '+geom.headLength.toFixed(0)+' m (width exponent '+geom.headPower.toFixed(2)+'). ':isSmall()?'Source: '+geom.source+'. ':'Headwater taper. '):'')+
  (hasOutlet()?'Outlet widens into an enclosed test pond.':'Blunt downstream test boundary.')+
+ (longHead()&&geom.source==='runoff'?
+ ' Width at 25/50/75% downstream: '+[.25,.5,.75].map(t=>(geom.width*Math.pow(t,geom.headPower)).toFixed(2)).join(' / ')+' m. ':'')+
  ' No fluid simulation.';
  const color=land.geometry.getAttribute('color'),uv=water.geometry.getAttribute('uv');
  $('debugreadout').textContent='Vertex colors: '+(color?color.count:'missing')+
