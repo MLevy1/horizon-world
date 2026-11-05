@@ -1653,7 +1653,7 @@ function buildTile(key,d){
  let vertices,indices,coords;
  if(refine){
   const result=channelAwareGrid({
-   x,z,size,segments:N,subdivision:8,
+   x,z,size,segments:N,subdivision:size<=128?8:4,
    ground:(wx,wz)=>worldGeography.terrain(wx,wz),
    nearChannel:(wx,wz,pad)=>{
     const river=naturalRiverAt(wx,wz);
