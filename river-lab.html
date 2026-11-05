@@ -155,7 +155,7 @@ const centerY=z=>{
    return pondLevel()+.009*120*(2*t*t-t*t*t);
   }
  }
- const base=5.5-((growthScene()?z:Math.min(z,180))+180)*.009;
+ const base=5.5-(((growthScene()||pondScene())?z:Math.min(z,180))+180)*.009;
  if(longHead()||!isSmall()||!hasHead()||geom.source!=='spring'||z>=-145)return base;
  // A small nearly level spring pool, gradually joining the normal grade.
  return 5.5-.009*(z+180)*smooth((z+180)/35);
@@ -390,8 +390,10 @@ function createWater(){
 }
 // Separate standing-water mesh: a level basin surface with its own shoreline.
 // The river overlaps the first 40m, lying slightly below the pond surface.
+const stillPondTexture=riverTexture.clone();
+stillPondTexture.offset.set(0,0);stillPondTexture.needsUpdate=true;
 const pondWaterMaterial=new THREE.MeshPhongMaterial({
- color:0x378fa5,map:riverTexture,side:THREE.DoubleSide,
+ color:0x378fa5,map:stillPondTexture,side:THREE.DoubleSide,
  shininess:42,specular:0xaacbd6,depthWrite:true
 });
 function createPondWater(){
@@ -442,7 +444,7 @@ let wireframe=false;
 let waterMotion=true,waterTextureEnabled=true;
 function setWaterAppearance(){
  water.material=waterTextureEnabled?[plainWaterMaterial,movingWaterMaterial]:[plainWaterMaterial,plainWaterMaterial];
- pondWaterMaterial.map=waterTextureEnabled?riverTexture:null;
+ pondWaterMaterial.map=waterTextureEnabled?stillPondTexture:null;
  pondWaterMaterial.needsUpdate=true;
  plainWaterMaterial.wireframe=wireframe;movingWaterMaterial.wireframe=wireframe;
 }
