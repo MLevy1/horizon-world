@@ -304,7 +304,7 @@ function naturalRivers(ix,iz){
  // connected chain. The old per-edge sine swell produced isolated lens
  // shapes and restarted after every 128-m drainage link.
  const pondSites=[];
- if(labPilotEnabled){
+ { // Alpha 4: pond reaches are defined for every watershed.
   const candidates=[];
   for(const id of kept){
    const down=w.parent[id],drop=Math.abs(w.base[id]-w.base[down]);
@@ -349,10 +349,10 @@ function naturalRivers(ix,iz){
   // Any pond is a continuous reach on the same main river chain. Its
   // irregular shoreline is shared by all affected graph edges.
   const chainRoot=primaryChainRoot(id);
-  const activePonds=labPilotEnabled?pondSites.filter(p=>p.root===chainRoot&&
-   Math.abs(p.distance-(upstreamDistance+length*.5))<p.halfLength+length*.5):[];
+  const activePonds=pondSites.filter(p=>p.root===chainRoot&&
+   Math.abs(p.distance-(upstreamDistance+length*.5))<p.halfLength+length*.5);
   let labPond=false,maxDepression=0;
-  const steps=Math.max(16,Math.ceil(length/(labPilotEnabled?6:10)));
+  const steps=Math.max(16,Math.ceil(length/6));
   for(let k=0;k<=steps;k++){
    const t=k/steps,u=1-t;
    const x=u*u*u*p0.x+3*u*u*t*control0.x+3*u*t*t*control1.x+t*t*t*p1.x;
@@ -1990,7 +1990,7 @@ function buildStream(ix,iz,key){
   for(const seg of naturalRivers(mi,mz).segments){
    const mx=(seg.x0+seg.x1)/2,mz0=(seg.z0+seg.z1)/2;
    if(mx<x0||mx>=x1||mz0<z0||mz0>=z1)continue;
-   if(labPilotEnabled){
+   {
     const list=pilotChains.get(seg.chainRoot)||[];
     list.push(seg);pilotChains.set(seg.chainRoot,list);
     selected++;if(seg.labPond)ponds++;
@@ -2005,7 +2005,7 @@ function buildStream(ix,iz,key){
  // Main-stem and tributary branches are built as continuous triangle
  // strips across all consecutive 128m drainage edges in the streaming
  // cell. A new run starts only when graph connectivity actually breaks.
- if(labPilotEnabled)for(const chain of pilotChains.values()){
+ for(const chain of pilotChains.values()){
   chain.sort((a,b)=>a.upstreamDistance-b.upstreamDistance);
   let run=[],last=null;
   const flush=()=>{
@@ -2033,9 +2033,9 @@ function buildStream(ix,iz,key){
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
   geo.setIndex(indices);
-  if(labPilotEnabled)geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
   geo.computeVertexNormals();geo.computeBoundingSphere();
-  const mesh=new THREE.Mesh(geo,labPilotEnabled?labPilotWaterMaterial:streamWaterMaterial);
+  const mesh=new THREE.Mesh(geo,labPilotWaterMaterial);
   mesh.frustumCulled=true;group.add(mesh);
  }
  group.visible=showStreams;scene.add(group);
@@ -2879,7 +2879,7 @@ function loop(){
  perfStats.lastFrame=now;
  const cpuStart=now,dt=Math.min(clock.getDelta(),.055);
  if(active)update(dt);
- if(labPilotEnabled&&labPilotMacro)labPilotTexture.offset.y=(labPilotTexture.offset.y-dt*.022)%1;
+ if(naturalWaterwaysEnabled)labPilotTexture.offset.y=(labPilotTexture.offset.y-dt*.022)%1;
  let work=0;
  while(buildQueue.length&&work<2){
   const [k,d]=buildQueue.shift();
