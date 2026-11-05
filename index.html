@@ -1667,8 +1667,8 @@ function tileContaining(wx,wz){
 function buildTile(key,d){
  // Geography-first elevation is fixed before the renderer chooses its mesh.
  // Locally refine near-field water corridors, leaving other tiles unchanged.
- const hasDrainage=d.size<=1024&&tileHasDrainage(d);
- if(hasDrainage)d.segments=Math.max(d.segments||config.detail,d.size<=256?56:40);
+ const hasDrainage=d.size<=2048&&tileHasDrainage(d);
+ if(hasDrainage)d.segments=Math.max(d.segments||config.detail,d.size<=256?56:d.size<=1024?40:32);
  const {x,z,size}=d,N=d.segments||config.detail;
  const refine=naturalWaterwaysEnabled&&hasDrainage;
  let vertices,indices,coords,adaptiveTerrain=null,waterGeometry=null;
