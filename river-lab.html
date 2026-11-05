@@ -125,15 +125,13 @@ const centerY=z=>{
  return 5.5-.009*(z+180)*smooth((z+180)/35);
 };
 function growthWidth(z){
- const start=2.8;
- const widths=[2.8,3.0,5.1,7.7];
- const gains=[2.2,3.7,7.3];
- let value=start;
- for(let i=0;i<GROWTH_JUNCTIONS.length;i++){
-  const t=(z-(GROWTH_JUNCTIONS[i]-80))/160;
-  value+=gains[i]*smooth(t);
- }
- return value;
+ // Simplified proxy for drainage accumulation. Width increases *after*
+ // each tributary junction over a 160 m reach; it does not restart from zero.
+ const start=Math.min(2.8,geom.width),gains=[2.2,3.7,7.3];
+ let added=0;
+ for(let i=0;i<GROWTH_JUNCTIONS.length;i++)
+  added+=gains[i]*smooth((z-(GROWTH_JUNCTIONS[i]-80))/160);
+ return start+(geom.width-start)*added/13.2;
 }
 function channelWidth(z){
  if(growthScene())return growthWidth(z)/2;
