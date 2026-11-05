@@ -96,7 +96,7 @@ export function solveDrainageDomain({ix,iz,height,N=DRAINAGE_N,S=DRAINAGE_STEP})
       }
     }
   }
-  return {ix,iz,ox,oz,N,S,C,base,level,parent,acc,root,ocean,landBoundary,outlets,stats};
+  return {ix,iz,ox,oz,N,S,C,base,level,parent,acc,root,order,ocean,landBoundary,outlets,stats};
 }
 /** Read an actual edge by world grid cell ID, including through the former
  * 16.384km boundary (local midpoint, N/2). */
