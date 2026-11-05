@@ -1,8 +1,9 @@
 name: Geography regression
 on:
   push:
-    branches: [main, alpha4-unified-geography, alpha4-unified-drainage-430]
+    branches: [main]
   pull_request:
+    branches: [main]
     paths:
       - 'geography.js'
       - 'drainage-network.js'
