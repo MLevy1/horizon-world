@@ -55,3 +55,21 @@ test('riverbed never overtops its water surface even in high-relief corridor',()
  }
  assert.equal(w.water(0,4.5),null);
 });
+
+test('headwater swales do not excavate deep empty trenches',()=>{
+ const generator=createWorldGenerator({
+  broadHeight:()=>220,
+  drainageAt:(_,z)=>({kind:'river',width:1.2,distance:Math.abs(z),
+    water:175,acc:45,maxCut:14,flowDistance:100})
+ });
+ const source=generator.sample(0,0);
+ assert.ok(source.ground>215,'dry source must remain a shallow swale');
+ assert.equal(source.waterElevation,null,'early headwater should not render isolated water dashes');
+ const mature=createWorldGenerator({
+  broadHeight:()=>220,
+  drainageAt:(_,z)=>({kind:'river',width:2.8,distance:Math.abs(z),
+    water:175,acc:140,maxCut:14,flowDistance:1600})
+ });
+ const stream=mature.sample(0,0);
+ assert.ok(stream.ground<stream.waterElevation,'mature bed should lie below water');
+});
