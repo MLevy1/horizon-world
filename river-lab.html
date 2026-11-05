@@ -184,9 +184,10 @@ function waterPosition(z,side){
  const width=channelWidth(z);
  return [x+side*nx*width,centerY(z)+.025,z+side*nz*width];
 }
+function waterSampleCount(){return isSmall()?480:RIVER_STEPS}
 function longitudinalSample(i){
  const max=hasOutlet()?POND_END:RIVER_END;
- return mix(RIVER_START,max,i/RIVER_STEPS);
+ return mix(RIVER_START,max,i/waterSampleCount());
 }
 function geometry(positions,indices){
  const g=new THREE.BufferGeometry();
@@ -262,7 +263,7 @@ const movingWaterMaterial=new THREE.MeshPhongMaterial({
 });
 function createWater(){
  const pos=[],idx=[],uvs=[];
- for(let i=0;i<=RIVER_STEPS;i++){
+ for(let i=0;i<=waterSampleCount();i++){
   const z=longitudinalSample(i);
   pos.push(...waterPosition(z,-1),...waterPosition(z,1));
   // UVs run across the river in U and with world distance in V.
@@ -293,7 +294,7 @@ function lineStrip(points,color){
 }
 for(const side of [-1,1]){
  const list=[];
- for(let i=0;i<=RIVER_STEPS;i++){
+ for(let i=0;i<=waterSampleCount();i++){
   const z=longitudinalSample(i),[x,,zz]=waterPosition(z,side);
   list.push([x,centerY(z)+.075,zz]);
  }
@@ -365,7 +366,7 @@ function rebuildGeometry(){
  lines.clear();
  for(const side of [-1,1]){
   const points=[];
-  for(let i=0;i<=RIVER_STEPS;i++){
+  for(let i=0;i<=waterSampleCount();i++){
    const z=longitudinalSample(i),[x,,zz]=waterPosition(z,side);
    points.push([x,centerY(z)+.075,zz]);
   }
@@ -396,7 +397,7 @@ for(const key of PARAMS)$(key).onchange=e=>{
 function audit(){
  let count=0,minDepth=Infinity,maxDepth=-Infinity,uphill=0;
  const end=hasOutlet()?POND_END:RIVER_END;
- for(let i=0;i<=RIVER_STEPS;i++){
+ for(let i=0;i<=waterSampleCount();i++){
   const z=longitudinalSample(i);
   if(i&&centerY(z)>centerY(longitudinalSample(i-1))+.00001)uphill++;
   for(const side of [-1,0,1]){
