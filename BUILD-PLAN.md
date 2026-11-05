@@ -12,15 +12,17 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
    Default: 1,179,650 cells, 10,342 headwaters, 14,014 stream reaches,
    1,734 river reaches, 320 ponds, 324 lakes, 2,345 ocean mouths.
    No unresolved inland terminals, cycles or uphill links.
-2. **Hydrology map — in progress.** The new standalone atlas has been built
-   locally. Its visual output needs correction and review before publication.
+2. **Hydrology map — viewable checkpoint.** The standalone full-planet atlas is
+   published on GitHub Pages for inspection. Visual refinement is still pending.
 3. **Inspection and touch controls — pending.** Check tracing to ocean,
    catchment highlighting, map/globe navigation and responsive layout.
-4. **Replace the live main page — pending.** Publish the checked hydrology-only
-   app at the existing GitHub Pages URL, removing retired active source.
+4. **Pages viewer — published.** The existing main page now opens the
+   hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-This first checkpoint saves the solver and tests. It does not replace the
-existing published 0.3.1 page yet. Old source remains until the new atlas is ready.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.4.0.
+It displays the complete global solver, with no detailed terrain or vegetation.
+This is a viewable work checkpoint; the remaining visual and touch-control
+review continues in small tasks.
 
 ## World contract
 
