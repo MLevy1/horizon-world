@@ -297,13 +297,18 @@ function naturalRivers(ix,iz){
    const y=Math.min(model,baseTerrain(x,z)+.12);
    const taper=head?Math.min(1,.08+.92*t/.76):1;
    let width=(width0+(width1-width0)*t)*taper;
+   let leftWidth=width,rightWidth=width;
    if(labPond){
-    // Continuously expand and contract the SAME strip into a pool.
-    // No second mesh/material seam, and endpoints agree with river links.
+    // Small, priority-flood-backed pond: unequal shorelines instead of
+    // the symmetric lens shape rejected in the River Lab. Expansion joins
+    // the original river banks at BOTH ends with zero slope.
     const basin=Math.pow(Math.sin(Math.PI*t),2);
-    width+=pondHalfWidth*basin;
+    const asym=.14*Math.sin(t*5.3+id*.11);
+    leftWidth+=pondHalfWidth*basin*(1.10+asym);
+    rightWidth+=pondHalfWidth*basin*(.88-asym);
+    width=Math.max(leftWidth,rightWidth);
    }
-   samples.push({x,z,y,width});
+   samples.push({x,z,y,width,leftWidth,rightWidth});
   }
   const seg={id,down,head,acc:w.acc[id],labPond,depression:labPond?depression:0,samples,
    x0:p0.x,z0:p0.z,x1:p1.x,z1:p1.z,width:Math.max(width0,width1)};
@@ -344,8 +349,12 @@ function naturalRiverAt(x,z){
   if(den<.001)continue;
   const t=Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.z)*dz)/den));
   const distance=Math.hypot(x-a.x-dx*t,z-a.z-dz*t);
-  const width=a.width+(b.width-a.width)*t;
-  const bank=Math.max(35,width*5+20);
+  const signed=dx*(z-a.z-dz*t)-dz*(x-a.x-dx*t);
+  const sideLeft=signed<0;
+  const aw=sideLeft?(a.leftWidth??a.width):(a.rightWidth??a.width);
+  const bw=sideLeft?(b.leftWidth??b.width):(b.rightWidth??b.width);
+  const width=aw+(bw-aw)*t;
+  const bank=Math.max(35,Math.max(a.width,b.width)*5+20);
   if(distance>=bank||distance/bank>=best)continue;
   nearest={distance,width,bank,water:a.y+(b.y-a.y)*t,acc:edge.seg.acc,head:edge.seg.head};
   best=distance/bank;
@@ -1847,8 +1856,8 @@ function makeLabWaterRibbon(seg){
   let dx=after.x-before.x,dz=after.z-before.z;
   const mag=Math.max(.001,Math.hypot(dx,dz));dx/=mag;dz/=mag;
   if(k>first)distance+=Math.hypot(a.x-samples[k-1].x,a.z-samples[k-1].z);
-  const width=Math.max(.32,a.width*.92);
   for(let side=-1;side<=1;side+=2){
+   const width=Math.max(.32,(side<0?(a.leftWidth??a.width):(a.rightWidth??a.width))*.92);
    const x=a.x+side*(-dz)*width,z=a.z+side*dx*width;
    p.push(x,Math.min(a.y+waterline,baseTerrain(x,z)+.14),z);
    uvs.push(side<0?0:1,distance/22);
