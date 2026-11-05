@@ -1921,7 +1921,9 @@ function makeLabWaterRibbon(seg){
  // High resolution longitudinally, shared source positions and a stable
  // waterbed relation. A dry swale remains at the extreme upstream tip.
  const start=samples.findIndex(a=>a.width*2>=.65);
- const first=Math.max(0,start);
+ // A drainage swale never becomes a visible stream if the entire
+ // connected reach remains sub-pixel narrow. Do not draw a blue ribbon.
+ const first=start<0?samples.length:start;
  for(let k=first;k<samples.length;k++){
   const a=samples[k],before=samples[Math.max(0,k-1)],after=samples[Math.min(samples.length-1,k+1)];
   let dx=after.x-before.x,dz=after.z-before.z;
