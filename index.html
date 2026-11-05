@@ -1990,33 +1990,44 @@ const labPilotWaterMaterial=new THREE.MeshPhongMaterial({
 });
 function makeLabWaterRibbon(seg){
  const samples=seg.samples,p=[],indices=[],uvs=[],waterline=.09;
- let distance=0;
- // High resolution longitudinally, shared source positions and a stable
- // waterbed relation. A dry swale remains at the extreme upstream tip.
+ // A shared cross-section supports narrow headwater channels and broad reaches
+ // without stretching one texture tile across an entire pond-width surface.
+ const across=8,stride=across+1;
  const start=samples.findIndex(a=>a.width*2>=.65);
- // A drainage swale never becomes a visible stream if the entire
- // connected reach remains sub-pixel narrow. Do not draw a blue ribbon.
  const first=start<0?samples.length:start;
  for(let k=first;k<samples.length;k++){
   const a=samples[k],before=samples[Math.max(0,k-1)],after=samples[Math.min(samples.length-1,k+1)];
   let dx=after.x-before.x,dz=after.z-before.z;
   const mag=Math.max(.001,Math.hypot(dx,dz));dx/=mag;dz/=mag;
-  if(k>first)distance+=Math.hypot(a.x-samples[k-1].x,a.z-samples[k-1].z);
-  const chainV=Number.isFinite(a.flowDistance)?a.flowDistance:distance;
-  for(let side=-1;side<=1;side+=2){
-   const width=Math.max(.32,(side<0?(a.leftWidth??a.width):(a.rightWidth??a.width))*.92);
-   const x=a.x+side*(-dz)*width,z=a.z+side*dx*width;
-   p.push(x,Math.min(a.y+waterline,baseTerrain(x,z)+.14),z);
-   uvs.push(side<0?0:1,chainV/22);
+  const left=Math.max(.01,a.leftWidth??a.width)*.92;
+  const right=Math.max(.01,a.rightWidth??a.width)*.92;
+  const chainV=Number.isFinite(a.flowDistance)?a.flowDistance:k-first;
+  for(let j=0;j<=across;j++){
+   const t=j/across,side=-left+(left+right)*t;
+   const x=a.x-dz*side,z=a.z+dx*side;
+   const waterY=a.y+waterline;
+   // Match only the outermost water vertices to low shoreline geometry.
+   // Interior water is not draped over the terrain; that would make
+   // the flat surface of a wide reach visibly ripple with the heightfield.
+   const edgeWeight=Math.pow(Math.abs(t*2-1),8);
+   const shorelineY=Math.min(waterY,baseTerrain(x,z)+.14);
+   const y=waterY+(shorelineY-waterY)*edgeWeight;
+   p.push(x,y,z);
+   // Repeating metres-based UVs avoid stretching the texture as a reach widens.
+   uvs.push(side/12,chainV/22);
+   if(k>first&&j>0){
+    const row=(k-first)*stride,here=row+j,above=here-stride;
+    indices.push(above-1,here-1,above,above,here-1,here);
+   }
   }
-  if(k>first){const j=(k-first)*2;indices.push(j-2,j,j-1,j-1,j,j+1)}
  }
  const g=new THREE.BufferGeometry();
  g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
  g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
  g.setIndex(indices);
+ // One normal field across river and widened sections; no lighting split at joins.
  const normals=new Float32Array(p.length);
- for(let i=0;i<normals.length;i+=3){normals[i+1]=1}
+ for(let i=0;i<normals.length;i+=3)normals[i+1]=1;
  g.setAttribute('normal',new THREE.BufferAttribute(normals,3));
  g.computeBoundingSphere();
  return g;
