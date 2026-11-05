@@ -2521,10 +2521,11 @@ function drawRegionalMap(){
 // between macros is explicit: outer boundaries are not hydrologically stitched.
 let explorerZoom=1,explorerCX=64,explorerCZ=64,explorerDrag=null,explorerSkipClick=false;
 function explorerMacro(){return watershedAt(drainInspectX,drainInspectZ)}
+function explorerGridSize(){return mapMode==='watershed'?DRAINAGE_N:128}
 function explorerClamp(){
- const half=64/explorerZoom;
- explorerCX=Math.max(half,Math.min(128-half,explorerCX));
- explorerCZ=Math.max(half,Math.min(128-half,explorerCZ));
+ const extent=explorerGridSize(),half=extent/(2*explorerZoom);
+ explorerCX=Math.max(half,Math.min(extent-half,explorerCX));
+ explorerCZ=Math.max(half,Math.min(extent-half,explorerCZ));
 }
 function explorerSetZoom(next,centerX=explorerCX,centerZ=explorerCZ){
  explorerZoom=Math.max(1,Math.min(8,next));
@@ -2532,7 +2533,7 @@ function explorerSetZoom(next,centerX=explorerCX,centerZ=explorerCZ){
 }
 function explorerView(){
  explorerClamp();
- const span=128/explorerZoom;
+ const span=explorerGridSize()/explorerZoom;
  return {x0:explorerCX-span/2,x1:explorerCX+span/2,z0:explorerCZ-span/2,z1:explorerCZ+span/2,span};
 }
 function explorerPoint(u,v){
@@ -2559,7 +2560,7 @@ function openWatershedInspection(){
  drainInspectX=Math.floor(focus.x/MACRO_SIZE)*2;
  drainInspectZ=Math.floor(focus.z/MACRO_SIZE)*2;
  const w=explorerMacro();
- explorerZoom=1;explorerCX=64;explorerCZ=64;explorerSkipClick=false;
+ explorerZoom=1;explorerCX=DRAINAGE_N/2;explorerCZ=DRAINAGE_N/2;explorerSkipClick=false;
  watershedSelection=null;
  $('panel').classList.remove('open');
  $('mapbox').classList.add('open');
@@ -2692,9 +2693,9 @@ function drawWatershedMap(){
  }
  // The dotted center lines identify the old four-page subdivision.
  ctx.save();ctx.setLineDash([3,5]);ctx.strokeStyle='#ffffff80';ctx.lineWidth=1;
- ctx.beginPath();ctx.moveTo(px(64),py(0));ctx.lineTo(px(64),py(128));
- ctx.moveTo(px(0),py(64));ctx.lineTo(px(128),py(64));ctx.stroke();ctx.restore();
- ctx.strokeStyle='#ffad68';ctx.lineWidth=2;ctx.strokeRect(px(0),py(128),px(128)-px(0),py(0)-py(128));
+ ctx.beginPath();ctx.moveTo(px(N/2),py(0));ctx.lineTo(px(N/2),py(N));
+ ctx.moveTo(px(0),py(N/2));ctx.lineTo(px(N),py(N/2));ctx.stroke();ctx.restore();
+ ctx.strokeStyle='#ffad68';ctx.lineWidth=2;ctx.strokeRect(px(0),py(N),px(N)-px(0),py(0)-py(N));
  const playerX=px((player.x-w.ox)/w.S),playerY=py((player.z-w.oz)/w.S);
  if(playerX>=0&&playerX<=W&&playerY>=0&&playerY<=H){
   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(playerX,playerY,4,0,Math.PI*2);ctx.fill();
@@ -2706,7 +2707,7 @@ function drawWatershedMap(){
  $('regionalDrill').style.display='none';
  $('watershedLegend').style.display='block';
  $('drainageStats').style.display='block';
- $('mapFoot').textContent=(16.384/explorerZoom).toFixed(1)+'km map span · basin '+w.ix+','+w.iz+
+ $('mapFoot').textContent=(32.768/explorerZoom).toFixed(1)+'km map span · connected drainage domain '+w.ix+','+w.iz+
   ' · '+explorerZoom.toFixed(1)+'× zoom · drag to pan · tap to inspect';
  const km=n=>(n/1000).toFixed(2)+' km';
  let coarseContinuation='';
@@ -2986,7 +2987,7 @@ $('visibilityDetail').onchange=e=>{adaptiveVisibility=e.target.checked;$('visibi
   return; }let r=e.target.getBoundingClientRect();selectMapLocation((e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height);renderMap()};$('mapLandscape').onclick=()=>{mapMode='landscape';renderMap()};$('mapDrainage').onclick=openDrainageInspection;$('mapWatershed').onclick=openWatershedInspection;$('mapRegional').onclick=openRegionalInspection;
 $('watershedIn').onclick=()=>explorerSetZoom(explorerZoom*2);
 $('watershedOut').onclick=()=>explorerSetZoom(explorerZoom/2);
-$('watershedReset').onclick=()=>explorerSetZoom(1,64,64);
+$('watershedReset').onclick=()=>explorerSetZoom(1,explorerGridSize()/2,explorerGridSize()/2);
 $('regionalDrill').onclick=()=>{
  if(!regionalSelection)return;
  const w=regionalAt(regionalInspectX,regionalInspectZ),id=regionalSelection.start;
@@ -3004,7 +3005,7 @@ $('mapCanvas').addEventListener('pointerdown',e=>{
 });
 $('mapCanvas').addEventListener('pointermove',e=>{
  if((mapMode!=='watershed'&&mapMode!=='regional')||!explorerDrag)return;
- const rect=e.target.getBoundingClientRect(),span=128/explorerZoom;
+ const rect=e.target.getBoundingClientRect(),span=explorerGridSize()/explorerZoom;
  const dx=(e.clientX-explorerDrag.x)/rect.width*span;
  const dz=(e.clientY-explorerDrag.y)/rect.height*span;
  if(Math.hypot(e.clientX-explorerDrag.x,e.clientY-explorerDrag.y)>7)explorerDrag.moved=true;
