@@ -509,7 +509,8 @@ function naturalRiverAt(x,z){
   const width=aw+(bw-aw)*t;
   const bank=Math.max(35,Math.max(a.width,b.width)*5+20);
   if(distance>=bank||distance/bank>=best)continue;
-  nearest={distance,width,bank,water:a.y+(b.y-a.y)*t,acc:edge.seg.acc,head:edge.seg.head};
+  nearest={distance,width,bank,water:a.y+(b.y-a.y)*t,acc:edge.seg.acc,head:edge.seg.head,
+   flowDistance:a.flowDistance+(b.flowDistance-a.flowDistance)*t};
   best=distance/bank;
  }
  return nearest;
