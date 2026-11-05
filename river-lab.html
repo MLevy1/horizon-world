@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Horizon — River Geometry Lab 1.8</title>
+<title>Horizon — River Geometry Lab 1.8.1</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#10232b;color:#eff8f2}
 *{box-sizing:border-box}body{margin:0;overflow:hidden}canvas{display:block}
@@ -35,7 +35,7 @@ details summary{cursor:pointer;font-size:13px}.sliders{display:grid;grid-templat
 </head>
 <body>
 <div id="scene"></div>
-<div id="header"><div><h1>HORIZON · RIVER LAB</h1><small>CONTROLLED GEOMETRY TEST · 1.8</small></div><a href="./index.html">Return to Horizon</a></div>
+<div id="header"><div><h1>HORIZON · RIVER LAB</h1><small>CONTROLLED GEOMETRY TEST · 1.8.1</small></div><a href="./index.html">Return to Horizon</a></div>
 <div id="error" role="alert"></div>
 <div id="controls" class="panel collapsed">
   <button id="panelToggle" type="button" aria-expanded="false" aria-controls="options">⚙ Show River Lab controls</button>
@@ -101,27 +101,53 @@ const GROWTH_END=1180,GROWTH_JUNCTIONS=[100,450,850];
 const POND_INLET=500,POND_JOIN=520,POND_TAIL=850;
 const pondScene=()=>geom.scene==='pond';
 const pondLevel=()=>5.5-(POND_JOIN+180)*.009+geom.pondLevelOffset;
-const pondCenter=z=>centerX(POND_INLET)+5*Math.sin((z-POND_INLET)/125);
+const pondCenter=z=>centerX(POND_INLET)+7*Math.sin((z-POND_INLET)/147);
+// Independent left/right shoreline stations (distances from the basin axis).
+// A river mouth enters a broadening bay; lateral shelves and unequal lobes
+// replace the former symmetrical sine lens and its elongated pointed tail.
+const POND_SHORE_STATIONS=[
+ [500,5.5,5.5],[515,10,14],[540,28,31],[575,55,43],
+ [615,84,66],[650,110,80],[690,102,106],[725,80,99],
+ [760,54,80],[795,43,53],[823,31,34],[841,17,18],
+ [847,9,10],[850,0,0]
+];
+function pondSides(z){
+ if(z<POND_INLET||z>POND_TAIL)return {left:0,right:0};
+ let i=0;
+ while(i<POND_SHORE_STATIONS.length-2&&z>POND_SHORE_STATIONS[i+1][0])i++;
+ const a=POND_SHORE_STATIONS[i],b=POND_SHORE_STATIONS[i+1];
+ const t=smooth((z-a[0])/(b[0]-a[0]));
+ const scale=geom.pondRadius/100;
+ const r0=mix(a[1],b[1],t),r1=mix(a[2],b[2],t);
+ const inlet=(1-smooth((z-POND_INLET)/50));
+ // Mouth matches the selected river width and merges into a natural lake.
+ return {left:Math.max(0,mix(r0*scale,geom.width/2,inlet)),
+         right:Math.max(0,mix(r1*scale,geom.width/2,inlet))};
+}
+function pondBounds(z){
+ const {left,right}=pondSides(z),cx=pondCenter(z);
+ return {left:cx-left,right:cx+right,center:cx,width:left+right};
+}
 function pondRadius(z){
- if(z<POND_INLET||z>POND_TAIL)return 0;
- const t=(z-POND_INLET)/(POND_TAIL-POND_INLET);
- const base=geom.width*.5;
- const bulge=geom.pondRadius*Math.pow(Math.max(0,Math.sin(Math.PI*t)),1.25);
- const taper=1-smooth(t/.45);
- return Math.max(.05,base*taper+bulge);
+ const p=pondSides(z);
+ return Math.max(.05,Math.max(p.left,p.right));
 }
 function pondGround(x,z,raw){
- const radius=pondRadius(z);
- if(radius<=0)return raw;
- const d=Math.abs(x-pondCenter(z));
- const rise=1.05,blend=geom.pondShore;
- if(d<radius){
-  const u=d/Math.max(.001,radius);
-  const depth=geom.pondDepth*Math.pow(Math.max(0,1-u*u),1.3);
-  return Math.min(raw,pondLevel()-.06-depth);
+ if(z<POND_INLET||z>POND_TAIL)return raw;
+ const p=pondBounds(z);
+ const outside=x<p.left?p.left-x:x>p.right?x-p.right:0;
+ // A shallow submerged margin ensures that interpolated terrain triangles
+ // cannot penetrate the visible water. The bank blends outward from there.
+ const guard=3.5,blend=geom.pondShore;
+ const inside=outside===0?Math.min(x-p.left,p.right-x):0;
+ if(!outside){
+  const u=Math.max(0,Math.min(1,inside/Math.max(1,p.width*.5)));
+  const depth=.30+geom.pondDepth*Math.pow(Math.sin(Math.PI*u*.5),1.5);
+  return Math.min(raw,pondLevel()-depth);
  }
- if(d<radius+blend){
-  const target=mix(pondLevel()-.06,raw,smooth((d-radius)/blend));
+ if(outside<guard)return Math.min(raw,pondLevel()-.30);
+ if(outside<guard+blend){
+  const target=mix(pondLevel()-.30,raw,smooth((outside-guard)/blend));
   return Math.min(raw,target);
  }
  return raw;
@@ -310,14 +336,15 @@ function createTerrain(){
    if(close){
     // Terrain vertices concentrate beside the small watercourse.
     // ~0.3m transverse sampling near banks, while far terrain stays coarse.
-    const u=i/columns*2-1,abs=Math.abs(u),corridor=pondScene()?Math.max(16,pondRadius(z)+8):growthScene()?Math.max(17,channelWidth(z)+18):extended?14:26,split=extended?.58:.48;
+    const u=i/columns*2-1,abs=Math.abs(u),corridor=pondScene()?Math.max(18,pondRadius(z)+geom.pondShore+10):growthScene()?Math.max(17,channelWidth(z)+18):extended?14:26,split=extended?.58:.48;
     const offset=abs<=split?corridor*abs/split:
       corridor+((pondScene()?235:extended?170:PLANE_MAX-35)-corridor)*((abs-split)/(1-split));
-    x=centerX(z)+Math.sign(u)*offset;
+    x=(pondScene()&&z>=POND_INLET?pondCenter(z):centerX(z))+Math.sign(u)*offset;
    }else x=mix(PLANE_MIN,PLANE_MAX,i/columns);
    const c=channelAt(x,z),h=groundHeight(x,z,c);
    pos.push(x,h,z);
-   const dist=pondScene()&&z>=POND_INLET?Math.abs(x-pondCenter(z))-pondRadius(z):c.distance-c.width*.6;
+   const p=pondScene()?pondBounds(z):null;
+   const dist=p&&z>=POND_INLET?(x<p.left?p.left-x:x>p.right?x-p.right:-Math.min(x-p.left,p.right-x)):c.distance-c.width*.6;
    const shade=1-smooth(dist/Math.max(1,geom.bankWidth+geom.shoulder));
    const color=new THREE.Color(0x89a079).lerp(new THREE.Color(0x719778),shade*.65);
    col.push(color.r,color.g,color.b);
@@ -403,21 +430,23 @@ function createWater(){
 const stillPondTexture=riverTexture.clone();
 stillPondTexture.offset.set(0,0);stillPondTexture.needsUpdate=true;
 const pondWaterMaterial=new THREE.MeshPhongMaterial({
- color:0x378fa5,map:stillPondTexture,side:THREE.DoubleSide,
- shininess:42,specular:0xaacbd6,depthWrite:true
+ color:0x378fa5,side:THREE.DoubleSide,
+ shininess:28,specular:0x6a9fad,depthWrite:true
 });
 function createPondWater(){
  if(!pondScene())return null;
- const pos=[],uv=[],indices=[];
- const steps=250;
+ const pos=[],uv=[],indices=[],steps=350;
+ // Build the standing surface across its own contour, not the river's banks.
  for(let i=0;i<=steps;i++){
-  const z=mix(POND_INLET,POND_TAIL,i/steps);
-  const x=pondCenter(z),r=pondRadius(z);
-  for(const side of [-1,1]){
-   pos.push(x+side*r,pondLevel()+.055,z);
-   uv.push(side<0?0:1,(z-POND_INLET)/38);
+  const z=mix(POND_INLET,POND_TAIL,i/steps),p=pondBounds(z);
+  // The end converges to one point; do not generate a zero-area closing face.
+  const margin=Math.min(.55,p.width*.10);
+  const left=p.left+margin,right=p.right-margin;
+  for(const x of [left,right]){
+   pos.push(x,pondLevel()+.055,z);
+   uv.push(x/52,z/52);
   }
-  if(i>0){const k=i*2;indices.push(k-2,k,k-1,k-1,k,k+1)}
+  if(i){const k=i*2;indices.push(k-2,k,k-1,k-1,k,k+1)}
  }
  const g=geometry(pos,indices);
  g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
@@ -454,7 +483,7 @@ let wireframe=false;
 let waterMotion=true,waterTextureEnabled=true;
 function setWaterAppearance(){
  water.material=waterTextureEnabled?[plainWaterMaterial,movingWaterMaterial]:[plainWaterMaterial,plainWaterMaterial];
- pondWaterMaterial.map=waterTextureEnabled?stillPondTexture:null;
+ pondWaterMaterial.map=null; // Keep pond optically calm; river remains animated.
  pondWaterMaterial.needsUpdate=true;
  plainWaterMaterial.wireframe=wireframe;movingWaterMaterial.wireframe=wireframe;
 }
@@ -614,7 +643,7 @@ function audit(){
  (longHead()&&geom.source==='runoff'?
  ' Width at 25/50/75% downstream: '+[.25,.5,.75].map(t=>(geom.width*Math.pow(t,geom.headPower)).toFixed(2)).join(' / ')+' m. ':'')+
  (stagedWater()?' Water begins '+(waterStartZ()-headStart()).toFixed(0)+' m downstream; first texture '+(thresholdZ(STAGED.textureWidth)-headStart()).toFixed(0)+' m; full opacity '+(thresholdZ(STAGED.fullWidth)-headStart()).toFixed(0)+' m.':'')+
- (pondScene()?' River-to-pond prototype: separate level basin at '+pondLevel().toFixed(2)+' m, shoreline '+POND_INLET+'–'+POND_TAIL+' m, '+(POND_JOIN-POND_INLET)+' m inlet overlap; pond has independent water geometry. ':'')+
+ (pondScene()?' River-to-pond prototype: asymmetric contour, independent level basin at '+pondLevel().toFixed(2)+' m, shoreline '+POND_INLET+'–'+POND_TAIL+' m, '+(POND_JOIN-POND_INLET)+' m inlet overlap; pond has independent water geometry. ':'')+
  (growthScene()?' Stream-to-river prototype: tributary confluences at 100, 450, 850 m; continuous channel width '+GROWTH_JUNCTIONS.map(z=>growthWidth(z).toFixed(1)).join(' / ')+' m at junctions. ':'')+
  ' No fluid simulation.';
  const color=land.geometry.getAttribute('color'),uv=water.geometry.getAttribute('uv');
