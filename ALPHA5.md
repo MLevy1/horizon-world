@@ -1,6 +1,6 @@
 # Alpha 5: geography-first world-generation replacement
 
-**Development branch. Do not merge without visual and performance validation.**
+**Alpha 5.1 experimental preview. Do not merge without visual and performance validation.**
 
 ## The dependency order
 
@@ -34,6 +34,18 @@ height queries. Drainage regions are an implementation detail, not hydrological 
   behavior, and valley scaling.
 - Visible version is 5.0.0 on the branch only; production remains 4.3.0.
 
+## New in Alpha 5.1
+
+- `terrain-mesh.js`: refine regular terrain cells around channels in fine near-field
+  tiles (4× or 8× based on tile size), with matching vertices at *internal cell*
+  boundaries. This reduces ground triangles cutting across narrow water channels.
+- Preserve established low-detail geometry outside the watercourse.
+- Ensure that a wetted channel is actually excavated beneath the water surface,
+  even when local terrain would exceed the former 14 m excavation limit.
+- Unit tests check internal triangulation continuity, upward triangle winding,
+  deterministic coordinates, and riverbed submersion in steep relief.
+- The test location X 10,929 / Z 458 remains a mandatory visual benchmark.
+
 ## Still required before replacing live world
 
 1. **Drainage between domains:** route across adjoining 32.768 km boundaries rather
@@ -41,9 +53,10 @@ height queries. Drainage regions are an implementation detail, not hydrological 
 2. **Standing-water basins:** define ponds and lakes in the geographic graph,
    with inlets, outlets, flat water elevations, basin contours, and bathymetry,
    before final geometry is built.
-3. **Channel-aware geometry:** triangulate along feature boundaries, banks and
-   tributary junctions, rather than relying on regular 4–5 m tile vertices to
-   resolve 1–3 m streams. Stitch the meshes across LOD tile boundaries.
+3. **Channel-aware geometry:** the first adaptive internal grid is implemented,
+   but it must still be tested visually for bank fidelity, tributary junctions,
+   river-to-pond mouths, and *cross-tile LOD stitching*. The outermost ring is
+   deliberately left coarse until a shared seam-stitching contract exists.
 4. **One water/terrain interface:** river and pond surfaces must use precisely
    the same boundaries and elevations as the final ground. Disallow geometry
    clipping against uncarved `baseTerrain`. Restore translucent water and
