@@ -1,6 +1,6 @@
 # Alpha 5: geography-first world-generation replacement
 
-**Alpha 5.2 experimental preview. Do not merge without visual and performance validation.**
+**Alpha 5.4 experimental shared-channel preview. Do not merge without visual and performance validation.**
 
 ## The dependency order
 
@@ -57,7 +57,35 @@ height queries. Drainage regions are an implementation detail, not hydrological 
 
 **Known gaps:** Ocean mouth treatment is a visual overlap, not a true shared river/ocean contour triangulation. True river and lake basins, cross-LOD seam stitching and hydrological domain routing remain unfinished.
 
-## Still required before replacing live world
+## New in Alpha 5.4 — shared channel triangulation
+
+- A new pure `shared-channel-mesh.js` splits the same indexed terrain triangles
+  into dry ground and wetted river polygons at the geographic waterline.
+  Both the riverbed boundary and the water surface use the **identical x/z
+  intersection vertices**, preventing independently drawn water ribbons from
+  slicing across their corresponding banks.
+- The old freestanding river ribbon construction is disabled in the Alpha 5.4
+  world renderer. Tile-owned water and terrain geometry are cleaned up together.
+- Connected headwater distance now reaches the geographic profile; dry source
+  swales have modest excavation, growing continuously toward mature channels.
+  Water is drawn only where the geographic ground lies beneath the waterline
+  and the width is adequately resolved by the current terrain tile.
+- Cross-section transitions are tested for deterministic positions, matching
+  bank/water boundaries, correct triangle winding, and full-tile channel
+  continuity, including the avoidance of subpixel dotted polygons.
+- Medium-distance terrain tiles can carry coarser, shared water geometry;
+  water that is too narrow for a distant grid remains unresolved rather than
+  being represented by intermittent thin strips.
+
+**Limitations requiring evaluation:** LOD seams between tiles of different
+sizes still need explicit stitching; narrow streams may not show at distance.
+Ocean/river and pond/river transitions need shared basin contour geometry.
+The water shader is still a surface approximation, not volumetric refraction.
+Validate X 11,543 / Z 919, X 10,265 / Z 272, both sides of terrain-tile seams,
+tributary junctions, underwater flight, and distant aerial views on iOS before
+considering a merge.
+
+
 
 1. **Drainage between domains:** route across adjoining 32.768 km boundaries rather
    than treating every land boundary as an unresolved terminus.
