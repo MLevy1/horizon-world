@@ -59,6 +59,7 @@
 <div id="intro" class="intro"><div class="glass introcard"><div class="eyebrow">A WORLD BEYOND THE HORIZON</div><h1>Go somewhere.</h1><p>A seed-generated landscape for exploration. Follow ridgelines, cross valleys, find coastlines, and survey the world before anything has been built.</p><div class="tips"><div class="tip"><b>Move</b><span><span class="kbd">W</span> <span class="kbd">A</span> <span class="kbd">S</span> <span class="kbd">D</span> · mouse to look</span></div><div class="tip"><b>Explore vertically</b><span><span class="kbd">Space</span> up · <span class="kbd">Shift</span> down</span></div><div class="tip"><b>Change mode</b><span><span class="kbd">F</span> flying / walking</span></div><div class="tip"><b>Navigation</b><span><span class="kbd">M</span> map · <span class="kbd">G</span> settings</span></div></div><button id="start" class="start">Enter the world →</button><div class="status" id="loading">Generating your landscape…</div></div></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import {createGeography} from './geography.js';
 const $=id=>document.getElementById(id);const renderer=new THREE.WebGLRenderer({canvas:$('view'),antialias:true,powerPreference:'high-performance'});let renderResolutionScale=1;function updateRenderResolution(){renderer.setPixelRatio(Math.min(devicePixelRatio,1.65)*renderResolutionScale);renderer.setSize(innerWidth,innerHeight)}updateRenderResolution();renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
 const scene=new THREE.Scene();scene.background=new THREE.Color('#a9c9d5');scene.fog=new THREE.FogExp2('#b0c9cd',0.000085);scene.add(new THREE.HemisphereLight(0xddeeff,0x777d64,2.15));const sun=new THREE.DirectionalLight(0xffefd5,2.0);sun.position.set(-5000,8500,-3000);scene.add(sun);
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.3,30000);camera.rotation.order='YXZ';const player={x:0,y:1000,z:0,yaw:0,pitch:-.13,fly:true,velocity:0};const config={seed:'HORIZON-01',maxDistance:16000,detail:24,speed:65,heightScale:1,collisions:true};let seedNumber=0,terrainCache=new Map(),tiles=new Map(),desired=new Map(),buildQueue=[],vegetationTiles=new Map(),vegetationQueue=[],lastVegetationX=Infinity,lastVegetationZ=Infinity,rockTiles=new Map(),rockQueue=[],lastRocksX=Infinity,lastRocksZ=Infinity,lastUpdateX=Infinity,lastUpdateZ=Infinity,lastUpdateAt=0,streamDirX=0,streamDirZ=-1,streamSpeed=0,active=false,keys=new Set(),dragging=false,touchLook=null,touchVector={x:0,y:0},verticalTouch=0,frame=0,mapDirty=true,mapPixels=null,loadingStarted=performance.now();
@@ -303,7 +304,7 @@ function naturalRivers(ix,iz){
  // connected chain. The old per-edge sine swell produced isolated lens
  // shapes and restarted after every 128-m drainage link.
  const pondSites=[];
- if(labPilotEnabled){
+ { // Alpha 4: pond reaches are defined for every watershed.
   const candidates=[];
   for(const id of kept){
    const down=w.parent[id],drop=Math.abs(w.base[id]-w.base[down]);
@@ -348,10 +349,10 @@ function naturalRivers(ix,iz){
   // Any pond is a continuous reach on the same main river chain. Its
   // irregular shoreline is shared by all affected graph edges.
   const chainRoot=primaryChainRoot(id);
-  const activePonds=labPilotEnabled?pondSites.filter(p=>p.root===chainRoot&&
-   Math.abs(p.distance-(upstreamDistance+length*.5))<p.halfLength+length*.5):[];
+  const activePonds=pondSites.filter(p=>p.root===chainRoot&&
+   Math.abs(p.distance-(upstreamDistance+length*.5))<p.halfLength+length*.5);
   let labPond=false,maxDepression=0;
-  const steps=Math.max(16,Math.ceil(length/(labPilotEnabled?6:10)));
+  const steps=Math.max(16,Math.ceil(length/6));
   for(let k=0;k<=steps;k++){
    const t=k/steps,u=1-t;
    const x=u*u*u*p0.x+3*u*u*t*control0.x+3*u*t*t*control1.x+t*t*t*p1.x;
@@ -462,7 +463,7 @@ function naturalRiverbed(raw,river){
 }
 function wetRiverbankColor(color,river){
  if(!river)return color;
- if(labPilotEnabled&&labPilotMacro){
+ { // Alpha 4: share sediment/shores across all watershed regions.
   const d=river.distance,w=river.width;
   const shore=1-smoothRange(w+1.3,w+Math.max(5,w*.95),d);
   const sand=[.59,.54,.43],gravel=[.39,.42,.40];
@@ -476,12 +477,20 @@ function wetRiverbankColor(color,river){
  const factor=wet*.25;
  return color.map((v,i)=>clamp01(v*(1-factor)+bank[i]*factor));
 }
+// Alpha 4: terrain, surface water and bank materials use one world-space query.
+// Legacy drainage remains a comparison path until regional routing is replaced.
+const worldGeography=createGeography({
+ baseHeight:baseTerrain,
+ resolveFeature:(x,z)=>{
+  if(!naturalWaterwaysEnabled)return null;
+  const river=naturalRiverAt(x,z);
+  return river?{...river,kind:'river',maxCut:NATURAL_VALLEY_MAX_CUT}:null;
+ }
+});
 function terrain(x,z){
+ if(naturalWaterwaysEnabled)return worldGeography.terrain(x,z);
  const raw=baseTerrain(x,z);
- if(raw<0)return raw;
- if(naturalWaterwaysEnabled)return naturalRiverbed(raw,naturalRiverAt(x,z));
- if(!riversEnabled||raw<0)return raw;
- return riverbedHeight(raw,drainageAt(x,z));
+ return !riversEnabled||raw<0?raw:riverbedHeight(raw,drainageAt(x,z));
 }
 function pondElevationAt(x,z){
  if(!riversEnabled)return null;
@@ -497,18 +506,15 @@ function pondElevationAt(x,z){
 }
 function inRiverChannel(x,z,margin=0){
  if(naturalWaterwaysEnabled){
-  const river=naturalRiverAt(x,z);
-  return !!river&&river.distance<river.width+margin;
+  const sample=worldGeography.sample(x,z);
+  return !!sample.feature&&sample.shoreDistance<margin;
  }
  const channel=drainageAt(x,z);
  if(channel&&channel.distance<channel.width*.7+margin)return true;
  return pondElevationAt(x,z)!==null;
 }
 function waterElevationAt(x,z){
- if(naturalWaterwaysEnabled){
-  const river=naturalRiverAt(x,z);
-  return river&&river.distance<river.width*.9?river.water+.10:null;
- }
+ if(naturalWaterwaysEnabled)return worldGeography.water(x,z);
  if(!riversEnabled)return null;
  if(baseTerrain(x,z)<0)return 0;
  const channel=drainageAt(x,z);
@@ -1593,11 +1599,13 @@ function buildTile(key,d){
  // could change heights by tens of metres, raising entire patches above tree roots.
  // Never change the surface to match another LOD: refine geometry instead.
  for(let j=0;j<=N;j++)for(let i=0;i<=N;i++){
-  const xx=x+i*step,zz=z+j*step,h=terrain(xx,zz);
+  const xx=x+i*step,zz=z+j*step;
+  const geographic=naturalWaterwaysEnabled?worldGeography.sample(xx,zz):null;
+  const h=geographic?geographic.ground:terrain(xx,zz);
   vertices.push(xx,h,zz);
   // World-aligned UVs keep ground texture stationary as terrain tiles stream.
   uvs.push(xx/18,zz/18);
-  const river=naturalWaterwaysEnabled?naturalRiverAt(xx,zz):null;
+  const river=geographic?.feature??null;
   const original=wetRiverbankColor(colorFor(xx,zz,h),river);
   colors.push(...original);
   naturalColors.push(...wetRiverbankColor(naturalColorFor(xx,zz,h,original),river));
@@ -1984,7 +1992,7 @@ function buildStream(ix,iz,key){
   for(const seg of naturalRivers(mi,mz).segments){
    const mx=(seg.x0+seg.x1)/2,mz0=(seg.z0+seg.z1)/2;
    if(mx<x0||mx>=x1||mz0<z0||mz0>=z1)continue;
-   if(labPilotEnabled){
+   {
     const list=pilotChains.get(seg.chainRoot)||[];
     list.push(seg);pilotChains.set(seg.chainRoot,list);
     selected++;if(seg.labPond)ponds++;
@@ -1999,7 +2007,7 @@ function buildStream(ix,iz,key){
  // Main-stem and tributary branches are built as continuous triangle
  // strips across all consecutive 128m drainage edges in the streaming
  // cell. A new run starts only when graph connectivity actually breaks.
- if(labPilotEnabled)for(const chain of pilotChains.values()){
+ for(const chain of pilotChains.values()){
   chain.sort((a,b)=>a.upstreamDistance-b.upstreamDistance);
   let run=[],last=null;
   const flush=()=>{
@@ -2027,9 +2035,9 @@ function buildStream(ix,iz,key){
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
   geo.setIndex(indices);
-  if(labPilotEnabled)geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
   geo.computeVertexNormals();geo.computeBoundingSphere();
-  const mesh=new THREE.Mesh(geo,labPilotEnabled?labPilotWaterMaterial:streamWaterMaterial);
+  const mesh=new THREE.Mesh(geo,labPilotWaterMaterial);
   mesh.frustumCulled=true;group.add(mesh);
  }
  group.visible=showStreams;scene.add(group);
@@ -2873,7 +2881,7 @@ function loop(){
  perfStats.lastFrame=now;
  const cpuStart=now,dt=Math.min(clock.getDelta(),.055);
  if(active)update(dt);
- if(labPilotEnabled&&labPilotMacro)labPilotTexture.offset.y=(labPilotTexture.offset.y-dt*.022)%1;
+ if(naturalWaterwaysEnabled)labPilotTexture.offset.y=(labPilotTexture.offset.y-dt*.022)%1;
  let work=0;
  while(buildQueue.length&&work<2){
   const [k,d]=buildQueue.shift();
