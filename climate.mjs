@@ -60,11 +60,12 @@ export function wetFraction(bed,spill,surface){
 /** A water-limited lake contracts below its spill. Its possible spill link is
  * retained in the geographic graph, but its active outflow is zero. */
 export function lakeBalance({cells,grid:g,height,climate,spillM,availableM3s}){
+  const precipitation=climate.liquidInputMm||climate.precipitation,evaporativeDemand=climate.effectiveEvaporationMm||climate.potentialEvaporation;
   const areaAt=i=>i<g.north?g.rowArea[(i/g.width)|0]:0;
   let min=Infinity,capacity=0;
   for(const i of cells){
     min=Math.min(min,height[i]);
-    const extra=Math.max(0,climate.potentialEvaporation[i]-climate.precipitation[i]+climate.runoffMm[i]);
+    const extra=Math.max(0,evaporativeDemand[i]-precipitation[i]+climate.runoffMm[i]);
     capacity+=areaAt(i)*extra*1000/YEAR_SECONDS;
   }
   const closed=availableM3s<capacity-1e-10;
@@ -73,7 +74,7 @@ export function lakeBalance({cells,grid:g,height,climate,spillM,availableM3s}){
     let lo=min,hi=spillM;
     for(let iteration=0;iteration<42;iteration++){
       const mid=(lo+hi)/2;let loss=0;
-      for(const i of cells){const f=wetFraction(height[i],spillM,mid),extra=Math.max(0,climate.potentialEvaporation[i]-climate.precipitation[i]+climate.runoffMm[i]);loss+=areaAt(i)*extra*1000/YEAR_SECONDS*f;}
+      for(const i of cells){const f=wetFraction(height[i],spillM,mid),extra=Math.max(0,evaporativeDemand[i]-precipitation[i]+climate.runoffMm[i]);loss+=areaAt(i)*extra*1000/YEAR_SECONDS*f;}
       if(loss>availableM3s)hi=mid;else lo=mid;
     }
     surface=(lo+hi)/2;
@@ -82,8 +83,8 @@ export function lakeBalance({cells,grid:g,height,climate,spillM,availableM3s}){
   for(const i of cells){
     const f=wetFraction(height[i],spillM,surface),a=areaAt(i)*f;
     area+=a;volume+=a*1e6*Math.max(0,surface-height[i]);
-    evaporation+=a*climate.potentialEvaporation[i]*1000/YEAR_SECONDS;
-    rain+=a*climate.precipitation[i]*1000/YEAR_SECONDS;
+    evaporation+=a*evaporativeDemand[i]*1000/YEAR_SECONDS;
+    rain+=a*precipitation[i]*1000/YEAR_SECONDS;
     wetBaseRunoff+=a*climate.runoffMm[i]*1000/YEAR_SECONDS;
     if(i<g.north){const y=(i/g.width)|0,lon=(i%g.width+.5+(y&1)*.5)/g.width*Math.PI*2-Math.PI;lonX+=Math.cos(lon)*a;lonZ+=Math.sin(lon)*a;latSum+=(90-(y+.5)/g.height*180)*a;}
   }

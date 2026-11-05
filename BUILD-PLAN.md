@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.5.0.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.6.0.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -36,7 +36,7 @@ The full default planet and an alternate seed pass twelve tests. Tests include
 annual precipitation conservation, zero/energy-limited runoff cases, lake
 contraction versus sustained overflow and valid closed-basin destinations.
 
-Next small tasks: snow/ice and glacier storage, then volcanic geography. No
+Snow and glacier storage are completed in the next checkpoint below. No
 detailed terrain, vegetation or active lava simulation is part of this checkpoint.
 
 ## World contract
@@ -55,8 +55,9 @@ below 0.35 km²; larger waterbodies are lakes. Annual rainfall produces steady
 runoff partitioned against evaporative demand, accumulated globally without
 tile boundaries. Lake inputs, open-water evaporation and outflows balance.
 Closed basins retain water below their possible spill; available runoff is
-accounted for by lake evaporation and ocean delivery. Snow storage, dynamic
-seasons and groundwater remain future tasks.
+accounted for by liquid runoff, evaporation, sublimation, retained ice,
+seasonal snow storage changes and sea calving. Dynamic river seasons and
+groundwater remain future tasks.
 
 Algorithm background: Barnes, Lehman & Mulla (2014),
 [Priority-Flood](https://doi.org/10.1016/j.cageo.2013.04.024).
@@ -67,3 +68,20 @@ Run the completed solver checks with:
 ```sh
 node --test tests/planet.test.mjs
 ```
+
+## Snow and glacier checkpoint — 0.6.0
+
+Completed: monthly snow accumulation/melt and sublimation, glacier/ice region
+inventory, downward ice routing, explicit retained ice, sea calving, meltwater
+supply to the existing hydrology graph, snow/ice and meltwater map views, and
+melt-outlet inspection shortcuts. This covers the complete planet.
+
+Default seed: 66 modeled glacier/ice regions, about 3,310 km² of glacier region
+and 9,077 km² with modeled snow. Newly retained ice is about 0.323 km³ per modeled
+year. These are procedural estimates; the ice-routing retention fraction is an
+explicit parameter. Detailed glacier movement and ice-surface deformation are
+not simulated. All 15 tests cover both the original global model and the new
+snow, seasonal, glacier and combined water-budget checks.
+
+Next checkpoint: volcanic locations and geography. Detailed terrain and
+vegetation remain outside this hydrology-first map.

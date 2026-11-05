@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
+import {annualSnowBudget,seasonalCycle} from '../cryosphere.mjs';
 import {annualPartition,lakeBalance,makeClimate} from '../climate.mjs';
 import {solvePlanet,neighbors,lonLat,cellAt,traceDownstream,catchmentMask,DEFAULT_WORLD,traceActive} from '../planet.mjs';
 
@@ -124,12 +125,12 @@ test('every full-planet climate value is finite and the annual planetary precipi
   const m=planet,c=m.climate;
   for(let i=0;i<m.grid.count;i++){
     for(const key of ['temperature','precipitation','potentialEvaporation','runoffMm','aridity'])assert.ok(Number.isFinite(c[key][i]),key);
-    assert.ok(c.precipitation[i]>=0&&c.runoffMm[i]>=0&&c.runoffMm[i]<=c.precipitation[i]);
+    assert.ok(c.precipitation[i]>=0&&c.runoffMm[i]>=0&&c.runoffMm[i]<=c.liquidInputMm[i]+1e-3);
     assert.ok(c.zone[i]<=4);
   }
   assert.ok(m.stats.desertAreaKm2>0&&m.stats.coldAreaKm2>0);
   assert.ok(m.stats.seasonalReaches>0&&m.stats.closedLakes>0&&m.stats.playas>0);
-  assert.ok(Math.abs(m.stats.precipitationM3s-m.stats.landEvaporationM3s-m.stats.lakeExtraEvaporationM3s-m.stats.deliveredFlowM3s)<1e-7);
+  assert.ok(Math.abs(m.stats.precipitationM3s-m.stats.landEvaporationM3s-m.stats.lakeExtraEvaporationM3s-m.stats.deliveredFlowM3s-m.stats.frozenBudgetM3s)<1e-7);
 });
 
 test('closed basins are valid active-flow destinations while their possible overflow routes remain connected',()=>{
@@ -162,4 +163,45 @@ test('a water-limited lake contracts and closes; ample upstream supply sustains 
   assert.equal(wet.closed,false);assert.equal(wet.waterLevelM,20);assert.ok(wet.outflowM3s>0);
   assert.ok(scarce.wetAreaKm2<wet.wetAreaKm2);
   assert.ok(Math.abs(scarce.netEvaporationM3s-.00001)<1e-10);
+});
+
+
+test('snow budgets conserve water across warm, seasonal and permanently freezing climates',()=>{
+  for(const temperature of [-30,-10,-2,5,20])for(const latitude of [-75,-45,0,45,75]){
+    const b=annualSnowBudget({temperature,precipitation:900,potentialEvaporation:500,latitude});
+    assert.ok(Math.abs(900-b.rainMm-b.meltMm-b.sublimationMm-b.formationMm-b.seasonalChangeMm)<1e-8);
+    assert.ok(Math.abs(900-b.rainMm-b.snowfallMm)<1e-8);
+    assert.ok(b.peakSnowMm>=0&&b.endSnowMm>=0&&b.formationMm>=0);
+  }
+  const warm=annualSnowBudget({temperature:30,precipitation:900,potentialEvaporation:500,latitude:0});
+  assert.equal(warm.snowfallMm,0);assert.equal(warm.rainMm,900);
+  const cold=annualSnowBudget({temperature:-30,precipitation:900,potentialEvaporation:35,latitude:75});
+  assert.ok(cold.formationMm>800);assert.equal(cold.meltMm,0);
+});
+
+test('hemisphere seasons reverse while annual precipitation and temperature offsets remain balanced',()=>{
+  const north=seasonalCycle(60),south=seasonalCycle(-60);
+  assert.ok(north.offsets[6]>0&&north.offsets[0]<0);
+  assert.ok(south.offsets[0]>0&&south.offsets[6]<0);
+  assert.ok(Math.abs(north.weights.reduce((a,b)=>a+b,0)-1)<1e-12);
+  assert.ok(Math.abs(north.offsets.reduce((a,b)=>a+b,0))<1e-12);
+});
+
+test('the full planet stores glacier water and routes melt into its actual drainage graph',()=>{
+  const m=planet,c=m.cryosphere,s=c.stats;
+  assert.ok(s.glaciers>0&&s.glacierAreaKm2>0&&s.snowAreaKm2>0);
+  assert.ok(s.snowmeltM3s>0&&s.glacierMeltM3s>0&&s.iceStorageChangeM3s>0&&s.calvingM3s>0);
+  assert.ok(Math.abs(s.glacierFormationM3s-s.glacierMeltM3s-s.iceStorageChangeM3s-s.calvingM3s)<1e-8);
+  let meltCells=0;
+  for(let i=0;i<m.grid.count;i++){
+    if(c.iceExportM3s[i]>0){assert.ok(m.receiver[i]>=0);assert.ok(m.height[m.receiver[i]]<m.height[i]);}
+    if(c.glacier[i])assert.ok(c.glacierId[i]>=0);
+    if(c.iceMeltMm[i]>0){assert.ok(m.climate.liquidInputMm[i]>=c.iceMeltMm[i]-.01);meltCells++;}
+    assert.ok(c.freezeMonths[i]<=12&&c.snowMonths[i]<=12);
+  }
+  assert.ok(meltCells>0);
+  for(const glacier of c.glaciers){
+    const path=traceActive(m,glacier.outletCell),end=path.at(-1),wb=m.waterbody[end]>=0?m.waterbodies[m.waterbody[end]]:null;
+    assert.ok(m.ocean[end]||wb?.closed);
+  }
 });

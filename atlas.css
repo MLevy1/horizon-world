@@ -17,3 +17,6 @@ dialog{max-width:570px;width:calc(100% - 36px);max-height:calc(100dvh - 48px);ov
 #climate-layer{width:100%;min-height:36px;border:1px solid #45616a;border-radius:5px;background:#10252d;color:var(--text);padding:7px 9px;font:inherit;font-size:11px;margin-bottom:11px}
 .climate-legend strong{font-size:9px;font-weight:500;color:#cfddd6}.climate-legend span{display:block;font-size:8px;line-height:1.7;color:var(--muted)}
 #climate-ramp{height:6px;border-radius:2px;margin:7px 0}.climate-summary{color:var(--accent);font-size:9px;line-height:1.7;margin:11px 0 16px}.layer-swatch.dry{background:#b7a17b;height:1px}
+
+.layer-swatch.snow{height:7px;background:#b7dfea;border:1px solid #ecf8f4;border-radius:2px}
+#snow-summary{margin-top:-9px;color:#c5e4e7}

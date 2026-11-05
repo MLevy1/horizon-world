@@ -1,12 +1,12 @@
-import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.5.0';
-import {ZONES,flowRegime} from './climate.mjs?v=0.5.0';
+import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.6.0';
+import {ZONES,flowRegime} from './climate.mjs?v=0.6.0';
 
 const $=id=>document.getElementById(id);
 const canvas=$('map'),ctx=canvas.getContext('2d'),stage=$('map-stage');
 const fmt=new Intl.NumberFormat('en-US'),number=(x,d=1)=>new Intl.NumberFormat('en-US',{maximumFractionDigits:d}).format(x);
 const state={model:null,worker:null,projection:'map',climateLayer:'water',zoom:1,cx:768,cy:384,lon:0,lat:0,selected:-1,trace:[],mask:null,showTrace:false,showCatchment:false,
   width:0,height:0,dpr:1,fit:1,frame:0,texture:null,textureData:null,catchmentTexture:null,globeCanvas:null,globeKey:'',paths:[],heads:[],mouths:[]};
-const layers={rivers:true,streams:true,lakes:true,headwaters:true,basins:false,arrows:false,dry:false};
+const layers={rivers:true,streams:true,lakes:true,headwaters:true,basins:false,arrows:false,dry:false,snow:true};
 const palette={ocean:[17,48,65],land:[54,70,66],coast:[70,86,78],lake:[90,170,187],shore:[28,66,80]};
 const TAU=Math.PI*2,DEG=Math.PI/180;
 let renderRevision=0;
@@ -50,6 +50,18 @@ function makeTexture(){
         else if(state.climateLayer==='water')color=wb.closed?[109,94,74]:palette.land;
       }
     }
+    if(layers.snow&&(state.climateLayer==='water'||state.climateLayer==='snow')){
+      const ice=m.cryosphere;
+      if(m.ocean[i]&&ice.freezeMonths[i]>=6){
+        const blend=Math.max(0,Math.min(.88,(-m.climate.temperature[i]-2)/20));
+        color=color.map((v,k)=>Math.round(v*(1-blend)+[158,195,212][k]*blend));
+      }
+      else if(!m.ocean[i]&&ice.glacier[i])color=[169,219,232];
+      else if(!m.ocean[i]&&layers.lakes&&m.wetness[i]>.35&&ice.freezeMonths[i]>=6)color=[170,202,219];
+      else if(!m.ocean[i]&&ice.snowMonths[i]>=6&&ice.peakSnowMm[i]>=20){
+        const blend=Math.min(.85,ice.snowMonths[i]/12*.85);color=color.map((v,k)=>Math.round(v*(1-blend)+[232,241,236][k]*blend));
+      }
+    }
     if(selectedMask?.[i])color=[Math.round(color[0]*.55+245*.45),Math.round(color[1]*.55+197*.45),Math.round(color[2]*.55+128*.45)];
     const xx=(x*2+(y&1))%tw,yy=y*2;
     for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){
@@ -60,10 +72,18 @@ function makeTexture(){
 }
 const ramps={temperature:[[87,100,166],[90,165,183],[169,199,166],[218,187,104],[183,84,64]],
   precipitation:[[139,104,65],[179,151,98],[125,166,157],[53,127,168],[73,91,167]],
-  aridity:[[153,104,64],[192,165,109],[151,168,126],[81,143,139],[53,111,142]]};
+  aridity:[[153,104,64],[192,165,109],[151,168,126],[81,143,139],[53,111,142]],
+  snow:[[54,70,66],[119,147,151],[184,208,212],[230,241,239],[169,219,232]],
+  melt:[[44,62,71],[58,105,145],[74,160,186],[139,207,216],[212,244,239]]};
 function climateColor(i){
   const c=state.model.climate,kind=state.climateLayer;
-  const value=kind==='temperature'?(c.temperature[i]+25)/60:kind==='precipitation'?c.precipitation[i]/2200:c.aridity[i]/1.5;
+  if(kind==='snow'){
+    const ice=state.model.cryosphere;
+    if(ice.glacier[i])return [169,219,232];
+    if(ice.snowMonths[i]>=11)return [230,241,239];
+    const blend=Math.min(.8,ice.peakSnowMm[i]/400);return [54,70,66].map((v,k)=>Math.round(v*(1-blend)+[220,233,228][k]*blend));
+  }
+  const value=kind==='melt'?(state.model.cryosphere.snowmeltMm[i]+state.model.cryosphere.iceMeltMm[i])/1000:kind==='temperature'?(c.temperature[i]+25)/60:kind==='precipitation'?c.precipitation[i]/2200:c.aridity[i]/1.5;
   const t=Math.max(0,Math.min(1,value))*4,k=Math.min(3,Math.floor(t)),f=t-k,r=ramps[kind];
   return r[k].map((v,j)=>Math.round(v*(1-f)+r[k+1][j]*f));
 }
@@ -76,7 +96,7 @@ function styleReach(kind,regime){
 }
 function updateClimateLegend(){
   const kind=state.climateLayer;
-  const labels={water:['Water availability','Solid: persistent-flow estimate · Dashed: seasonal / ephemeral'],temperature:['Mean annual temperature','−25°C · −10°C · 5°C · 20°C · 35°C'],precipitation:['Annual precipitation','0 · 550 · 1,100 · 1,650 · 2,200+ mm/yr'],aridity:['Moisture balance · precipitation / evaporative demand','Dry / desert ← 0 · 0.25 · 0.5 · 1 → Humid']};
+  const labels={water:['Water availability','Solid: persistent-flow estimate · Dashed: seasonal / ephemeral'],temperature:['Mean annual temperature','−25°C · −10°C · 5°C · 20°C · 35°C'],precipitation:['Annual precipitation','0 · 550 · 1,100 · 1,650 · 2,200+ mm/yr'],aridity:['Moisture balance · precipitation / evaporative demand','Dry / desert ← 0 · 0.25 · 0.5 · 1 → Humid'],snow:['Snow & ice · annual estimates','Gray: seasonal snow · White: persistent snow · Blue: glacier / frozen water'],melt:['Snow + glacier meltwater supply','0 · 250 · 500 · 750 · 1,000+ mm water/yr']};
   $('climate-legend-title').textContent=labels[kind][0];$('climate-legend-labels').textContent=labels[kind][1];
   $('climate-ramp').style.background=kind==='water'?'linear-gradient(90deg,#9b8056,#344642,#5aaabb)':`linear-gradient(90deg,${ramps[kind].map(c=>'rgb('+c.join(',')+')').join(',')})`;
 }
@@ -296,10 +316,11 @@ function coordText(lon,lat){return `${Math.abs(lat).toFixed(2)}° ${lat>=0?'N':'
 function selectCell(i,{focus=false}={}){
   const m=state.model;if(!m)return;state.selected=i;state.trace=traceActive(m,i);state.showTrace=!m.ocean[i];state.showCatchment=false;state.mask=null;
   $('clear-selection').hidden=false;$('selection-actions').hidden=!!m.ocean[i];$('trace-button').classList.toggle('active',state.showTrace);$('catchment-button').classList.remove('active');
+  const ice=m.cryosphere,glacierId=ice.glacierId[i];
   const [lon,lat]=lonLat(m.grid,i),wb=m.waterbody[i]>=0?m.waterbodies[m.waterbody[i]]:null;
   let kind=wb?wb.kind:m.ocean[i]?'ocean':m.channel[i]===3?'major river':m.channel[i]===2?'river':m.channel[i]?'stream':'drainage cell';
-  const head=state.heads.some(n=>n.cell===i);if(head)kind='headwater';
-  const name=wb?(wb.status==='playa'?'Dry basin ':wb.kind==='lake'?'Lake ':'Pond ')+String(wb.id+1).padStart(3,'0'):m.ocean[i]?'The global ocean':head?'A river begins here':kind==='drainage cell'?'An inland catchment':kind==='major river'?'The main river':kind==='river'?'A connected river':'A tributary stream';
+  const head=state.heads.some(n=>n.cell===i);if(head)kind='headwater';if(glacierId>=0)kind='glacier / ice region';
+  const name=glacierId>=0?'Glacier region '+String(glacierId+1).padStart(2,'0'):wb?(wb.status==='playa'?'Dry basin ':wb.kind==='lake'?'Lake ':'Pond ')+String(wb.id+1).padStart(3,'0'):m.ocean[i]?'The global ocean':head?'A river begins here':kind==='drainage cell'?'An inland catchment':kind==='major river'?'The main river':kind==='river'?'A connected river':'A tributary stream';
   let length=0;for(let k=1;k<state.trace.length;k++)length+=distanceKm(m.grid,state.trace[k-1],state.trace[k]);
   const area=wb?m.catchment[wb.outletCell]:m.catchment[i],flow=wb?wb.outflowM3s:m.discharge[i];
   const terminal=m.activeTerminal[i],destinationBody=m.waterbody[terminal]>=0?m.waterbodies[m.waterbody[terminal]]:null;
@@ -309,9 +330,12 @@ function selectCell(i,{focus=false}={}){
     field('Contributing area',number(area,2)+' km²')+field('Mean annual flow',number(flow,3)+' m³/s')+
     (wb?field('Current water area',number(wb.wetAreaKm2,3)+' km²')+field('Water level',number(wb.waterLevelM,1)+' m')+field('Lake behavior',wb.status==='playa'?'Playa / dry basin':wb.closed?'Closed · no outflow':'Overflowing')+field('Lake evaporation',number(wb.evaporationM3s,3)+' m³/s'):
     field('Drainage elevation',number(m.level[i],1)+' m')+field('Route to destination',number(length,1)+' km'));
+  const frozenData=field('Annual snowfall',number(ice.snowfallMm[i],0)+' mm SWE')+field('Snowmelt supply',number(ice.snowmeltMm[i],0)+' mm water/yr')+
+    field('Peak modeled snow',number(ice.peakSnowMm[i],0)+' mm SWE')+field('New ice retained',number(ice.iceGainMm[i],0)+' mm water/yr')+
+    (glacierId>=0?field('Glacier melt supply',number(ice.iceMeltMm[i],0)+' mm water/yr')+field('Ice region area',number(ice.glaciers[glacierId].areaKm2,2)+' km²'):'');
   const climateData=field('Mean temperature',number(m.climate.temperature[i],1)+' °C')+field('Precipitation',number(m.rainfall[i],0)+' mm/yr')+
     field('Evaporative demand',number(m.climate.potentialEvaporation[i],0)+' mm/yr')+field('Climate estimate',ZONES[m.climate.zone[i]]);
-  $('inspector').className='';$('inspector').innerHTML=`<div class="selection-kind">${kind}</div><div class="selection-name">${name}</div><div class="selection-coord">${coordText(lon,lat)}</div><div class="selection-data">${data}${climateData}</div><p class="selection-destination">${m.ocean[i]?'Connected planetary ocean.':`Modeled flow destination: <b>${destination}</b><br>${wb?'Water area follows the annual lake balance.':flowRegime(flow,area)+' flow estimate · '+lakeCount(state.trace,m)+' inland basins on this route.'}`}</p>`;
+  $('inspector').className='';$('inspector').innerHTML=`<div class="selection-kind">${kind}</div><div class="selection-name">${name}</div><div class="selection-coord">${coordText(lon,lat)}</div><div class="selection-data">${data}${climateData}${frozenData}</div><p class="selection-destination">${m.ocean[i]?'Connected planetary ocean.':`Meltwater / flow destination: <b>${destination}</b><br>${wb?'Water area follows the annual lake balance.':flowRegime(flow,area)+' flow estimate · '+lakeCount(state.trace,m)+' inland basins on this route.'}`}</p>`;
 
   if(focus){
     if(state.projection==='globe'){state.lon=lon;state.lat=lat;state.zoom=1.7;}
@@ -400,6 +424,7 @@ function displayStats(){
   $('verification-title').textContent='Every flow has a valid destination';$('verification-detail').textContent=`${fmt.format(s.cells)} cells · 0 cycles · Annual water budget balanced`;
   $('verification').querySelector('.verification-symbol').textContent='✓';$('verification').classList.remove('failed');
   $('climate-summary').textContent=`${number(s.desertAreaKm2/s.landAreaKm2*100,0)}% desert land · ${s.closedLakes} closed waterbodies · ${s.playas} dry basins`;
+  $('snow-summary').textContent=`${fmt.format(m.cryosphere.stats.glaciers)} glacier / ice regions · ${number(m.cryosphere.stats.snowAreaKm2,0)} km² with seasonal or persistent snow`;
   $('coverage').textContent=`${fmt.format(s.cells)} flow cells · ${Math.round(s.equatorSpacingM)} m equatorial spacing`;
   $('map-subtitle').textContent=`${number(s.worldAreaKm2,0)} km². Fully connected.`;
   $('systems-list').replaceChildren();
@@ -420,6 +445,11 @@ function displayStats(){
       let cell=wb.outletCell;for(let i=0;i<m.grid.north;i++)if(m.waterbody[i]===wb.id&&m.wetness[i]>.35){cell=i;break;}
       selectCell(cell,{focus:true});
     });$('systems-list').append(button);
+  }
+  for(const glacier of [...m.cryosphere.glaciers].sort((a,b)=>b.meltwaterM3s-a.meltwaterM3s).slice(0,3)){
+    const button=document.createElement('button');button.type='button';
+    button.innerHTML=`<span class="system-number">❄</span><span class="system-name">Glacier region ${String(glacier.id+1).padStart(2,'0')}<small>${number(glacier.meltwaterM3s,3)} m³/s estimated meltwater</small></span><span class="system-area">${number(glacier.areaKm2,0)} <small>km²</small></span>`;
+    button.addEventListener('click',()=>selectCell(glacier.outletCell,{focus:true}));$('systems-list').append(button);
   }
 }
 function generate(seed){
