@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {solvePlanet,neighbors,lonLat,cellAt,traceDownstream,catchmentMask,DEFAULT_WORLD} from '../planet.mjs';
+import {annualPartition,lakeBalance,makeClimate} from '../climate.mjs';
+import {solvePlanet,neighbors,lonLat,cellAt,traceDownstream,catchmentMask,DEFAULT_WORLD,traceActive} from '../planet.mjs';
 
 const planet=solvePlanet();
 const digest=m=>{
   const hash=createHash('sha256');
-  for(const key of ['height','level','receiver','ocean','waterbody','catchment','discharge','outlet','channel'])hash.update(new Uint8Array(m[key].buffer));
+  for(const key of ['height','level','receiver','ocean','waterbody','catchment','discharge','outlet','channel','activeTerminal','wetness'])hash.update(new Uint8Array(m[key].buffer));
   return hash.digest('hex');
 };
 
@@ -58,13 +59,13 @@ test('every pond and lake is level, has one spill outlet and independently balan
       const wb=m.waterbodies[id];assert.equal(m.level[i],wb.surfaceM);assert.ok(m.height[i]<wb.surfaceM);
       if(p<0||m.waterbody[p]!==id)exits[id]++;
       const area=i<m.grid.north?m.grid.rowArea[(i/m.grid.width)|0]:0;
-      rainInput[id]+=area*m.rainfall[i]*1000/(365.25*86400)*.58;
+      rainInput[id]+=area*m.climate.runoffMm[i]*1000/(365.25*86400);
     }
     if(p>=0&&m.waterbody[p]>=0&&m.waterbody[p]!==id)externalInput[m.waterbody[p]]+=m.discharge[i];
   }
   for(const wb of m.waterbodies){
     assert.equal(exits[wb.id],1);
-    assert.ok(Math.abs(m.discharge[wb.outletCell]-externalInput[wb.id]-rainInput[wb.id])<1e-7);
+    assert.ok(Math.abs(m.discharge[wb.outletCell]+wb.netEvaporationM3s-externalInput[wb.id]-rainInput[wb.id])<1e-7);
     const path=traceDownstream(m,wb.outletCell);assert.ok(m.ocean[path.at(-1)]);
   }
 });
@@ -83,8 +84,8 @@ test('the compact graph connects every source and waterbody to a mouth without o
   }
 });
 
-test('global runoff and catchment area reach the ocean without resets or losses',()=>{
-  assert.ok(Math.abs(planet.stats.totalRunoffM3s-planet.stats.deliveredFlowM3s)<1e-7);
+test('global catchment area and annual runoff are conserved through ocean delivery and lake evaporation',()=>{
+  assert.ok(Math.abs(planet.stats.totalRunoffM3s-planet.stats.deliveredFlowM3s-planet.stats.lakeExtraEvaporationM3s)<1e-7);
   assert.ok(Math.abs(planet.stats.landAreaKm2-planet.stats.deliveredAreaKm2)<1e-7);
   const node=planet.nodes.find(n=>n.kind==='headwater'&&planet.waterbody[planet.receiver[n.cell]]<0);
   const mask=catchmentMask(planet,node.cell);let area=0;
@@ -107,4 +108,58 @@ test('land at both poles drains through the real polar nodes instead of ending a
     assert.ok(m.ocean[traceDownstream(m,i).at(-1)]);
   }
   assert.equal(m.validation.ok,true);assert.ok(m.stats.poleConnections>=2);
+});
+
+
+test('annual precipitation partition respects water and energy limits, including zero cases',()=>{
+  for(const p of [0,1,100,700,2500])for(const pet of [0,1,100,1000,3000]){
+    const b=annualPartition(p,pet);
+    assert.ok(b.evaporation>=0&&b.evaporation<=Math.min(p,pet)+1e-10);
+    assert.ok(b.runoff>=0);assert.ok(Math.abs(b.evaporation+b.runoff-p)<1e-9);
+  }
+  assert.ok(annualPartition(100,1500).runoff<annualPartition(1000,1500).runoff);
+});
+
+test('every full-planet climate value is finite and the annual planetary precipitation budget balances',()=>{
+  const m=planet,c=m.climate;
+  for(let i=0;i<m.grid.count;i++){
+    for(const key of ['temperature','precipitation','potentialEvaporation','runoffMm','aridity'])assert.ok(Number.isFinite(c[key][i]),key);
+    assert.ok(c.precipitation[i]>=0&&c.runoffMm[i]>=0&&c.runoffMm[i]<=c.precipitation[i]);
+    assert.ok(c.zone[i]<=4);
+  }
+  assert.ok(m.stats.desertAreaKm2>0&&m.stats.coldAreaKm2>0);
+  assert.ok(m.stats.seasonalReaches>0&&m.stats.closedLakes>0&&m.stats.playas>0);
+  assert.ok(Math.abs(m.stats.precipitationM3s-m.stats.landEvaporationM3s-m.stats.lakeExtraEvaporationM3s-m.stats.deliveredFlowM3s)<1e-7);
+});
+
+test('closed basins are valid active-flow destinations while their possible overflow routes remain connected',()=>{
+  const m=planet;
+  for(let i=0;i<m.grid.count;i++){
+    const t=m.activeTerminal[i],wb=m.waterbody[t]>=0?m.waterbodies[m.waterbody[t]]:null;
+    assert.ok(m.ocean[t]||(wb?.closed&&wb.outletCell===t));
+  }
+  for(const wb of m.waterbodies){
+    assert.ok(wb.waterLevelM<=wb.surfaceM+1e-5);
+    assert.ok(wb.wetAreaKm2<=wb.areaKm2+1e-7);
+    assert.ok(Math.abs(wb.inflowM3s+wb.localRunoffM3s-wb.wetBaseRunoffM3s+wb.directRainM3s-wb.evaporationM3s-wb.outflowM3s)<1e-7);
+    if(wb.closed){
+      assert.equal(wb.outflowM3s,0);assert.equal(m.activeTerminal[wb.outletCell],wb.outletCell);
+      assert.equal(traceActive(m,wb.outletCell).length,1);
+      assert.ok(m.ocean[traceDownstream(m,wb.outletCell).at(-1)]);
+      assert.ok(wb.waterLevelM<wb.surfaceM);
+    }
+  }
+});
+
+test('a water-limited lake contracts and closes; ample upstream supply sustains overflow',()=>{
+  const g=planet.grid,cells=[Math.floor(g.height/2)*g.width+2],i=cells[0],height=new Float32Array(g.count);
+  height[i]=10;
+  const c={precipitation:new Float32Array(g.count),potentialEvaporation:new Float32Array(g.count),runoffMm:new Float32Array(g.count)};
+  c.precipitation[i]=100;c.potentialEvaporation[i]=1200;c.runoffMm[i]=annualPartition(100,1200).runoff;
+  const args={cells,grid:g,height,climate:c,spillM:20};
+  const scarce=lakeBalance({...args,availableM3s:.00001}),wet=lakeBalance({...args,availableM3s:1});
+  assert.equal(scarce.closed,true);assert.equal(scarce.outflowM3s,0);assert.ok(scarce.waterLevelM<20);
+  assert.equal(wet.closed,false);assert.equal(wet.waterLevelM,20);assert.ok(wet.outflowM3s>0);
+  assert.ok(scarce.wetAreaKm2<wet.wetAreaKm2);
+  assert.ok(Math.abs(scarce.netEvaporationM3s-.00001)<1e-10);
 });

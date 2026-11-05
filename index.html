@@ -7,11 +7,11 @@
   <meta name="description" content="Horizon: the complete hydrology of a seeded planet. Explore connected headwaters, streams, rivers, ponds, lakes and ocean outlets.">
   <title>Horizon — Global Hydrology</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23101c22'/%3E%3Cpath d='M11 4q12 6 4 13t3 11M24 7q-3 6-9 10' fill='none' stroke='%2397dedb' stroke-width='3'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./atlas.css?v=0.4.0">
+  <link rel="stylesheet" href="./atlas.css?v=0.5.0">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="./" aria-label="Horizon home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 3q16 6 5 15t4 11M25 7q-4 6-10 11"/></svg><span>HORIZON<small>GLOBAL HYDROLOGY · 0.4.0</small></span></a>
+    <a class="brand" href="./" aria-label="Horizon home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 3q16 6 5 15t4 11M25 7q-4 6-10 11"/></svg><span>HORIZON<small>GLOBAL HYDROLOGY · 0.5.0</small></span></a>
     <div class="top-note"><span class="status-dot"></span><span id="top-status">Generating the whole planet</span></div>
     <button class="quiet about-trigger" id="about-open">About this world <span aria-hidden="true">↗</span></button>
   </header>
@@ -20,7 +20,7 @@
       <section class="world-section">
         <div class="eyebrow">A WORLD BUILT AROUND WATER</div>
         <h1>Every river<br>has a way home.</h1>
-        <p class="intro">One planet. A connected system from the first headwater to the open ocean.</p>
+        <p class="intro">One planet. A connected system with ocean outlets, closed lakes, and dry basins.</p>
         <form id="seed-form" class="seed-form">
           <label for="seed">WORLD SEED</label>
           <div class="seed-row"><input id="seed" name="seed" maxlength="100" value="HORIZON-01" autocomplete="off" spellcheck="false" aria-label="World seed"><button id="generate" type="submit" aria-label="Generate planet" title="Generate planet">↻</button></div>
@@ -38,6 +38,10 @@
       </section>
       <section class="layers-section" aria-labelledby="layers-title">
         <div class="section-heading"><h2 id="layers-title">Map layers</h2><button id="layers-reset" class="text-button">Reset</button></div>
+        <label class="climate-view-label" for="climate-layer">GLOBAL CLIMATE VIEW</label>
+        <select id="climate-layer" aria-label="Climate view"><option value="water">Water & dry regions</option><option value="temperature">Temperature</option><option value="precipitation">Precipitation</option><option value="aridity">Moisture / aridity</option></select>
+        <div class="climate-legend"><strong id="climate-legend-title"></strong><div id="climate-ramp"></div><span id="climate-legend-labels"></span></div>
+        <p class="climate-summary" id="climate-summary">Calculating climate and water availability…</p>
         <div class="layer-grid">
           <label><input type="checkbox" id="layer-rivers" checked><span class="layer-swatch river"></span>Rivers</label>
           <label><input type="checkbox" id="layer-streams" checked><span class="layer-swatch stream"></span>Streams</label>
@@ -45,15 +49,16 @@
           <label><input type="checkbox" id="layer-headwaters" checked><span class="layer-swatch headwater"></span>Headwaters</label>
           <label><input type="checkbox" id="layer-basins"><span class="layer-swatch basin"></span>Catchments</label>
           <label><input type="checkbox" id="layer-arrows"><span class="layer-swatch arrow">→</span>Flow direction</label>
+          <label><input type="checkbox" id="layer-dry"><span class="layer-swatch dry"></span>Potential spills</label>
         </div>
       </section>
       <section class="inspector-section" aria-labelledby="inspector-title">
         <div class="section-heading"><h2 id="inspector-title">Follow the water</h2><button id="clear-selection" class="text-button" hidden>Clear</button></div>
-        <div id="inspector" class="inspector-empty"><span class="inspect-icon">⌖</span><p>Select any waterway or place on land to follow its journey to the ocean.</p></div>
-        <div id="selection-actions" class="selection-actions" hidden><button id="trace-button">Trace to ocean</button><button id="catchment-button" class="secondary">Show catchment</button></div>
+        <div id="inspector" class="inspector-empty"><span class="inspect-icon">⌖</span><p>Select any waterway or place on land to follow its downstream destination.</p></div>
+        <div id="selection-actions" class="selection-actions" hidden><button id="trace-button">Trace flow</button><button id="catchment-button" class="secondary">Show catchment</button></div>
       </section>
       <section class="systems-section" aria-labelledby="systems-title">
-        <div class="section-heading"><h2 id="systems-title">Largest river systems</h2><span class="tiny-label">BY CATCHMENT</span></div>
+        <div class="section-heading"><h2 id="systems-title">Explore water systems</h2><span class="tiny-label">GLOBAL SHORTCUTS</span></div>
         <div id="systems-list" class="systems-list"><p class="muted">Finding the continental drainage systems…</p></div>
       </section>
       <footer class="sidebar-footer">Hydrology first.<br><span>Land is shown only to make the water legible.</span></footer>
@@ -65,7 +70,7 @@
       </div>
       <div class="map-stage" id="map-stage">
         <canvas id="map" role="img" aria-label="Global water network. Drag to pan, pinch or scroll to zoom, and select a waterway to inspect it." tabindex="0"></canvas>
-        <div class="map-loading" id="loading" role="status" aria-live="polite"><div class="loading-mark"><span></span><span></span><span></span></div><h2>Finding every way to the sea</h2><p id="loading-stage">Defining continents and drainage divides</p><div class="progress-track"><div id="loading-progress"></div></div><small>The entire planet is generated together.</small></div>
+        <div class="map-loading" id="loading" role="status" aria-live="polite"><div class="loading-mark"><span></span><span></span><span></span></div><h2>Balancing the whole world’s water</h2><p id="loading-stage">Defining continents and drainage divides</p><div class="progress-track"><div id="loading-progress"></div></div><small>The entire planet is generated together.</small></div>
         <div class="map-controls" role="group" aria-label="Map controls"><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><button id="fit-world" aria-label="Fit complete world" title="Fit complete world">⊙</button></div>
         <div class="map-compass" aria-hidden="true"><span>N</span><svg viewBox="0 0 20 28"><path d="M10 1 4 21l6-4 6 4z"/></svg></div>
         <div class="map-hint" id="map-hint">Drag to explore <span>·</span> Scroll or pinch to zoom <span>·</span> Select to trace</div>
@@ -79,10 +84,10 @@
     <button class="dialog-close quiet" id="about-close" aria-label="Close about dialog">✕</button>
     <span class="eyebrow">HORIZON · A FRESH FOUNDATION</span><h2>A complete world of water.</h2>
     <p>This version starts with hydrology. It generates one closed planet, then resolves its ocean, drainage divides, headwaters, streams, rivers, ponds, lakes and spill outlets as a single connected system.</p>
-    <dl><dt>World</dt><dd>A fictional planet, 128 km in diameter; about 51,472 km² of surface.</dd><dt>Coverage</dt><dd>1,179,650 flow cells. Longitude is connected across the map seam; both poles are part of the same graph.</dd><dt>Map resolution</dt><dd>About 262 m between flow cells at the equator. Zooming changes the view of the existing network.</dd><dt>Water</dt><dd>Steady rainfall runoff. Ponds and lakes are retained at their spill levels, with one outlet and conserved downstream flow. Every inland cell drains to the connected ocean.</dd><dt>Land</dt><dd>Only broad drainage elevations are calculated to establish flow direction. There are no detailed terrain meshes, vegetation, buildings or 3D river surfaces.</dd></dl>
-    <p class="muted">A lake is classified here as an inland waterbody of at least 0.35 km²; smaller waterbodies are shown as ponds. Shorelines follow the drainage grid. Seasonal drying, evaporation and groundwater are outside this steady-flow model.</p>
+    <dl><dt>World</dt><dd>A fictional planet, 128 km in diameter; about 51,472 km² of surface.</dd><dt>Coverage</dt><dd>1,179,650 flow cells. Longitude is connected across the map seam; both poles are part of the same graph.</dd><dt>Map resolution</dt><dd>About 262 m between flow cells at the equator. Zooming changes the view of the existing network.</dd><dt>Water</dt><dd>Annual precipitation is partitioned between evaporation and runoff. Lakes contract when inflow cannot sustain a spill. Active flow ends at an ocean or closed basin; possible overflow connections remain available in the global graph.</dd><dt>Climate</dt><dd>Temperature follows latitude and elevation. An approximate circulation transports moisture around complete latitude rings, including windward rainfall and leeward drying. These annual fields change runoff and lake water balances; they are procedural estimates, not a weather forecast.</dd><dt>Land</dt><dd>Only broad drainage elevations are calculated to establish flow direction. There are no detailed terrain meshes, vegetation, buildings or 3D river surfaces.</dd></dl>
+    <p class="muted">Lake and pond names refer to their mapped basin inventory (0.35 km² threshold). The blue surface follows estimated annual water availability; exposed basin margins are brown. Dashed waterways indicate seasonal or ephemeral flow estimates. Potential spills are dormant overflow links. Snow storage, glacier motion, seasons, and groundwater remain future steps.</p>
     <a href="https://github.com/MLevy1/horizon-world" target="_blank" rel="noopener">View the source ↗</a>
   </dialog>
-  <script type="module" src="./atlas.mjs?v=0.4.0"></script>
+  <script type="module" src="./atlas.mjs?v=0.5.0"></script>
 </body>
 </html>

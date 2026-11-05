@@ -19,10 +19,25 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.4.0.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.5.0.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
+
+## Climate checkpoint — 0.5.0
+
+Completed: visible global temperature, precipitation and moisture/aridity layers;
+climate-dependent runoff; annual evaporation budgets; contracting lakes, closed
+basins, playa estimates and active flow destinations. Potential overflow routes
+remain globally connected. Dashed waterways indicate annual estimates of seasonal
+or ephemeral flow; dormant spills are a separate optional layer.
+
+The full default planet and an alternate seed pass twelve tests. Tests include
+annual precipitation conservation, zero/energy-limited runoff cases, lake
+contraction versus sustained overflow and valid closed-basin destinations.
+
+Next small tasks: snow/ice and glacier storage, then volcanic geography. No
+detailed terrain, vegetation or active lava simulation is part of this checkpoint.
 
 ## World contract
 
@@ -37,9 +52,11 @@ The largest connected below-sea-level component is the ocean. Priority-Flood
 resolves every inland cell to its lowest escape level. Enclosed depressions
 retain flat water surfaces and one spill outlet each. Ponds have mapped area
 below 0.35 km²; larger waterbodies are lakes. Annual rainfall produces steady
-runoff (coefficient 0.58), accumulated globally without tile boundaries. Lake
-inputs and outflows balance. All retained basins are overflowing in this
-steady-flow model; evaporation, seasonal drying and groundwater are not modeled.
+runoff partitioned against evaporative demand, accumulated globally without
+tile boundaries. Lake inputs, open-water evaporation and outflows balance.
+Closed basins retain water below their possible spill; available runoff is
+accounted for by lake evaporation and ocean delivery. Snow storage, dynamic
+seasons and groundwater remain future tasks.
 
 Algorithm background: Barnes, Lehman & Mulla (2014),
 [Priority-Flood](https://doi.org/10.1016/j.cageo.2013.04.024).

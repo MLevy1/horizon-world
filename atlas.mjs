@@ -1,11 +1,12 @@
-import {VERSION,lonLat,cellAt,traceDownstream,catchmentMask,distanceKm} from './planet.mjs';
+import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.5.0';
+import {ZONES,flowRegime} from './climate.mjs?v=0.5.0';
 
 const $=id=>document.getElementById(id);
 const canvas=$('map'),ctx=canvas.getContext('2d'),stage=$('map-stage');
 const fmt=new Intl.NumberFormat('en-US'),number=(x,d=1)=>new Intl.NumberFormat('en-US',{maximumFractionDigits:d}).format(x);
-const state={model:null,worker:null,projection:'map',zoom:1,cx:768,cy:384,lon:0,lat:0,selected:-1,trace:[],mask:null,showTrace:false,showCatchment:false,
+const state={model:null,worker:null,projection:'map',climateLayer:'water',zoom:1,cx:768,cy:384,lon:0,lat:0,selected:-1,trace:[],mask:null,showTrace:false,showCatchment:false,
   width:0,height:0,dpr:1,fit:1,frame:0,texture:null,textureData:null,catchmentTexture:null,globeCanvas:null,globeKey:'',paths:[],heads:[],mouths:[]};
-const layers={rivers:true,streams:true,lakes:true,headwaters:true,basins:false,arrows:false};
+const layers={rivers:true,streams:true,lakes:true,headwaters:true,basins:false,arrows:false,dry:false};
 const palette={ocean:[17,48,65],land:[54,70,66],coast:[70,86,78],lake:[90,170,187],shore:[28,66,80]};
 const TAU=Math.PI*2,DEG=Math.PI/180;
 let renderRevision=0;
@@ -20,6 +21,7 @@ function resize(){
 new ResizeObserver(resize).observe(stage);
 
 function makeTexture(){
+  if(!state.model)return;
   const m=state.model,{width:w,height:h}=m.grid,tw=w*2,th=h*2;
   const tex=document.createElement('canvas');tex.width=tw;tex.height=th;
   const tctx=tex.getContext('2d'),im=tctx.createImageData(tw,th),data=im.data;
@@ -36,9 +38,18 @@ function makeTexture(){
     if(m.ocean[i]){
       const shore=!m.ocean[y*w+(x+w-1)%w]||!m.ocean[y*w+(x+1)%w]||(y>0&&!m.ocean[i-w])||(y<h-1&&!m.ocean[i+w]);
       color=shore?palette.shore:palette.ocean;
-    }else if(layers.lakes&&m.waterbody[i]>=0)color=palette.lake;
-    else if(layers.basins)color=colorForBasin(m.outlet[i]);
-    else if(m.ocean[y*w+(x+w-1)%w]||m.ocean[y*w+(x+1)%w])color=palette.coast;
+    }else{
+      const wb=m.waterbody[i]>=0?m.waterbodies[m.waterbody[i]]:null;
+      if(state.climateLayer!=='water')color=climateColor(i);
+      else if(m.climate.zone[i]===1)color=[99,86,58];
+      else if(m.climate.zone[i]===2)color=[76,77,58];
+      else if(m.climate.zone[i]===0)color=[63,77,82];
+      if(layers.basins)color=colorForBasin(m.activeTerminal[i]);
+      if(layers.lakes&&wb){
+        if(wb.status!=='playa'&&m.wetness[i]>.35)color=palette.lake;
+        else if(state.climateLayer==='water')color=wb.closed?[109,94,74]:palette.land;
+      }
+    }
     if(selectedMask?.[i])color=[Math.round(color[0]*.55+245*.45),Math.round(color[1]*.55+197*.45),Math.round(color[2]*.55+128*.45)];
     const xx=(x*2+(y&1))%tw,yy=y*2;
     for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){
@@ -47,6 +58,30 @@ function makeTexture(){
   }
   tctx.putImageData(im,0,0);state.texture=tex;state.textureData=im;state.globeKey='';renderRevision++;requestDraw();
 }
+const ramps={temperature:[[87,100,166],[90,165,183],[169,199,166],[218,187,104],[183,84,64]],
+  precipitation:[[139,104,65],[179,151,98],[125,166,157],[53,127,168],[73,91,167]],
+  aridity:[[153,104,64],[192,165,109],[151,168,126],[81,143,139],[53,111,142]]};
+function climateColor(i){
+  const c=state.model.climate,kind=state.climateLayer;
+  const value=kind==='temperature'?(c.temperature[i]+25)/60:kind==='precipitation'?c.precipitation[i]/2200:c.aridity[i]/1.5;
+  const t=Math.max(0,Math.min(1,value))*4,k=Math.min(3,Math.floor(t)),f=t-k,r=ramps[kind];
+  return r[k].map((v,j)=>Math.round(v*(1-f)+r[k+1][j]*f));
+}
+function effectiveRegime(reach){return reach.dormantSpill?'dry':reach.regime;}
+function styleReach(kind,regime){
+  ctx.strokeStyle=regime==='dry'?'#b7a17b':kind==='stream'?'#79b9c9':kind==='river'?'#a0d9e0':'#d0f2ef';
+  ctx.globalAlpha=regime==='dry'?.23:regime==='ephemeral'?.32:regime==='seasonal'?.57:.9;
+  ctx.lineWidth=(kind==='stream'?.43:kind==='river'?.94:1.7)*Math.pow(state.zoom,.40)*(regime==='perennial'?1:.75);
+  ctx.lineCap='round';ctx.lineJoin='round';ctx.setLineDash(regime==='perennial'?[]:regime==='seasonal'?[4,3]:[1,3]);
+}
+function updateClimateLegend(){
+  const kind=state.climateLayer;
+  const labels={water:['Water availability','Solid: persistent-flow estimate · Dashed: seasonal / ephemeral'],temperature:['Mean annual temperature','−25°C · −10°C · 5°C · 20°C · 35°C'],precipitation:['Annual precipitation','0 · 550 · 1,100 · 1,650 · 2,200+ mm/yr'],aridity:['Moisture balance · precipitation / evaporative demand','Dry / desert ← 0 · 0.25 · 0.5 · 1 → Humid']};
+  $('climate-legend-title').textContent=labels[kind][0];$('climate-legend-labels').textContent=labels[kind][1];
+  $('climate-ramp').style.background=kind==='water'?'linear-gradient(90deg,#9b8056,#344642,#5aaabb)':`linear-gradient(90deg,${ramps[kind].map(c=>'rgb('+c.join(',')+')').join(',')})`;
+}
+$('climate-layer').addEventListener('change',e=>{state.climateLayer=e.target.value;updateClimateLegend();if(state.model)makeTexture();});
+updateClimateLegend();
 function hsl(h,s,l){
   const hue=(p,q,t)=>{if(t<0)t++;if(t>1)t--;return t<1/6?p+(q-p)*6*t:t<1/2?q:t<2/3?p+(q-p)*(2/3-t)*6:p;};
   const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;
@@ -99,12 +134,15 @@ function drawMap(){
   drawMapGrid(start,end);
   for(const kind of ['stream','river','major']){
     if(kind==='stream'?!layers.streams:!layers.rivers)continue;
-    ctx.strokeStyle=kind==='stream'?'#79b9c9':kind==='river'?'#a0d9e0':'#d0f2ef';
-    ctx.globalAlpha=kind==='stream'?.67:kind==='river'?.88:.97;
-    ctx.lineWidth=(kind==='stream'?.43:kind==='river'?.94:1.7)*Math.pow(state.zoom,.40);ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
-    for(const entry of state.paths)if(entry.reach.kind===kind)for(let copy=start-1;copy<=end;copy++)appendMapPath(entry.points,copy*w);
-    ctx.stroke();
+    for(const regime of ['dry','ephemeral','seasonal','perennial']){
+      if(regime==='dry'&&!layers.dry)continue;
+      styleReach(kind,regime);ctx.beginPath();
+      for(const entry of state.paths)if(entry.reach.kind===kind&&effectiveRegime(entry.reach)===regime)
+        for(let copy=start-1;copy<=end;copy++)appendMapPath(entry.points,copy*w);
+      ctx.stroke();
+    }
   }
+  ctx.setLineDash([]);
   ctx.globalAlpha=1;
   if(layers.headwaters){
     ctx.fillStyle='#d4dfcb';ctx.globalAlpha=.65;ctx.beginPath();const r=Math.min(2.6,.62*Math.pow(state.zoom,.40));
@@ -156,11 +194,14 @@ function drawGlobe(){
   ctx.save();ctx.beginPath();ctx.arc(g.cx,g.cy,g.r,0,TAU);ctx.clip();drawGlobeGrid(g);
   for(const kind of ['stream','river','major']){
     if(kind==='stream'?!layers.streams:!layers.rivers)continue;
-    ctx.strokeStyle=kind==='stream'?'#79b9c9':kind==='river'?'#a0d9e0':'#d0f2ef';ctx.globalAlpha=kind==='stream'?.62:.92;
-    ctx.lineWidth=(kind==='stream'?.45:kind==='river'?.9:1.5)*Math.pow(state.zoom,.4);ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
-    for(const {reach} of state.paths)if(reach.kind===kind)appendGlobePath(reach.path,g);
-    ctx.stroke();
+    for(const regime of ['dry','ephemeral','seasonal','perennial']){
+      if(regime==='dry'&&!layers.dry)continue;
+      styleReach(kind,regime);ctx.beginPath();
+      for(const {reach} of state.paths)if(reach.kind===kind&&effectiveRegime(reach)===regime)appendGlobePath(reach.path,g);
+      ctx.stroke();
+    }
   }
+  ctx.setLineDash([]);
   ctx.globalAlpha=1;
   if(layers.headwaters){ctx.fillStyle='#d4dfcb';ctx.globalAlpha=.65;ctx.beginPath();for(const n of state.heads){const [x,y,z]=globeProject(n.lon,n.lat,g);if(z<=.03)continue;const r=.63*Math.pow(state.zoom,.4);ctx.moveTo(x+r,y);ctx.arc(x,y,r,0,TAU);}ctx.fill();ctx.globalAlpha=1;}
   if(layers.arrows)drawFlowArrows();if(layers.lakes&&state.zoom>=2)drawLakeLabels();ctx.restore();
@@ -180,6 +221,7 @@ function drawFlowArrows(){
   ctx.strokeStyle='#d7eee2bb';ctx.lineWidth=.8;ctx.beginPath();let count=0;
   for(const {reach} of state.paths){
     if(reach.kind==='stream'&&!layers.streams||reach.kind!=='stream'&&!layers.rivers)continue;
+    if(reach.dormantSpill||reach.regime==='dry'||reach.dischargeM3s<1e-9)continue;
     if(reach.kind==='stream'&&state.zoom<3)continue;
     const stride=Math.max(3,Math.floor(40/(state.fit*state.zoom)));
     for(let k=Math.min(2,reach.path.length-1);k<reach.path.length;k+=stride){
@@ -196,7 +238,7 @@ function drawFlowArrows(){
 function drawLakeLabels(){
   ctx.font='10px system-ui';ctx.fillStyle='#d2eeeb';ctx.textAlign='center';
   for(const wb of state.model.waterbodies){
-    if(wb.kind!=='lake'||wb.areaKm2*state.zoom<12)continue;
+    if(wb.kind!=='lake'||wb.status==='playa'||wb.wetAreaKm2*state.zoom<12)continue;
     let point;
     if(state.projection==='globe')point=globeProject(wb.lon,wb.lat,globeSetup());
     else {const g=state.model.grid,p={x:(wb.lon+180)/360*g.width,y:(90-wb.lat)/180*g.height};let dx=p.x-state.cx;dx-=Math.round(dx/g.width)*g.width;point=[state.width/2+dx*state.fit*state.zoom,state.height/2+(p.y-state.cy)*state.fit*state.zoom,1];}
@@ -252,20 +294,25 @@ function selectAt(lx,ly){
 }
 function coordText(lon,lat){return `${Math.abs(lat).toFixed(2)}° ${lat>=0?'N':'S'} · ${Math.abs(lon).toFixed(2)}° ${lon>=0?'E':'W'}`;}
 function selectCell(i,{focus=false}={}){
-  const m=state.model;if(!m)return;state.selected=i;state.trace=traceDownstream(m,i);state.showTrace=!m.ocean[i];state.showCatchment=false;state.mask=null;
+  const m=state.model;if(!m)return;state.selected=i;state.trace=traceActive(m,i);state.showTrace=!m.ocean[i];state.showCatchment=false;state.mask=null;
   $('clear-selection').hidden=false;$('selection-actions').hidden=!!m.ocean[i];$('trace-button').classList.toggle('active',state.showTrace);$('catchment-button').classList.remove('active');
   const [lon,lat]=lonLat(m.grid,i),wb=m.waterbody[i]>=0?m.waterbodies[m.waterbody[i]]:null;
   let kind=wb?wb.kind:m.ocean[i]?'ocean':m.channel[i]===3?'major river':m.channel[i]===2?'river':m.channel[i]?'stream':'drainage cell';
   const head=state.heads.some(n=>n.cell===i);if(head)kind='headwater';
-  const name=wb?(wb.kind==='lake'?'Lake ':'Pond ')+String(wb.id+1).padStart(3,'0'):m.ocean[i]?'The global ocean':head?'A river begins here':kind==='drainage cell'?'An inland catchment':kind==='major river'?'The main river':kind==='river'?'A connected river':'A tributary stream';
+  const name=wb?(wb.status==='playa'?'Dry basin ':wb.kind==='lake'?'Lake ':'Pond ')+String(wb.id+1).padStart(3,'0'):m.ocean[i]?'The global ocean':head?'A river begins here':kind==='drainage cell'?'An inland catchment':kind==='major river'?'The main river':kind==='river'?'A connected river':'A tributary stream';
   let length=0;for(let k=1;k<state.trace.length;k++)length+=distanceKm(m.grid,state.trace[k-1],state.trace[k]);
   const area=wb?m.catchment[wb.outletCell]:m.catchment[i],flow=wb?wb.outflowM3s:m.discharge[i];
+  const terminal=m.activeTerminal[i],destinationBody=m.waterbody[terminal]>=0?m.waterbodies[m.waterbody[terminal]]:null;
+  const destination=destinationBody?.closed?(destinationBody.status==='playa'?'Dry closed basin ':'Closed basin ')+String(destinationBody.id+1).padStart(3,'0'):'Global ocean';
   const field=(label,value)=>`<div><span>${label}</span><strong>${value}</strong></div>`;
   const data=m.ocean[i]?field('Connected ocean',number(m.stats.oceanAreaKm2,0)+' km²')+field('Sea level','0 m'):
-    field('Contributing area',number(area,2)+' km²')+field('Steady flow',number(flow,3)+' m³/s')+
-    (wb?field('Water surface',number(wb.areaKm2,3)+' km²')+field('Spill elevation',number(wb.surfaceM,1)+' m')+field('Stream inlets',fmt.format(m.reaches.filter(e=>m.nodes[e.to].waterbody===wb.id).length))+field('Outlets','1 · connected'):
-    field('Drainage elevation',number(m.level[i],1)+' m')+field('Distance to ocean',number(length,1)+' km'));
-  $('inspector').className='';$('inspector').innerHTML=`<div class="selection-kind">${kind}</div><div class="selection-name">${name}</div><div class="selection-coord">${coordText(lon,lat)}</div><div class="selection-data">${data}</div><p class="selection-destination">${m.ocean[i]?'All inland systems return to this connected body of water.':`Downstream destination: <b>Global ocean</b><br>${wb?'Retained water surface, one spill outlet.':lakeCount(state.trace,m)+' inland waterbodies along this route.'}`}</p>`;
+    field('Contributing area',number(area,2)+' km²')+field('Mean annual flow',number(flow,3)+' m³/s')+
+    (wb?field('Current water area',number(wb.wetAreaKm2,3)+' km²')+field('Water level',number(wb.waterLevelM,1)+' m')+field('Lake behavior',wb.status==='playa'?'Playa / dry basin':wb.closed?'Closed · no outflow':'Overflowing')+field('Lake evaporation',number(wb.evaporationM3s,3)+' m³/s'):
+    field('Drainage elevation',number(m.level[i],1)+' m')+field('Route to destination',number(length,1)+' km'));
+  const climateData=field('Mean temperature',number(m.climate.temperature[i],1)+' °C')+field('Precipitation',number(m.rainfall[i],0)+' mm/yr')+
+    field('Evaporative demand',number(m.climate.potentialEvaporation[i],0)+' mm/yr')+field('Climate estimate',ZONES[m.climate.zone[i]]);
+  $('inspector').className='';$('inspector').innerHTML=`<div class="selection-kind">${kind}</div><div class="selection-name">${name}</div><div class="selection-coord">${coordText(lon,lat)}</div><div class="selection-data">${data}${climateData}</div><p class="selection-destination">${m.ocean[i]?'Connected planetary ocean.':`Modeled flow destination: <b>${destination}</b><br>${wb?'Water area follows the annual lake balance.':flowRegime(flow,area)+' flow estimate · '+lakeCount(state.trace,m)+' inland basins on this route.'}`}</p>`;
+
   if(focus){
     if(state.projection==='globe'){state.lon=lon;state.lat=lat;state.zoom=1.7;}
     else {const p=xy(i);state.cx=p.x;state.cy=p.y;state.zoom=Math.max(3,state.zoom);clampMap();}
@@ -275,7 +322,7 @@ function selectCell(i,{focus=false}={}){
 function lakeCount(path,m){return new Set(path.map(i=>m.waterbody[i]).filter(i=>i>=0)).size;}
 function clearSelection(){
   state.selected=-1;state.trace=[];state.mask=null;state.showTrace=false;state.showCatchment=false;
-  $('inspector').className='inspector-empty';$('inspector').innerHTML='<span class="inspect-icon">⌖</span><p>Select any waterway or place on land to follow its journey to the ocean.</p>';
+  $('inspector').className='inspector-empty';$('inspector').innerHTML='<span class="inspect-icon">⌖</span><p>Select any waterway or place on land to follow its downstream destination.</p>';
   $('selection-actions').hidden=true;$('clear-selection').hidden=true;makeTexture();
 }
 $('clear-selection').addEventListener('click',clearSelection);
@@ -343,15 +390,16 @@ canvas.addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);gesture
 canvas.addEventListener('dblclick',e=>{const p=pointerLocal(e);zoomBy(2,p.x,p.y);});
 
 for(const key of Object.keys(layers))$('layer-'+key).addEventListener('change',e=>{layers[key]=e.target.checked;if(key==='lakes'||key==='basins')makeTexture();else requestDraw();});
-$('layers-reset').addEventListener('click',()=>{for(const key of Object.keys(layers)){layers[key]=!['basins','arrows'].includes(key);$('layer-'+key).checked=layers[key];}makeTexture();});
+$('layers-reset').addEventListener('click',()=>{for(const key of Object.keys(layers)){layers[key]=!['basins','arrows','dry'].includes(key);$('layer-'+key).checked=layers[key];}makeTexture();});
 $('about-open').addEventListener('click',()=>$('about-dialog').showModal());$('about-close').addEventListener('click',()=>$('about-dialog').close());
 $('about-dialog').addEventListener('click',e=>{if(e.target===$('about-dialog')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});
 
 function displayStats(){
   const m=state.model,s=m.stats;for(const key of ['headwaters','streams','rivers','ponds','lakes','mouths'])$('stat-'+key).textContent=fmt.format(s[key]);
-  $('top-status').textContent='Complete planet · All systems connected';
-  $('verification-title').textContent='Every inland cell reaches the ocean';$('verification-detail').textContent=`${fmt.format(s.cells)} cells checked · 0 cycles · 0 unresolved outlets`;
+  $('top-status').textContent='Complete planet · Climate and water balanced';
+  $('verification-title').textContent='Every flow has a valid destination';$('verification-detail').textContent=`${fmt.format(s.cells)} cells · 0 cycles · Annual water budget balanced`;
   $('verification').querySelector('.verification-symbol').textContent='✓';$('verification').classList.remove('failed');
+  $('climate-summary').textContent=`${number(s.desertAreaKm2/s.landAreaKm2*100,0)}% desert land · ${s.closedLakes} closed waterbodies · ${s.playas} dry basins`;
   $('coverage').textContent=`${fmt.format(s.cells)} flow cells · ${Math.round(s.equatorSpacingM)} m equatorial spacing`;
   $('map-subtitle').textContent=`${number(s.worldAreaKm2,0)} km². Fully connected.`;
   $('systems-list').replaceChildren();
@@ -363,17 +411,27 @@ function displayStats(){
       selectCell(head,{focus:true});
     });$('systems-list').append(button);
   }
+  const examples=m.waterbodies.filter(w=>w.closed&&w.status!=='playa').sort((a,b)=>b.wetAreaKm2-a.wetAreaKm2).slice(0,2);
+  const playa=m.waterbodies.find(w=>w.status==='playa');if(playa)examples.push(playa);
+  for(const wb of examples){
+    const button=document.createElement('button');button.type='button';
+    button.innerHTML=`<span class="system-number">◇</span><span class="system-name">${wb.status==='playa'?'Dry':'Closed'} basin ${String(wb.id+1).padStart(3,'0')}<small>${wb.closed?'No ocean outflow · evaporation balances inflow':''}</small></span><span class="system-area">${number(wb.wetAreaKm2,2)} <small>km²</small></span>`;
+    button.addEventListener('click',()=>{
+      let cell=wb.outletCell;for(let i=0;i<m.grid.north;i++)if(m.waterbody[i]===wb.id&&m.wetness[i]>.35){cell=i;break;}
+      selectCell(cell,{focus:true});
+    });$('systems-list').append(button);
+  }
 }
 function generate(seed){
   state.worker?.terminate();state.worker=null;state.model=null;state.selected=-1;state.trace=[];state.mask=null;state.showTrace=false;state.showCatchment=false;
   $('generate').disabled=true;$('loading').hidden=false;$('loading-progress').style.width='0';$('loading-stage').textContent='Defining continents and drainage divides';
-  $('loading').querySelector('h2').textContent='Finding every way to the sea';$('top-status').textContent='Generating the whole planet';
+  $('loading').querySelector('h2').textContent='Balancing the whole world’s water';$('top-status').textContent='Generating the whole planet';
   $('verification-title').textContent='Solving the complete planet';$('verification-detail').textContent='Continents, basins and every downstream link.';$('verification').querySelector('.verification-symbol').textContent='…';
-  $('selection-actions').hidden=true;$('clear-selection').hidden=true;$('inspector').className='inspector-empty';$('inspector').innerHTML='<span class="inspect-icon">⌖</span><p>Select any waterway or place on land to follow its journey to the ocean.</p>';
+  $('selection-actions').hidden=true;$('clear-selection').hidden=true;$('inspector').className='inspector-empty';$('inspector').innerHTML='<span class="inspect-icon">⌖</span><p>Select any waterway or place on land to follow its downstream destination.</p>';
   for(const key of ['headwaters','streams','rivers','ponds','lakes','mouths'])$('stat-'+key).textContent='—';
   $('systems-list').innerHTML='<p class="muted">Finding the continental drainage systems…</p>';
   try{
-    const worker=new Worker(new URL('./planet-worker.mjs',import.meta.url),{type:'module'});state.worker=worker;
+    const worker=new Worker(new URL('./planet-worker.mjs?v='+VERSION,import.meta.url),{type:'module'});state.worker=worker;
     worker.onmessage=({data})=>{
       if(data.type==='progress'){$('loading-stage').textContent=data.stage;$('loading-progress').style.width=data.fraction*100+'%';}
       else if(data.type==='complete'){

@@ -1,11 +1,11 @@
 {
   "name": "horizon-world",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "description": "The complete hydrology of a closed, seeded planet.",
   "scripts": {
-    "test": "node --test tests/planet.test.mjs",
+    "test": "node --test tests/*.test.mjs",
     "build": "node scripts/build.mjs"
   }
 }
