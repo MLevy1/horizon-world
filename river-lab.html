@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Horizon — River Geometry Lab 1.5.1</title>
+<title>Horizon — River Geometry Lab 1.6</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#10232b;color:#eff8f2}
 *{box-sizing:border-box}body{margin:0;overflow:hidden}canvas{display:block}
@@ -35,7 +35,7 @@ details summary{cursor:pointer;font-size:13px}.sliders{display:grid;grid-templat
 </head>
 <body>
 <div id="scene"></div>
-<div id="header"><div><h1>HORIZON · RIVER LAB</h1><small>CONTROLLED GEOMETRY TEST · 1.5.1</small></div><a href="./index.html">Return to Horizon</a></div>
+<div id="header"><div><h1>HORIZON · RIVER LAB</h1><small>CONTROLLED GEOMETRY TEST · 1.6</small></div><a href="./index.html">Return to Horizon</a></div>
 <div id="error" role="alert"></div>
 <div id="controls" class="panel collapsed">
   <button id="panelToggle" type="button" aria-expanded="false" aria-controls="options">⚙ Show River Lab controls</button>
@@ -51,7 +51,7 @@ details summary{cursor:pointer;font-size:13px}.sliders{display:grid;grid-templat
     <label><input type="checkbox" id="grid"> Reference lines</label>
     <label><input type="checkbox" id="shores" checked> Banks</label><label>Terrain <select id="terrainMode"><option value="solid" selected>Solid / unlit</option><option value="colors">Colors / unlit</option><option value="shaded">Lit</option><option value="normals">Normals</option></select></label>
   </div>
-  <div class="geometrybar"><button id="headwaterView">Inspect headwater</button><label>Scene <select id="sceneMode"><option value="long" selected>Long headwater (km)</option><option value="short">Original 360 m test</option></select></label><label>Preset <select id="preset"><option value="river">Small river</option><option value="stream" selected>Small stream</option><option value="incised">Incised channel</option><option value="lowland">Broad lowland</option></select></label><label>Endpoints <select id="endMode"><option value="both" selected>Headwater + pond</option><option value="head">Headwater only</option><option value="outlet">Pond only</option><option value="blunt">Blunt (comparison)</option></select></label><label>Headwater source <select id="headSource"><option value="spring" selected>Spring pool</option><option value="seep">Diffuse seep</option><option value="runoff" selected>Gradual runoff</option><option value="taper">Old taper (compare)</option></select></label></div>
+  <div class="geometrybar"><button id="headwaterView">Inspect headwater</button><label>Scene <select id="sceneMode"><option value="long" selected>Long headwater (km)</option><option value="short">Original 360 m test</option></select></label><label>Preset <select id="preset"><option value="river">Small river</option><option value="stream" selected>Small stream</option><option value="incised">Incised channel</option><option value="lowland">Broad lowland</option></select></label><label>Endpoints <select id="endMode"><option value="both" selected>Headwater + pond</option><option value="head">Headwater only</option><option value="outlet">Pond only</option><option value="blunt">Blunt (comparison)</option></select></label><label>Headwater source <select id="headSource"><option value="spring" selected>Spring pool</option><option value="seep">Diffuse seep</option><option value="runoff" selected>Gradual runoff (staged)</option><option value="taper">Old taper (compare)</option></select></label></div>
 <details id="geometryPanel"><summary>River geometry settings</summary>
 <div class="sliders">
 <label>Water width <output id="widthValue"></output><input id="width" type="range" min="2" max="20" step=".2" value="9.2"></label>
@@ -100,6 +100,13 @@ const terrainStart=()=>headStart()-25;
 const terrainEnd=()=>hasOutlet()?POND_END+15:RIVER_END+25;
 const development=z=>Math.max(0,Math.min(1,(z-headStart())/geom.headLength));
 const growth=z=>Math.pow(development(z),geom.headPower);
+const stagedWater=()=>longHead()&&geom.source==='runoff';
+const STAGED={startWidth:.60,fullWidth:1.60,textureWidth:1.00,minRun:48};
+const hydroWidth=z=>geom.width*growth(z);
+const thresholdZ=width=>headStart()+geom.headLength*Math.pow(Math.min(1,Math.max(0,width/geom.width)),1/geom.headPower);
+const waterStartZ=()=>stagedWater()?thresholdZ(STAGED.startWidth):headStart();
+const waterOpacity=z=>stagedWater()?smooth((hydroWidth(z)-STAGED.startWidth)/(STAGED.fullWidth-STAGED.startWidth)):1;
+const waterTextured=z=>!stagedWater()||hydroWidth(z)>=STAGED.textureWidth;
 const bankGrowth=z=>longHead()&&geom.source==='runoff'?Math.pow(development(z),2):1;
 const isSmall=()=>geom.width<=4.5;
 const streamNoise=z=>.13*Math.sin(z*.17+.8)+.06*Math.sin(z*.49+1.7)+.045*Math.sin(z*.87+.2);
@@ -285,25 +292,40 @@ function waterSurfaceTexture(){
 }
 const riverTexture=waterSurfaceTexture();
 const plainWaterMaterial=new THREE.MeshPhongMaterial({
- color:0x318ba1,side:THREE.DoubleSide,shininess:65,specular:0x9fb9c3,depthWrite:true
+ color:0x318ba1,vertexColors:true,transparent:true,side:THREE.DoubleSide,shininess:65,specular:0x9fb9c3,depthWrite:false
 });
 const movingWaterMaterial=new THREE.MeshPhongMaterial({
- color:0x4699af,map:riverTexture,side:THREE.DoubleSide,shininess:78,specular:0xc7e2eb,depthWrite:true
+ color:0x4699af,map:riverTexture,vertexColors:true,transparent:true,side:THREE.DoubleSide,shininess:78,specular:0xc7e2eb,depthWrite:false
 });
 function createWater(){
- const pos=[],idx=[],uvs=[];
- for(let i=0;i<=waterSampleCount();i++){
-  const z=longitudinalSample(i);
+ const pos=[],idx=[],uvs=[],colors=[],grouper=[];
+ const begin=waterStartZ(),end=hasOutlet()?POND_END:RIVER_END;
+ const span=end-begin,active=!stagedWater()||span>=STAGED.minRun;
+ const count=active?Math.ceil(span/(geom.scene==='long'?1.25:1)):0;
+ let oldMat=-1,groupBegin=0;
+ for(let i=0;i<=count&&active;i++){
+  const z=mix(begin,end,i/Math.max(1,count));
   pos.push(...waterPosition(z,-1),...waterPosition(z,1));
-  // UVs run across the river in U and with world distance in V.
-  // We animate V alone, preserving a directional downstream current.
   uvs.push(0,(z-headStart())/22,1,(z-headStart())/22);
-  if(i){const k=i*2;idx.push(k-2,k,k-1,k-1,k,k+1)}
+  const alpha=waterOpacity(z);
+  colors.push(1,1,1,alpha,1,1,1,alpha);
+  if(i>0){
+   const k=i*2,indexBegin=idx.length;
+   idx.push(k-2,k,k-1,k-1,k,k+1);
+   const mid=mix(begin,end,(i-.5)/count),material=waterTextured(mid)?1:0;
+   if(oldMat!==material){
+    if(oldMat!==-1)grouper.push([groupBegin,indexBegin-groupBegin,oldMat]);
+    groupBegin=indexBegin;oldMat=material;
+   }
+  }
  }
+ if(oldMat!==-1)grouper.push([groupBegin,idx.length-groupBegin,oldMat]);
  const g=geometry(pos,idx);
  g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
- const m=new THREE.Mesh(g,movingWaterMaterial);
- m.renderOrder=2;scene.add(m);return m;
+ g.setAttribute('color',new THREE.Float32BufferAttribute(colors,4));
+ for(const [start,count,material] of grouper)g.addGroup(start,count,material);
+ const mesh=new THREE.Mesh(g,[plainWaterMaterial,movingWaterMaterial]);
+ mesh.renderOrder=2;scene.add(mesh);return mesh;
 }
 let land=createTerrain(),water=createWater();
 const terrainMaterials={
@@ -334,8 +356,8 @@ lines.visible=true;scene.add(lines);
 let wireframe=false;
 let waterMotion=true,waterTextureEnabled=true;
 function setWaterAppearance(){
- water.material=waterTextureEnabled?movingWaterMaterial:plainWaterMaterial;
- water.material.wireframe=wireframe;
+ water.material=waterTextureEnabled?[plainWaterMaterial,movingWaterMaterial]:[plainWaterMaterial,plainWaterMaterial];
+ plainWaterMaterial.wireframe=wireframe;movingWaterMaterial.wireframe=wireframe;
 }
 $('motion').onchange=e=>{waterMotion=e.target.checked};
 $('texture').onchange=e=>{waterTextureEnabled=e.target.checked;setWaterAppearance()};
@@ -471,6 +493,7 @@ function audit(){
  (hasOutlet()?'Outlet widens into an enclosed test pond.':'Blunt downstream test boundary.')+
  (longHead()&&geom.source==='runoff'?
  ' Width at 25/50/75% downstream: '+[.25,.5,.75].map(t=>(geom.width*Math.pow(t,geom.headPower)).toFixed(2)).join(' / ')+' m. ':'')+
+ (stagedWater()?' Water begins '+(waterStartZ()-headStart()).toFixed(0)+' m downstream; first texture '+(thresholdZ(STAGED.textureWidth)-headStart()).toFixed(0)+' m; full opacity '+(thresholdZ(STAGED.fullWidth)-headStart()).toFixed(0)+' m.':'')+
  ' No fluid simulation.';
  const color=land.geometry.getAttribute('color'),uv=water.geometry.getAttribute('uv');
  $('debugreadout').textContent='Vertex colors: '+(color?color.count:'missing')+
