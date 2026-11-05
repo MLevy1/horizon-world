@@ -464,7 +464,7 @@ joinedPlainMaterial.color.setHex(0x378fa5);
 joinedPlainMaterial.specular.setHex(0x668f9e);
 joinedPlainMaterial.shininess=34;
 function createUnifiedRiverPond(){
- const pos=[],uv=[],rgba=[],idx=[],across=24;
+ const pos=[],uv=[],rgba=[],idx=[],flowStrength=[],across=24;
  const upstream=Math.ceil((POND_INLET-headStart())/1.2),downstream=350;
  let rows=0;
  // Never duplicate the join row. Its coordinates, UVs and normals are
@@ -490,7 +490,12 @@ function createUnifiedRiverPond(){
     // The texture's transverse spatial frequency stays nearly constant
     // as the lake widens rather than stretching to the full lake width.
     uv.push((x-left)/Math.max(1,geom.width),(z-headStart())/22);
-    rgba.push(1,1,1,1);
+    // Motion is full-strength upstream but diminishes continuously into
+    // the pond, without introducing a second water mesh or material.
+    const flow=1-.94*smooth((z-(POND_INLET-25))/POND_FLOW_FADE);
+    flowStrength.push(flow);
+    const tint=mix(1,.91,1-flow);
+    rgba.push(tint,tint,tint,1);
     if(rows&&j){
      const k=rows*(across+1)+j,p=k-(across+1);
      // Upward winding (river & pond had opposite winding previously).
@@ -503,6 +508,8 @@ function createUnifiedRiverPond(){
  const g=geometry(pos,idx);
  g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
  g.setAttribute('color',new THREE.Float32BufferAttribute(rgba,4));
+ g.userData.flowBaseV=Float32Array.from(uv.filter((_,i)=>i%2===1));
+ g.userData.flowStrength=Float32Array.from(flowStrength);
  // A single smooth surface normal prevents a lighting discontinuity
  // where the gently sloping river becomes level pond water.
  const normals=new Float32Array(pos.length);
@@ -704,7 +711,7 @@ function audit(){
  (longHead()&&geom.source==='runoff'?
  ' Width at 25/50/75% downstream: '+[.25,.5,.75].map(t=>(geom.width*Math.pow(t,geom.headPower)).toFixed(2)).join(' / ')+' m. ':'')+
  (stagedWater()?' Water begins '+(waterStartZ()-headStart()).toFixed(0)+' m downstream; first texture '+(thresholdZ(STAGED.textureWidth)-headStart()).toFixed(0)+' m; full opacity '+(thresholdZ(STAGED.fullWidth)-headStart()).toFixed(0)+' m.':'')+
- (pondScene()?' River-to-pond prototype: one continuous river-and-pond water mesh (no separate inlet seam), unified surface normals and shading, independent asymmetric sand/gravel basin at '+pondLevel().toFixed(2)+' m. ':'')+
+ (pondScene()?' River-to-pond prototype: 145 m gradually widening mouth, flattening banks, seamless shoreline and flow fading to 6% in the standing basin. Pond level '+pondLevel().toFixed(2)+' m. ':'')+
  (growthScene()?' Stream-to-river prototype: tributary confluences at 100, 450, 850 m; continuous channel width '+GROWTH_JUNCTIONS.map(z=>growthWidth(z).toFixed(1)).join(' / ')+' m at junctions. ':'')+
  ' No fluid simulation.';
  const color=land.geometry.getAttribute('color'),uv=water.geometry.getAttribute('uv');
@@ -716,9 +723,25 @@ syncUI();drawCrossSection();audit();view('aerial');
 function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
 window.addEventListener('resize',resize);
 const animationClock=new THREE.Clock();
+let waterFlowPhase=0,uvUpdateCounter=0;
 renderer.setAnimationLoop(()=>{
  const dt=Math.min(.05,animationClock.getDelta());
- if(waterMotion&&waterTextureEnabled)riverTexture.offset.y=(riverTexture.offset.y-dt*.032)%1;
+ if(pondScene()){
+  riverTexture.offset.y=0;
+  if(waterMotion&&waterTextureEnabled&&water&&water.geometry.userData.flowStrength){
+   waterFlowPhase+=dt*.032;
+   // Update the existing UV buffer at up to 20 Hz on mobile. Only texture
+   // coordinates change; water vertices and triangle count stay constant.
+   if(++uvUpdateCounter%3===0){
+    const uv=water.geometry.getAttribute('uv'),values=uv.array;
+    const base=water.geometry.userData.flowBaseV,strength=water.geometry.userData.flowStrength;
+    for(let i=0;i<strength.length;i++)values[i*2+1]=base[i]-waterFlowPhase*strength[i];
+    uv.needsUpdate=true;
+   }
+  }
+ }else if(waterMotion&&waterTextureEnabled){
+  riverTexture.offset.y=(riverTexture.offset.y-dt*.032)%1;
+ }
  controls.update();renderer.render(scene,camera);
 });
 }catch(err){$('error').style.display='block';$('error').textContent='River lab error: '+String(err);throw err}
