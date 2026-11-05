@@ -58,3 +58,13 @@ test('sub-grid headwaters remain dry instead of dashed polygons',()=>{
 test('shared contour generation is deterministic across rebuilds',()=>{
  assert.deepEqual(make(),make());
 });
+
+test('continuous connected channel covers an entire modeled tile without dashes',()=>{
+ const {water}=make(3);
+ const xs=[...new Set(water.positions.filter((_,i)=>i%3===0).map(v=>+v.toFixed(5)))].sort((a,b)=>a-b);
+ assert.equal(xs[0],0);
+ assert.equal(xs.at(-1),32);
+ for(let i=1;i<xs.length;i++){
+  assert.ok(xs[i]-xs[i-1]<=4.0001,'unexpected dry gap between river cross-sections');
+ }
+});
