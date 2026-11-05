@@ -300,7 +300,7 @@ function groundHeight(x,z,c=channelAt(x,z)){
  if(z<POND_INLET)return stream;
  // Blend terrain banks across the inlet; water surfaces meet at one edge.
  const basin=pondGround(x,z,base);
- if(z<POND_JOIN)return mix(stream,basin,smooth((z-POND_INLET)/(POND_JOIN-POND_INLET)));
+ if(z<POND_JOIN)return Math.min(basin,mix(stream,basin,smooth((z-POND_INLET)/(POND_JOIN-POND_INLET))));
  return basin;
 }
 function waterPosition(z,side){
