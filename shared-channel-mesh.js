@@ -77,8 +77,15 @@ export function sharedChannelMesh(grid,{sample,waterColor,minimumHalfWidth=.7}){
   if(poly.length<3)return;
   const ids=poly.map(waterOnly?waterVertex:terrainVertex);
   for(let j=1;j+1<ids.length;j++){
-   // The source mesh is consistently wound +Y; clipping preserves winding.
-   (waterOnly?waterFaces:faces).push(ids[0],ids[j],ids[j+1]);
+   const [a,b,c]=[ids[0],ids[j],ids[j+1]];
+   const arr=waterOnly?waterVerts:verts;
+   const ax=arr[a*3],az=arr[a*3+2],bx=arr[b*3],bz=arr[b*3+2],
+     cx=arr[c*3],cz=arr[c*3+2];
+   const sign=(bz-az)*(cx-ax)-(bx-ax)*(cz-az);
+   // Wet/dry clipping can introduce repeated endpoints at exact shore
+   // vertices. Never emit zero-area triangles or reversed-facing geometry.
+   if(Math.abs(sign)<1e-9)continue;
+   (waterOnly?waterFaces:faces).push(a,sign>0?b:c,sign>0?c:b);
    if(waterOnly)waterTriangles++;
   }
  }
