@@ -12,7 +12,7 @@
  */
 export function channelAwareGrid({x,z,size,segments,ground,nearChannel,subdivision=8}){
  if(!Number.isInteger(segments)||segments<1)throw new RangeError('Invalid segments');
- if(!Number.isInteger(subdivision)||subdivision<2)throw new RangeError('Invalid subdivision');
+ if(!Number.isInteger(subdivision)||subdivision<2||subdivision%2)throw new RangeError('Invalid subdivision');
  const N=segments,R=subdivision,step=size/N;
  const dense=new Uint8Array(N*N),cell=(i,j)=>j*N+i;
  // Keep the outer ring consistent with existing tile edges. Exact stitching
