@@ -1,37 +1,30 @@
-# Horizon 0.3.0 — connected hydrology foundation
+# Horizon 0.3.1 — One drainage graph for terrain and scenery
 
-The new [hydrology atlas](hydrology.html) operates on a **bounded**
-65.536 km × 65.536 km geographic region, using a shared 256 m grid
-(65,536 cells). The entire domain is solved at once. No drainage statistics
-are restarted at the smaller terrain rendering tile boundaries.
+The 65.536 km × 65.536 km atlas graph is now solved **before** the
+first 3D terrain tile. The same solved graph supplies world-space drainage
+features to the final terrain sampler (`hydrology-terrain.mjs`).
+Terrain meshes, vegetation roots, tree exclusion, rocks, collision and
+walking/flying ground-height queries all use that sampler.
 
-## Implemented
-- Broad relief sampled from Horizon's same seed-based terrain formula.
-- One whole-domain priority-flood determines drainage receivers and fills
-  local sinks for routing. The resulting directed graph is acyclic.
-- Catchment area is accumulated from upstream to downstream.
-- Sea outlets and unresolved outer-boundary outlets are distinguished.
-- Three interactive atlas views: elevation, drainage and outlet basins.
-- Select any location; see coordinates, elevation, contributing area, outlet
-  type, and inspect the continuous upstream/downstream tracing.
-- Pure hydrology model, independent of Three.js, rendering, terrain tiles and
-  water materials. Tests cover connectivity, downhill flow and tile seams.
+The module spatially indexes the atlas's connected channels. It makes modest
+erosion cuts into the seeded base terrain, with no local watershed solves and
+no flow-area reset at rendering-tile boundaries. Old regional drainage map
+options, legacy River Lab pilot and experimental river-water switch are
+disabled in the player interface. The Atlas is the supported flow inspection.
 
-## Important limits
-This is **not yet an infinite or planetary world hydrology solver**. The
-modeled area is bounded. Rivers that reach land edges are marked unresolved;
-we do not assert what happens beyond the domain. Priority-flood filling
-implies possible depressions, but lakes, sediment, physical erosion and
-seasonal discharge are not independently modeled. Flow quantity is currently
-upstream area (km²), not volumetric discharge.
+**Important limits:** This is a bounded geographic model, not infinite
+planetary hydrology. The original base terrain remains outside the domain,
+and erosion blends out near its boundary. The 256 m network resolution is
+insufficient for finished river meanders or realistic riverbanks. The graph
+does not yet determine retained lakes, overflow heights or precise water
+surface elevations, so **inland water isn't rendered**. Oceans are preserved.
+Dormant old river-generation code remains in the source for careful removal
+after mobile testing; it is no longer on the active terrain path.
 
-The existing Horizon exploration world is preserved for comparison. The
-experimental 3D river toggle remains off by default and has not been rebuilt
-around the new hydrology data.
+Tests cover atlas receiver consistency, seed determinism, bounded erosion,
+and continuity at rendering-tile boundaries.
 
-## Next steps
-- Reconcile outlets when expanding the geographic coverage.
-- Classify standing-water basins, retained lakes and overflow outlets.
-- Generate channel dimensions from accumulated contributing area.
-- Carve final terrain and floodplains from the resolved connected graph.
-- Create water meshes only from that final geography.
+Next: basin storage/overflow, a finer connected channel graph, shared
+terrain-and-water geometry, then retiring dead legacy modules.
+
+Run `node --test tests/hydrology.test.mjs tests/hydrology-terrain.test.mjs`.

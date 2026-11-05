@@ -1,12 +1,14 @@
-# Horizon 0.3.0
+# Horizon 0.3.1
 
-The existing 3D explorer is preserved alongside a hydrology-first
-geographic atlas.
+The 3D explorer and [Hydrology Atlas](hydrology.html) now share one
+hydrology-first geographic model for a bounded 65.536 km domain.
 
-- [3D world](index.html)
-- [Hydrology atlas](hydrology.html)
-- [Hydrology model assumptions and roadmap](HYDROLOGY-03.md)
+- [World explorer](index.html)
+- [Hydrology Atlas](hydrology.html)
+- [Scope and limitations](HYDROLOGY-03.md)
 
-Run `node --test tests/hydrology.test.mjs` to verify the whole-domain graph.
-The new drainage model is bounded, not an infinite planet. It is not yet
-connected to the experimental 3D river renderer.
+Forests, coastlines, terrain streaming, flight and navigation are retained.
+Inland river and lake water rendering is temporarily disabled because the
+new graph does not yet contain valid water-surface geometry.
+
+Run `node --test tests/hydrology.test.mjs tests/hydrology-terrain.test.mjs`.
