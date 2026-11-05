@@ -59,6 +59,7 @@
 <div id="intro" class="intro"><div class="glass introcard"><div class="eyebrow">A WORLD BEYOND THE HORIZON</div><h1>Go somewhere.</h1><p>A seed-generated landscape for exploration. Follow ridgelines, cross valleys, find coastlines, and survey the world before anything has been built.</p><div class="tips"><div class="tip"><b>Move</b><span><span class="kbd">W</span> <span class="kbd">A</span> <span class="kbd">S</span> <span class="kbd">D</span> · mouse to look</span></div><div class="tip"><b>Explore vertically</b><span><span class="kbd">Space</span> up · <span class="kbd">Shift</span> down</span></div><div class="tip"><b>Change mode</b><span><span class="kbd">F</span> flying / walking</span></div><div class="tip"><b>Navigation</b><span><span class="kbd">M</span> map · <span class="kbd">G</span> settings</span></div></div><button id="start" class="start">Enter the world →</button><div class="status" id="loading">Generating your landscape…</div></div></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import {createGeography} from './geography.js';
 const $=id=>document.getElementById(id);const renderer=new THREE.WebGLRenderer({canvas:$('view'),antialias:true,powerPreference:'high-performance'});let renderResolutionScale=1;function updateRenderResolution(){renderer.setPixelRatio(Math.min(devicePixelRatio,1.65)*renderResolutionScale);renderer.setSize(innerWidth,innerHeight)}updateRenderResolution();renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
 const scene=new THREE.Scene();scene.background=new THREE.Color('#a9c9d5');scene.fog=new THREE.FogExp2('#b0c9cd',0.000085);scene.add(new THREE.HemisphereLight(0xddeeff,0x777d64,2.15));const sun=new THREE.DirectionalLight(0xffefd5,2.0);sun.position.set(-5000,8500,-3000);scene.add(sun);
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.3,30000);camera.rotation.order='YXZ';const player={x:0,y:1000,z:0,yaw:0,pitch:-.13,fly:true,velocity:0};const config={seed:'HORIZON-01',maxDistance:16000,detail:24,speed:65,heightScale:1,collisions:true};let seedNumber=0,terrainCache=new Map(),tiles=new Map(),desired=new Map(),buildQueue=[],vegetationTiles=new Map(),vegetationQueue=[],lastVegetationX=Infinity,lastVegetationZ=Infinity,rockTiles=new Map(),rockQueue=[],lastRocksX=Infinity,lastRocksZ=Infinity,lastUpdateX=Infinity,lastUpdateZ=Infinity,lastUpdateAt=0,streamDirX=0,streamDirZ=-1,streamSpeed=0,active=false,keys=new Set(),dragging=false,touchLook=null,touchVector={x:0,y:0},verticalTouch=0,frame=0,mapDirty=true,mapPixels=null,loadingStarted=performance.now();
@@ -476,12 +477,20 @@ function wetRiverbankColor(color,river){
  const factor=wet*.25;
  return color.map((v,i)=>clamp01(v*(1-factor)+bank[i]*factor));
 }
+// Alpha 4: terrain, surface water and bank materials use one world-space query.
+// Legacy drainage remains a comparison path until regional routing is replaced.
+const worldGeography=createGeography({
+ baseHeight:baseTerrain,
+ resolveFeature:(x,z)=>{
+  if(!naturalWaterwaysEnabled)return null;
+  const river=naturalRiverAt(x,z);
+  return river?{...river,kind:'river',maxCut:NATURAL_VALLEY_MAX_CUT}:null;
+ }
+});
 function terrain(x,z){
+ if(naturalWaterwaysEnabled)return worldGeography.terrain(x,z);
  const raw=baseTerrain(x,z);
- if(raw<0)return raw;
- if(naturalWaterwaysEnabled)return naturalRiverbed(raw,naturalRiverAt(x,z));
- if(!riversEnabled||raw<0)return raw;
- return riverbedHeight(raw,drainageAt(x,z));
+ return !riversEnabled||raw<0?raw:riverbedHeight(raw,drainageAt(x,z));
 }
 function pondElevationAt(x,z){
  if(!riversEnabled)return null;
@@ -497,18 +506,15 @@ function pondElevationAt(x,z){
 }
 function inRiverChannel(x,z,margin=0){
  if(naturalWaterwaysEnabled){
-  const river=naturalRiverAt(x,z);
-  return !!river&&river.distance<river.width+margin;
+  const sample=worldGeography.sample(x,z);
+  return !!sample.feature&&sample.shoreDistance<margin;
  }
  const channel=drainageAt(x,z);
  if(channel&&channel.distance<channel.width*.7+margin)return true;
  return pondElevationAt(x,z)!==null;
 }
 function waterElevationAt(x,z){
- if(naturalWaterwaysEnabled){
-  const river=naturalRiverAt(x,z);
-  return river&&river.distance<river.width*.9?river.water+.10:null;
- }
+ if(naturalWaterwaysEnabled)return worldGeography.water(x,z);
  if(!riversEnabled)return null;
  if(baseTerrain(x,z)<0)return 0;
  const channel=drainageAt(x,z);
