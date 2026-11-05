@@ -1,13 +1,5 @@
 name: Alpha 4 integrated browser smoke
 on:
-  push:
-    branches: [alpha4-unified-drainage-430]
-    paths:
-      - 'index.html'
-      - 'drainage-network.js'
-      - 'geography.js'
-      - 'tests/browser-smoke.mjs'
-      - '.github/workflows/alpha4-browser-smoke.yml'
   workflow_dispatch:
 jobs:
   mobile:
