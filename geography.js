@@ -16,6 +16,15 @@ export function ramp(a, b, value) {
 }
 export function lerp(a, b, t) { return a+(b-a)*t; }
 
+/** Gradual swale -> intermittent trickle -> visible stream over a long reach.
+ * Flow-distance is measured along an actual connected upstream chain.
+ */
+export function headwaterGrowth(distanceMetres, transitionMetres = 1050, exponent = 2.2) {
+  if (!(transitionMetres > 0)) throw new RangeError('Transition length must be positive');
+  return Math.pow(ramp(0,transitionMetres,Math.max(0,distanceMetres)),exponent);
+}
+
+
 /**
  * River Lab cross-section shared by the lab and world.
  * width is a HALF-width (distance from centreline to water's edge).
