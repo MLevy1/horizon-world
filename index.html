@@ -334,8 +334,15 @@ function naturalRivers(ix,iz){
   const length=Math.hypot(p1.x-p0.x,p1.z-p0.z);
   const tangent0=nodeTangent(id),tangent1=w.parent[down]>=0?
    nodeTangent(down):{x:(p1.x-p0.x)/length,z:(p1.z-p0.z)/length};
-  const control0={x:p0.x+tangent0.x*length*.30,z:p0.z+tangent0.z*length*.30};
-  const control1={x:p1.x-tangent1.x*length*.30,z:p1.z-tangent1.z*length*.30};
+  // Preserve 3.18 control handles when the pilot is disabled.
+  const previous=up>=0?nodePosition(up):p0;
+  const next=w.parent[down]>=0?nodePosition(w.parent[down]):p1;
+  const control0=labPilotEnabled?
+   {x:p0.x+tangent0.x*length*.30,z:p0.z+tangent0.z*length*.30}:
+   {x:p0.x+(p1.x-previous.x)*.20,z:p0.z+(p1.z-previous.z)*.20};
+  const control1=labPilotEnabled?
+   {x:p1.x-tangent1.x*length*.30,z:p1.z-tangent1.z*length*.30}:
+   {x:p1.x-(next.x-p0.x)*.20,z:p1.z-(next.z-p0.z)*.20};
   const width0=naturalRiverWidth(w.acc[id]),width1=naturalRiverWidth(w.acc[down]);
   const upstreamDistance=sourceDistance(id);
   // Any pond is a continuous reach on the same main river chain. Its
