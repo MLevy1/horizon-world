@@ -51,7 +51,7 @@ details summary{cursor:pointer;font-size:13px}.sliders{display:grid;grid-templat
     <label><input type="checkbox" id="grid"> Reference lines</label>
     <label><input type="checkbox" id="shores" checked> Banks</label><label>Terrain <select id="terrainMode"><option value="solid" selected>Solid / unlit</option><option value="colors">Colors / unlit</option><option value="shaded">Lit</option><option value="normals">Normals</option></select></label>
   </div>
-  <div class="geometrybar"><button id="headwaterView">Inspect headwater</button><label>Scene <select id="sceneMode"><option value="long">Long headwater (km)</option><option value="growth">Stream → river (1.4 km)</option><option value="pond" selected>River → pond (1 km)</option><option value="short">Original 360 m test</option></select></label><label>Preset <select id="preset"><option value="river">Small river</option><option value="stream" selected>Small stream</option><option value="incised">Incised channel</option><option value="lowland">Broad lowland</option></select></label><label>Endpoints <select id="endMode"><option value="both" selected>Headwater + pond</option><option value="head">Headwater only</option><option value="outlet">Pond only</option><option value="blunt">Blunt (comparison)</option></select></label><label>Headwater source <select id="headSource"><option value="spring" selected>Spring pool</option><option value="seep">Diffuse seep</option><option value="runoff" selected>Gradual runoff (staged)</option><option value="taper">Old taper (compare)</option></select></label></div>
+  <div class="geometrybar"><button id="headwaterView">Inspect headwater</button><label>Scene <select id="sceneMode"><option value="long">Long headwater (km)</option><option value="growth">Stream → river (1.4 km)</option><option value="pond" selected>River → pond (1 km)</option><option value="short">Original 360 m test</option></select></label><label>Preset <select id="preset"><option value="river" selected>Small river</option><option value="stream">Small stream</option><option value="incised">Incised channel</option><option value="lowland">Broad lowland</option></select></label><label>Endpoints <select id="endMode"><option value="both" selected>Headwater + pond</option><option value="head">Headwater only</option><option value="outlet">Pond only</option><option value="blunt">Blunt (comparison)</option></select></label><label>Headwater source <select id="headSource"><option value="spring" selected>Spring pool</option><option value="seep">Diffuse seep</option><option value="runoff" selected>Gradual runoff (staged)</option><option value="taper">Old taper (compare)</option></select></label></div>
 <details id="geometryPanel"><summary>River geometry settings</summary>
 <div class="sliders">
 <label>Water width <output id="widthValue"></output><input id="width" type="range" min="2" max="20" step=".2" value="9.2"></label>
@@ -156,11 +156,11 @@ const riverX=z=>13*Math.sin(z/55)+5*Math.sin(z/27)+(isSmall()?streamWobble(z):0)
 const centerX=z=>growthScene()?13*Math.sin(z/150)+8*Math.sin(z/66)+1.3*Math.sin(z/19):pondScene()?13*Math.sin(z/150)+8*Math.sin(z/66):z>180?riverX(180)+.06*(z-180):riverX(z);
 const centerY=z=>{
  if(pondScene()){
-  if(z>=POND_JOIN)return pondLevel();
-  if(z>=POND_JOIN-120){
+  if(z>=POND_INLET)return pondLevel();
+  if(z>=POND_INLET-120){
    // Hermite grade: natural upstream slope, horizontal at the pond level.
-   const t=(z-(POND_JOIN-120))/120;
-   const start=5.5-((POND_JOIN-120)+180)*.009;
+   const t=(z-(POND_INLET-120))/120;
+   const start=5.5-((POND_INLET-120)+180)*.009;
    const h00=2*t*t*t-3*t*t+1,h10=t*t*t-2*t*t+t,h01=-2*t*t*t+3*t*t;
    return h00*start+h10*(-.009*120)+h01*pondLevel();
   }
