@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Horizon — River Geometry Lab 1.6</title>
+<title>Horizon — River Geometry Lab 1.7</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#10232b;color:#eff8f2}
 *{box-sizing:border-box}body{margin:0;overflow:hidden}canvas{display:block}
@@ -35,7 +35,7 @@ details summary{cursor:pointer;font-size:13px}.sliders{display:grid;grid-templat
 </head>
 <body>
 <div id="scene"></div>
-<div id="header"><div><h1>HORIZON · RIVER LAB</h1><small>CONTROLLED GEOMETRY TEST · 1.6</small></div><a href="./index.html">Return to Horizon</a></div>
+<div id="header"><div><h1>HORIZON · RIVER LAB</h1><small>CONTROLLED GEOMETRY TEST · 1.7</small></div><a href="./index.html">Return to Horizon</a></div>
 <div id="error" role="alert"></div>
 <div id="controls" class="panel collapsed">
   <button id="panelToggle" type="button" aria-expanded="false" aria-controls="options">⚙ Show River Lab controls</button>
@@ -51,7 +51,7 @@ details summary{cursor:pointer;font-size:13px}.sliders{display:grid;grid-templat
     <label><input type="checkbox" id="grid"> Reference lines</label>
     <label><input type="checkbox" id="shores" checked> Banks</label><label>Terrain <select id="terrainMode"><option value="solid" selected>Solid / unlit</option><option value="colors">Colors / unlit</option><option value="shaded">Lit</option><option value="normals">Normals</option></select></label>
   </div>
-  <div class="geometrybar"><button id="headwaterView">Inspect headwater</button><label>Scene <select id="sceneMode"><option value="long" selected>Long headwater (km)</option><option value="short">Original 360 m test</option></select></label><label>Preset <select id="preset"><option value="river">Small river</option><option value="stream" selected>Small stream</option><option value="incised">Incised channel</option><option value="lowland">Broad lowland</option></select></label><label>Endpoints <select id="endMode"><option value="both" selected>Headwater + pond</option><option value="head">Headwater only</option><option value="outlet">Pond only</option><option value="blunt">Blunt (comparison)</option></select></label><label>Headwater source <select id="headSource"><option value="spring" selected>Spring pool</option><option value="seep">Diffuse seep</option><option value="runoff" selected>Gradual runoff (staged)</option><option value="taper">Old taper (compare)</option></select></label></div>
+  <div class="geometrybar"><button id="headwaterView">Inspect headwater</button><label>Scene <select id="sceneMode"><option value="long">Long headwater (km)</option><option value="growth" selected>Stream → river (1.4 km)</option><option value="short">Original 360 m test</option></select></label><label>Preset <select id="preset"><option value="river">Small river</option><option value="stream" selected>Small stream</option><option value="incised">Incised channel</option><option value="lowland">Broad lowland</option></select></label><label>Endpoints <select id="endMode"><option value="both" selected>Headwater + pond</option><option value="head">Headwater only</option><option value="outlet">Pond only</option><option value="blunt">Blunt (comparison)</option></select></label><label>Headwater source <select id="headSource"><option value="spring" selected>Spring pool</option><option value="seep">Diffuse seep</option><option value="runoff" selected>Gradual runoff (staged)</option><option value="taper">Old taper (compare)</option></select></label></div>
 <details id="geometryPanel"><summary>River geometry settings</summary>
 <div class="sliders">
 <label>Water width <output id="widthValue"></output><input id="width" type="range" min="2" max="20" step=".2" value="9.2"></label>
@@ -90,14 +90,17 @@ controls.enableDamping=true;controls.dampingFactor=.07;controls.maxDistance=4200
 scene.add(new THREE.HemisphereLight(0xddeefb,0x5f7150,2.1));
 const sun=new THREE.DirectionalLight(0xfff5d4,2.0);sun.position.set(-80,140,-110);scene.add(sun);
 const PLANE_MIN=-195,PLANE_MAX=265,TERRAIN_CELLS=184,RIVER_STEPS=216;
+const GROWTH_END=1180,GROWTH_JUNCTIONS=[100,450,850];
+const growthScene=()=>geom.scene==='growth';
+const sceneEnd=()=>growthScene()?GROWTH_END:(hasOutlet()?POND_END:RIVER_END);
 const RIVER_START=-180,RIVER_END=180,POND_END=250;
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t)};
 const mix=(a,b,t)=>a+(b-a)*t;
-const geom={width:2.8,depth:.3,rise:.45,bankWidth:1.1,shoulder:4,headLength:1000,headPower:2.5,outletLength:30,mode:'head',source:'runoff',scene:'long'};
+const geom={width:16,depth:1.2,rise:.85,bankWidth:3.2,shoulder:9,headLength:1000,headPower:2.5,outletLength:30,mode:'blunt',source:'taper',scene:'growth'};
 const longHead=()=>geom.scene==='long'&&hasHead();
 const headStart=()=>longHead()?RIVER_START-geom.headLength:RIVER_START;
 const terrainStart=()=>headStart()-25;
-const terrainEnd=()=>hasOutlet()?POND_END+15:RIVER_END+25;
+const terrainEnd=()=>sceneEnd()+25;
 const development=z=>Math.max(0,Math.min(1,(z-headStart())/geom.headLength));
 const growth=z=>Math.pow(development(z),geom.headPower);
 const stagedWater=()=>longHead()&&geom.source==='runoff';
@@ -114,14 +117,26 @@ const streamWobble=z=>1.05*Math.sin(z/10.5)+.42*Math.sin(z/5.7)+.22*Math.sin(z/3
 const hasHead=()=>geom.mode==='head'||geom.mode==='both';
 const hasOutlet=()=>geom.mode==='outlet'||geom.mode==='both';
 const riverX=z=>13*Math.sin(z/55)+5*Math.sin(z/27)+(isSmall()?streamWobble(z):0);
-const centerX=z=>z>180?riverX(180)+.06*(z-180):riverX(z);
+const centerX=z=>growthScene()?13*Math.sin(z/150)+8*Math.sin(z/66)+1.3*Math.sin(z/19):z>180?riverX(180)+.06*(z-180):riverX(z);
 const centerY=z=>{
- const base=5.5-(Math.min(z,180)+180)*.009;
+ const base=5.5-((growthScene()?z:Math.min(z,180))+180)*.009;
  if(longHead()||!isSmall()||!hasHead()||geom.source!=='spring'||z>=-145)return base;
  // A small nearly level spring pool, gradually joining the normal grade.
  return 5.5-.009*(z+180)*smooth((z+180)/35);
 };
+function growthWidth(z){
+ const start=2.8;
+ const widths=[2.8,3.0,5.1,7.7];
+ const gains=[2.2,3.7,7.3];
+ let value=start;
+ for(let i=0;i<GROWTH_JUNCTIONS.length;i++){
+  const t=(z-(GROWTH_JUNCTIONS[i]-80))/160;
+  value+=gains[i]*smooth(t);
+ }
+ return value;
+}
 function channelWidth(z){
+ if(growthScene())return growthWidth(z)/2;
  const normal=geom.width/2;
  if(longHead()&&geom.source==='runoff')return Math.max(.006,normal*growth(z)*(isSmall()?1+streamNoise(z):1));
  if(hasOutlet()&&z>180){
@@ -154,6 +169,7 @@ function channelWidth(z){
  return normal*(hasHead()?mix(.055,1,smooth((z-headStart())/geom.headLength)):1);
 }
 function channelDepth(z){
+ if(growthScene())return .34+.075*(growthWidth(z)-2.8);
  if(longHead()&&geom.source==='runoff')return geom.depth*Math.pow(development(z),1.65);
  let head=hasHead()?mix(.05,1,smooth((z-headStart())/geom.headLength)):1;
  if(isSmall()&&hasHead()&&geom.source==='spring')
@@ -162,6 +178,7 @@ function channelDepth(z){
  return geom.depth*head*pond;
 }
 function bankRise(z){
+ if(growthScene())return .45+.035*(growthWidth(z)-2.8);
  if(longHead()&&geom.source==='runoff')return geom.rise*Math.pow(development(z),2.1);
  let head=hasHead()?mix(.03,1,smooth((z-headStart())/geom.headLength)):1;
  if(isSmall()&&hasHead()&&geom.source==='spring')
@@ -176,7 +193,7 @@ function baseHeight(x,z){
  .25*Math.sin(z/62)*Math.sin(x/55);
 }
 function channelAt(x,z){
- const last=hasOutlet()?POND_END:RIVER_END;
+ const last=sceneEnd();
  const z0=Math.max(headStart(),Math.min(last,z));
  let nearest=z0,dist=Infinity;
  // Sub-metre centerline search for narrow streambanks. A coarse nearest
@@ -189,7 +206,7 @@ function channelAt(x,z){
   if(d<dist){dist=d;nearest=zz}
  }
  const water=centerY(nearest),half=channelWidth(nearest);
- return {distance:dist,riverZ:nearest,water,width:half,depth:channelDepth(nearest),rise:bankRise(nearest),bankWidth:Math.max(.28,geom.bankWidth*bankGrowth(nearest)),shoulder:Math.max(1.2,geom.shoulder*bankGrowth(nearest))};
+ return {distance:dist,riverZ:nearest,water,width:half,depth:channelDepth(nearest),rise:bankRise(nearest),bankWidth:growthScene()?2+growthWidth(nearest)*.18:Math.max(.28,geom.bankWidth*bankGrowth(nearest)),shoulder:growthScene()?6+growthWidth(nearest)*.6:Math.max(1.2,geom.shoulder*bankGrowth(nearest))};
 }
 function profileHeight(d,c,base){
  const bedHalf=c.width*.54;
@@ -209,18 +226,18 @@ function groundHeight(x,z,c=channelAt(x,z)){
  return Math.min(base,profileHeight(c.distance,c,base));
 }
 function waterPosition(z,side){
- const x=centerX(z),z0=Math.max(headStart(),z-.1),z1=Math.min(hasOutlet()?POND_END:RIVER_END,z+.1);
+ const x=centerX(z),z0=Math.max(headStart(),z-.1),z1=Math.min(sceneEnd(),z+.1);
  const slope=(centerX(z1)-centerX(z0))/Math.max(.0001,z1-z0);
  const scale=Math.sqrt(1+slope*slope),nx=1/scale,nz=-slope/scale;
  const width=channelWidth(z);
  return [x+side*nx*width,centerY(z)+.025,z+side*nz*width];
 }
 function waterSampleCount(){
- const span=(hasOutlet()?POND_END:RIVER_END)-headStart();
- return geom.scene==='long'?Math.min(2300,Math.ceil(span/1.25)):(isSmall()?480:RIVER_STEPS);
+ const span=sceneEnd()-headStart();
+ return geom.scene==='long'||growthScene()?Math.min(2300,Math.ceil(span/1.25)):(isSmall()?480:RIVER_STEPS);
 }
 function longitudinalSample(i){
- const max=hasOutlet()?POND_END:RIVER_END;
+ const max=sceneEnd();
  return mix(headStart(),max,i/waterSampleCount());
 }
 function geometry(positions,indices){
@@ -229,9 +246,9 @@ function geometry(positions,indices){
  g.setIndex(indices);g.computeVertexNormals();g.computeBoundingSphere();return g;
 }
 function createTerrain(){
- const close=isSmall(),extended=geom.scene==='long';
- const columns=extended?124:(close?176:TERRAIN_CELLS);
- const rows=extended?Math.min(1250,Math.ceil((terrainEnd()-terrainStart())/2.25)):(close?440:TERRAIN_CELLS);
+ const extended=geom.scene!=='short',close=isSmall()||extended;
+ const columns=extended?(growthScene()?184:124):(close?176:TERRAIN_CELLS);
+ const rows=extended?Math.min(1250,Math.ceil((terrainEnd()-terrainStart())/(growthScene()?1.8:2.25))):(close?440:TERRAIN_CELLS);
  const pos=[],idx=[],col=[],stride=columns+1;
  for(let j=0;j<=rows;j++){
   const z=extended?mix(terrainStart(),terrainEnd(),j/rows):mix(PLANE_MIN,PLANE_MAX,j/rows);
@@ -240,7 +257,7 @@ function createTerrain(){
    if(close){
     // Terrain vertices concentrate beside the small watercourse.
     // ~0.3m transverse sampling near banks, while far terrain stays coarse.
-    const u=i/columns*2-1,abs=Math.abs(u),corridor=extended?14:26,split=extended?.54:.48;
+    const u=i/columns*2-1,abs=Math.abs(u),corridor=growthScene()?Math.max(17,channelWidth(z)+18):extended?14:26,split=extended?.58:.48;
     const offset=abs<=split?corridor*abs/split:
       corridor+((extended?170:PLANE_MAX-35)-corridor)*((abs-split)/(1-split));
     x=centerX(z)+Math.sign(u)*offset;
@@ -299,7 +316,7 @@ const movingWaterMaterial=new THREE.MeshPhongMaterial({
 });
 function createWater(){
  const pos=[],idx=[],uvs=[],colors=[],grouper=[];
- const begin=waterStartZ(),end=hasOutlet()?POND_END:RIVER_END;
+ const begin=waterStartZ(),end=sceneEnd();
  const span=end-begin,active=!stagedWater()||span>=STAGED.minRun;
  const count=active?Math.ceil(span/(geom.scene==='long'?1.25:1)):0;
  let oldMat=-1,groupBegin=0;
@@ -363,10 +380,10 @@ $('motion').onchange=e=>{waterMotion=e.target.checked};
 $('texture').onchange=e=>{waterTextureEnabled=e.target.checked;setWaterAppearance()};
 function view(name){
  const views={
- bank:{pos:[29,centerY(-65)+3,-65],target:[centerX(-65),centerY(-65),-65]},
- aerial:geom.scene==='long'?{pos:[160,600,headStart()+geom.headLength*.5],target:[0,centerY(headStart()+geom.headLength*.5),headStart()+geom.headLength*.5]}:{pos:[100,80,95],target:[centerX(20),centerY(20),20]},
- top:geom.scene==='long'?{pos:[.1,Math.max(750,geom.headLength*1.25),headStart()+geom.headLength*.5],target:[0,centerY(headStart()+geom.headLength*.5),headStart()+geom.headLength*.5]}:{pos:[.1,260,0],target:[0,0,0]},
- section:{pos:[38,centerY(0)+5,0],target:[centerX(0),centerY(0),0]},
+ bank:growthScene()?{pos:[centerX(500)+28,centerY(500)+5,495],target:[centerX(500),centerY(500),500]}:{pos:[29,centerY(-65)+3,-65],target:[centerX(-65),centerY(-65),-65]},
+ aerial:growthScene()?{pos:[230,330,540],target:[centerX(540),centerY(540),540]}:geom.scene==='long'?{pos:[160,600,headStart()+geom.headLength*.5],target:[0,centerY(headStart()+geom.headLength*.5),headStart()+geom.headLength*.5]}:{pos:[100,80,95],target:[centerX(20),centerY(20),20]},
+ top:growthScene()?{pos:[.1,1300,500],target:[centerX(500),centerY(500),500]}:geom.scene==='long'?{pos:[.1,Math.max(750,geom.headLength*1.25),headStart()+geom.headLength*.5],target:[0,centerY(headStart()+geom.headLength*.5),headStart()+geom.headLength*.5]}:{pos:[.1,260,0],target:[0,0,0]},
+ section:growthScene()?{pos:[centerX(450)+35,centerY(450)+6,450],target:[centerX(450),centerY(450),450]}:{pos:[38,centerY(0)+5,0],target:[centerX(0),centerY(0),0]},
  headwater:{pos:[centerX(headStart()+geom.headLength*.67)+28,centerY(headStart()+geom.headLength*.67)+20,headStart()+geom.headLength*.67-32],
  target:[centerX(headStart()+geom.headLength*.67),centerY(headStart()+geom.headLength*.67),headStart()+geom.headLength*.67]}
  };
@@ -443,11 +460,18 @@ function syncUI(){
  }
  $('endMode').value=geom.mode;
  $('headSource').value=geom.source;
- $('headSource').disabled=!hasHead();
+ $('headSource').disabled=!hasHead()||growthScene();
+ $('endMode').disabled=growthScene();
+ $('headLength').disabled=growthScene();
+ $('headPower').disabled=geom.scene!=='long';
 }
 $('sceneMode').onchange=e=>{
  geom.scene=e.target.value;
- if(geom.scene==='long'){
+ if(geom.scene==='growth'){
+  Object.assign(geom,PRESETS.river);
+  geom.width=16;geom.depth=1.2;geom.rise=.85;geom.bankWidth=3.2;geom.shoulder=9;
+  geom.mode='blunt';geom.source='taper';$('preset').value='river';
+ }else if(geom.scene==='long'){
   Object.assign(geom,PRESETS.stream);
   geom.headLength=1000;geom.headPower=2.5;geom.source='runoff';geom.mode='head';
   $('preset').value='stream';
@@ -456,13 +480,14 @@ $('sceneMode').onchange=e=>{
   geom.headLength=45;geom.source='taper';geom.mode='both';
   $('preset').value='river';
  }
- scene.fog.far=geom.scene==='long'?6000:850;
+ scene.fog.far=geom.scene==='short'?850:6000;
  syncUI();rebuildGeometry();view('top');
 };
 $('preset').onchange=e=>{
- const wasLong=geom.scene==='long';
+ const wasLong=geom.scene==='long',wasGrowth=growthScene();
  Object.assign(geom,PRESETS[e.target.value]);
- geom.source=wasLong?'runoff':(e.target.value==='stream'?'spring':'taper');
+ geom.source=wasLong?'runoff':wasGrowth?'taper':(e.target.value==='stream'?'spring':'taper');
+ if(wasGrowth)geom.mode='blunt';
  if(wasLong)geom.headLength=1000;
  syncUI();rebuildGeometry();
 };
@@ -474,7 +499,7 @@ for(const key of PARAMS)$(key).onchange=e=>{
 };
 function audit(){
  let count=0,minDepth=Infinity,maxDepth=-Infinity,uphill=0;
- const end=hasOutlet()?POND_END:RIVER_END;
+ const end=sceneEnd();
  for(let i=0;i<=waterSampleCount();i++){
   const z=longitudinalSample(i);
   if(i&&centerY(z)>centerY(longitudinalSample(i-1))+.00001)uphill++;
@@ -494,13 +519,14 @@ function audit(){
  (longHead()&&geom.source==='runoff'?
  ' Width at 25/50/75% downstream: '+[.25,.5,.75].map(t=>(geom.width*Math.pow(t,geom.headPower)).toFixed(2)).join(' / ')+' m. ':'')+
  (stagedWater()?' Water begins '+(waterStartZ()-headStart()).toFixed(0)+' m downstream; first texture '+(thresholdZ(STAGED.textureWidth)-headStart()).toFixed(0)+' m; full opacity '+(thresholdZ(STAGED.fullWidth)-headStart()).toFixed(0)+' m.':'')+
+ (growthScene()?' Stream-to-river prototype: tributary confluences at 100, 450, 850 m; continuous channel width '+GROWTH_JUNCTIONS.map(z=>growthWidth(z).toFixed(1)).join(' / ')+' m at junctions. ':'')+
  ' No fluid simulation.';
  const color=land.geometry.getAttribute('color'),uv=water.geometry.getAttribute('uv');
  $('debugreadout').textContent='Vertex colors: '+(color?color.count:'missing')+
  ' · water UVs: '+(uv?uv.count:'missing')+' · animated surface: single reusable 128×256 texture.';
 }
 scene.fog.far=6000;
-syncUI();drawCrossSection();audit();view('top');
+syncUI();drawCrossSection();audit();view('aerial');
 function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
 window.addEventListener('resize',resize);
 const animationClock=new THREE.Clock();
