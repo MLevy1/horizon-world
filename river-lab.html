@@ -91,8 +91,7 @@ const centerY=z=>{
  const base=5.5-(Math.min(z,180)+180)*.009;
  if(!isSmall()||!hasHead()||geom.source!=='spring'||z>=-145)return base;
  // A small nearly level spring pool, gradually joining the normal grade.
- const pool=5.5-.009*35;
- return mix(pool,base,smooth((z+180)/35));
+ return 5.5-.009*(z+180)*smooth((z+180)/35);
 };
 function channelWidth(z){
  const normal=geom.width/2;
@@ -173,8 +172,8 @@ function profileHeight(d,c,base){
  if(d<=shoulderEnd)return mix(c.water+c.rise,base,smooth((d-bankEnd)/geom.shoulder));
  return base;
 }
-function groundHeight(x,z){
- const c=channelAt(x,z),base=baseHeight(x,z);
+function groundHeight(x,z,c=channelAt(x,z)){
+ const base=baseHeight(x,z);
  // No raised levees: this operator only excavates.
  return Math.min(base,profileHeight(c.distance,c,base));
 }
@@ -209,7 +208,7 @@ function createTerrain(){
       corridor+(PLANE_MAX-35-corridor)*((abs-split)/(1-split));
     x=centerX(z)+Math.sign(u)*offset;
    }else x=mix(PLANE_MIN,PLANE_MAX,i/columns);
-   const h=groundHeight(x,z),c=channelAt(x,z);
+   const c=channelAt(x,z),h=groundHeight(x,z,c);
    pos.push(x,h,z);
    const shade=1-smooth((c.distance-c.width*.6)/Math.max(1,geom.bankWidth+geom.shoulder));
    const color=new THREE.Color(0x89a079).lerp(new THREE.Color(0x719778),shade*.65);
