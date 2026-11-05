@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Horizon Alpha 4.2.0 — Landscape Explorer</title>
+<title>Horizon Alpha 4.3.0 — Landscape Explorer</title>
 <style>
 :root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;--line:rgba(255,255,255,.15);--surface:rgba(17,28,32,.85);--muted:#adb9b7}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8aafc5;color:#f5f8f7}canvas#view{display:block;width:100%;height:100%;touch-action:none}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:2px solid #bce4ba;outline-offset:2px}.glass{background:var(--surface);backdrop-filter:blur(18px);border:1px solid var(--line);box-shadow:0 12px 40px #07141930}.brand{position:absolute;top:18px;left:20px;pointer-events:none;text-shadow:0 1px 6px #243b4588}.brand b{letter-spacing:.2em;font-size:13px;font-weight:800}.brand span{display:block;letter-spacing:.12em;font-size:10px;color:#e1ebeb;margin-top:5px}.topright{position:absolute;right:18px;top:17px;display:flex;gap:8px}.chip{border:1px solid var(--line);padding:9px 12px;background:var(--surface);color:white;border-radius:11px;font-size:12px;backdrop-filter:blur(12px)}.chip:hover{background:#35494a}.hud{position:absolute;bottom:20px;left:20px;padding:12px 15px;border-radius:13px;min-width:225px;font-size:12px;pointer-events:none}.hud strong{font-size:14px;letter-spacing:.03em}.hud .minor{color:#bed1cb;line-height:1.8;margin-top:4px;font-variant-numeric:tabular-nums}.hud .mode{color:#b4e5c6}.cross{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:17px;height:17px;pointer-events:none;opacity:.8}.cross:before,.cross:after{content:"";position:absolute;background:#fff;box-shadow:0 1px 4px #0008}.cross:before{width:1px;height:17px;left:8px}.cross:after{height:1px;width:17px;top:8px}.panel{position:absolute;right:18px;top:68px;width:min(330px,calc(100vw - 36px));padding:17px;border-radius:17px;max-height:calc(100vh - 95px);overflow:auto;display:none}.panel.open{display:block}.panel h2{margin:0 0 5px;font-size:15px}.panel p{color:var(--muted);font-size:12px;line-height:1.5;margin:0 0 15px}.panel label{font-size:12px;color:#dfece7;display:flex;justify-content:space-between;align-items:center;margin:15px 0 6px}.panel output{color:#b7debb;font-variant-numeric:tabular-nums}.panel input[type=range]{width:100%;accent-color:#a9d5ae}.panel input[type=number],.panel input[type=text]{padding:9px;color:white;width:100%;background:#142528;border-radius:9px;border:1px solid var(--line)}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.action{border:1px solid #6a9987;background:#446858;color:white;padding:10px 12px;border-radius:9px;font-size:12px}.action.secondary{background:#243839;border-color:var(--line)}.action:hover{filter:brightness(1.15)}.divider{height:1px;background:var(--line);margin:17px 0}.mapbox{position:absolute;bottom:20px;right:18px;border-radius:15px;padding:11px;width:234px;display:none}.mapbox.open{display:block}
 .mapbox.explorer{position:fixed;inset:0;width:100%;height:100%;height:100dvh;max-height:none;z-index:14;box-sizing:border-box;border-radius:0;display:flex;flex-direction:column;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));overflow-y:auto;overscroll-behavior:contain;background:#142b2ff2}
@@ -81,11 +81,11 @@
 #mapbox.open[data-map-mode="watershed"] #explorerTools,
 #mapbox.open[data-map-mode="regional"] #explorerTools{display:flex!important}
 </style>
-<!-- HORIZON_VERSION: 4.2.0 -->
+<!-- HORIZON_VERSION: 4.3.0 -->
 </head>
 <body>
 <canvas id="view"></canvas>
-<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 4.2.0</span></div>
+<div class="brand"><b>HORIZON</b><span>LANDSCAPE EXPLORER · ALPHA 4.3.0</span></div>
 <div class="topright"><button id="mapBtn" class="chip">▧ Map</button><button id="perfBtn" class="chip">▥ Perf</button><button id="settingsBtn" class="chip">⚙ Settings</button><button id="helpBtn" class="chip">? Help</button></div>
 <div id="perfPanel" class="glass profiler">
 <h2>Live performance <button id="perfClose" class="chip" style="float:right;padding:3px 8px">×</button></h2>
@@ -106,7 +106,7 @@
 <div class="glass hud"><strong id="region">The Highlands</strong><div class="minor"><span id="coords">0 E · 0 N · 0 m elevation</span><br><span id="movement" class="mode">FLYING</span> · <span id="speedtext">65 km/h</span><br><span id="chunks">Building terrain…</span><br><span id="surfaceDebug" style="font-size:10px;opacity:.8">Surface alignment checking…</span><br><span id="treeInspectStatus" style="font-size:10px;color:#fff2a7">Tree inspection: none</span></div></div>
 <div id="toast" class="toast"></div>
 <div id="panel" class="glass panel">
-<div class="newHead"><h2>World settings <small>4.2.0</small></h2><button id="closeSettings" class="chip">×</button></div>
+<div class="newHead"><h2>World settings <small>4.3.0</small></h2><button id="closeSettings" class="chip">×</button></div>
 <p>Controls for exploring the world.</p>
 <section class="simpleSection"><h3>Exploration</h3>
 <label>View distance <output id="simpleViewOut">16 km</output></label><input id="simpleView" type="range" min="4" max="24" step="2" value="16">
@@ -123,11 +123,12 @@
 </div>
 <div id="mapbox" class="glass mapbox"><div class="maphead"><b id="mapTitle">REGIONAL MAP</b><button id="closeMap" class="chip" style="padding:3px 7px">×</button></div><div class="mapmodes" style="display:flex;gap:5px;margin-bottom:8px"><button id="mapLandscape" class="chip" style="flex:1">Landscape</button><button id="mapDrainage" class="chip" style="flex:1">Drainage</button><button id="mapWatershed" class="chip" style="flex:1">Watershed</button><button id="mapRegional" class="chip" style="flex:1">Regional</button></div><canvas id="mapCanvas" width="256" height="256"></canvas><div class="explorerTools" id="explorerTools" style="display:none"><button class="chip" id="watershedOut">− Zoom</button><button class="chip" id="watershedReset">Overview</button><button class="chip" id="watershedIn">+ Zoom</button><button class="chip" id="regionalDrill" style="display:none">Inspect local</button></div><div id="mapSelection" class="mapSelection" style="display:none"><div><strong>Selected map location</strong><div id="mapSelectCoords"></div><div id="mapHoverCoords">Tap the map to select a location</div></div><div class="mapActions"><button id="mapTravel" class="action">Travel here</button><button id="mapCopy" class="chip">Copy X, Z</button></div></div><div id="drainageNav" style="display:none;gap:5px;align-items:center;justify-content:center;margin-top:7px"><button id="drainWest" class="chip">← W</button><button id="drainNorth" class="chip">↑ N</button><button id="drainSouth" class="chip">↓ S</button><button id="drainEast" class="chip">E →</button></div><div id="mapFoot" class="mapfoot">20 × 20 km · north is up<br>Click a point to teleport · dotted rings every 2.5 km</div><div id="drainageStats" class="mapfoot" style="display:none"></div><div id="watershedLegend" class="mapfoot" style="display:none">Gray: runoff · turquoise: tributary · blue: trunk · yellow: selected downstream path · green: modeled ocean outlet · orange: unresolved macro outlet/border. Drag to pan · tap a channel to trace · gray runoff, cyan tributary, blue trunk, yellow selection · green sea outlet, orange unresolved boundary. No 3D water.</div></div>
 <div class="mobile"><div id="joystick" class="touchpad"><div class="stick" id="stick"></div></div><div class="mobbuttons"><button id="upBtn">↑</button><button id="flyBtn">✈</button><button id="downBtn">↓</button></div></div>
-<div class="footnote">Horizon Alpha 4.2.0 · unified geography · browser-rendered</div>
+<div class="footnote">Horizon Alpha 4.3.0 · unified geography · browser-rendered</div>
 <div id="intro" class="intro"><div class="glass introcard"><div class="eyebrow">A WORLD BEYOND THE HORIZON</div><h1>Go somewhere.</h1><p>A seed-generated landscape for exploration. Follow ridgelines, cross valleys, find coastlines, and survey the world before anything has been built.</p><div class="tips"><div class="tip"><b>Move</b><span><span class="kbd">W</span> <span class="kbd">A</span> <span class="kbd">S</span> <span class="kbd">D</span> · mouse to look</span></div><div class="tip"><b>Explore vertically</b><span><span class="kbd">Space</span> up · <span class="kbd">Shift</span> down</span></div><div class="tip"><b>Change mode</b><span><span class="kbd">F</span> flying / walking</span></div><div class="tip"><b>Navigation</b><span><span class="kbd">M</span> map · <span class="kbd">G</span> settings</span></div></div><button id="start" class="start">Enter the world →</button><div class="status" id="loading">Generating your landscape…</div></div></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 import {createGeography,headwaterGrowth} from './geography.js';
+import {solveDrainageDomain,domainOfMacro,DRAINAGE_N} from './drainage-network.js';
 const $=id=>document.getElementById(id);const renderer=new THREE.WebGLRenderer({canvas:$('view'),antialias:true,powerPreference:'high-performance'});let renderResolutionScale=1;function updateRenderResolution(){renderer.setPixelRatio(Math.min(devicePixelRatio,1.65)*renderResolutionScale);renderer.setSize(innerWidth,innerHeight)}updateRenderResolution();renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
 const scene=new THREE.Scene();scene.background=new THREE.Color('#a9c9d5');scene.fog=new THREE.FogExp2('#b0c9cd',0.000085);scene.add(new THREE.HemisphereLight(0xddeeff,0x777d64,2.15));const sun=new THREE.DirectionalLight(0xffefd5,2.0);sun.position.set(-5000,8500,-3000);scene.add(sun);
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.3,30000);camera.rotation.order='YXZ';const player={x:0,y:1000,z:0,yaw:0,pitch:-.13,fly:true,velocity:0};const config={seed:'HORIZON-01',maxDistance:16000,detail:24,speed:65,heightScale:1,collisions:true};let seedNumber=0,terrainCache=new Map(),tiles=new Map(),desired=new Map(),buildQueue=[],vegetationTiles=new Map(),vegetationQueue=[],lastVegetationX=Infinity,lastVegetationZ=Infinity,rockTiles=new Map(),rockQueue=[],lastRocksX=Infinity,lastRocksZ=Infinity,lastUpdateX=Infinity,lastUpdateZ=Infinity,lastUpdateAt=0,streamDirX=0,streamDirZ=-1,streamSpeed=0,active=false,keys=new Set(),dragging=false,touchLook=null,touchVector={x:0,y:0},verticalTouch=0,frame=0,mapDirty=true,mapPixels=null,loadingStarted=performance.now();
@@ -287,45 +288,31 @@ function naturalRiverWidth(acc){
  return .35+Math.sqrt(Math.max(0,acc))*.30; // half-width; small streams grow into rivers
 }
 function naturalRivers(ix,iz){
- const key=watershedKey(ix,iz);
+ const domain=domainOfMacro(ix,iz),key=watershedKey(domain.ix,domain.iz);
  if(naturalRiverCache.has(key))return naturalRiverCache.get(key);
- const w=watershedAt(ix*2,iz*2),N=w.N,S=w.S;
+ const w=drainageDomainAt(domain.ix,domain.iz),N=w.N,S=w.S;
  const bins=new Map(),segments=[],byId=new Map();
- const candidate=new Uint8Array(w.C),status=new Int8Array(w.C);
- // First classify every edge independently. Acceptance is later based on
- // whether the ENTIRE downstream path reaches the ocean using valid edges.
- // A rejected edge disqualifies its upstream branches, so no blue ribbons
- // abruptly stop in the middle of a hillside.
+ const candidate=new Uint8Array(w.C);
+ // Drainage topology is a first-class geographic fact.
+ // A local terrain spike, narrow valley, or steep reach must not veto the
+ // *entire upstream river*. Geometry is adapted later with bounded carving.
+ // Only a route's actual sea-connected drainage classification and flow area
+ // determine whether it belongs to the connected physical water network.
  for(let id=0;id<w.C;id++){
-  const down=w.parent[id],a=w.acc[id];
-  if(down<0||a<NATURAL_RIVER_THRESHOLD||!w.ocean[id]||w.base[id]<=0)continue;
-  const h0=w.base[id],h1=Math.max(0,w.base[down]);
-  const x0=w.ox+(id%N+.5)*S,z0=w.oz+(Math.floor(id/N)+.5)*S;
-  const x1=w.ox+(down%N+.5)*S,z1=w.oz+(Math.floor(down/N)+.5)*S;
-  const length=Math.hypot(x1-x0,z1-z0);
-  if(w.base[down]<=0&&h0>32)continue;
-  if(w.base[down]>0&&h1>h0+2)continue;
-  if(Math.abs(h0-h1)/length>.30)continue;
-  let incompatible=false;
-  for(const t of [.125,.25,.375,.5,.625,.75,.875]){
-   const x=x0+(x1-x0)*t,z=z0+(z1-z0)*t;
-   const model=h0+(h1-h0)*t;
-   if(Math.abs(baseTerrain(x,z)-model)>12){incompatible=true;break}
-  }
-  if(!incompatible)candidate[id]=1;
- }
- function connectsToSea(id){
-  if(w.base[id]<=0)return true;
-  if(status[id]!==0)return status[id]>0;
   const down=w.parent[id];
-  if(down<0||!candidate[id]){status[id]=-1;return false}
-  // Downstream nodes are always distinct in the priority-flood graph.
-  const good=connectsToSea(down);
-  status[id]=good?1:-1;
-  return good;
+  if(down<0||w.base[id]<=0||!w.ocean[id])continue;
+  if(w.acc[id]>=NATURAL_RIVER_THRESHOLD)candidate[id]=1;
+ }
+ // Priority flood is downstream-first. An eligible reach must connect through
+ // eligible downstream edges to true sea, avoiding recursive path scans.
+ // Exterior land outlets remain provisional and are not called ocean.
+ const connected=new Uint8Array(w.C);
+ for(const id of w.order){
+  const down=w.parent[id];
+  if(down>=0&&candidate[id]&&(w.base[down]<=0||connected[down]))connected[id]=1;
  }
  const incoming=new Map();
- for(let id=0;id<w.C;id++)if(candidate[id]&&connectsToSea(id)){
+ for(let id=0;id<w.C;id++)if(candidate[id]&&connected[id]){
   const down=w.parent[id],arr=incoming.get(down)||[];
   arr.push(id);incoming.set(down,arr);
  }
@@ -466,7 +453,7 @@ function naturalRivers(ix,iz){
  }
  const data={w,segments,bins,byId,headwaters:[...kept].filter(id=>bestUpstream(id)<0).length,
   ponds:pondSites.length,pondSites};
- if(naturalRiverCache.size>=8)naturalRiverCache.clear();
+ if(naturalRiverCache.size>=4)naturalRiverCache.delete(naturalRiverCache.keys().next().value);
  naturalRiverCache.set(key,data);
  return data;
 }
@@ -2283,102 +2270,24 @@ function openDrainageInspection(){
  $('mapbox').classList.add('open');
  renderMap();
 }
-// Alpha 3.13 geography experiment. A fixed 16.4km macro-watershed
-// underlies four navigable 8.2km map pages. Flow and accumulation are solved
-// on ONE shared grid, so all four pages show identical border connections.
-// Macro-boundary exits remain provisional: this is NOT global hydrology.
-// This code is map-only. It never touches terrain(), vegetation or 3D water.
-const WATERSHED_N=128,WATERSHED_STEP=128,WATERSHED_SIZE=8192;
-const MACRO_SIZE=WATERSHED_N*WATERSHED_STEP;
+// Alpha 4.3: one connected hydrological domain drives both the watershed map
+// and physical terrain. Previous 16.384km quadrants are NOT hydrologic outlets.
+const WATERSHED_N=DRAINAGE_N,WATERSHED_STEP=128,WATERSHED_SIZE=8192;
+const MACRO_SIZE=16384;
 const watershedCache=new Map();
 let watershedSelection=null;
 function watershedKey(ix,iz){return ix+':'+iz}
-function watershedAt(pageX,pageZ){
- const ix=Math.floor(pageX/2),iz=Math.floor(pageZ/2);
+function drainageDomainAt(ix,iz){
  const key=watershedKey(ix,iz);
  if(watershedCache.has(key))return watershedCache.get(key);
- const N=WATERSHED_N,S=WATERSHED_STEP,C=N*N;
- const ox=ix*MACRO_SIZE,oz=iz*MACRO_SIZE;
- const base=new Float32Array(C),level=new Float32Array(C),seen=new Uint8Array(C);
- const parent=new Int32Array(C),acc=new Float32Array(C),root=new Int32Array(C);
- const order=[],heap=[];
- parent.fill(-1);acc.fill(1);
- for(let z=0;z<N;z++)for(let x=0;x<N;x++)
-  base[z*N+x]=baseTerrain(ox+(x+.5)*S,oz+(z+.5)*S);
- function push(id,h){
-  let i=heap.length;heap.push({id,h});
-  while(i>0){const p=(i-1)>>1;if(heap[p].h<=h)break;heap[i]=heap[p];i=p}
-  heap[i]={id,h};
- }
- function pop(){
-  const first=heap[0],last=heap.pop();
-  if(heap.length){
-   let i=0;
-   while(true){
-    const l=2*i+1;if(l>=heap.length)break;
-    const r=l+1,m=r<heap.length&&heap[r].h<heap[l].h?r:l;
-    if(heap[m].h>=last.h)break;heap[i]=heap[m];i=m;
-   }
-   heap[i]=last;
-  }
-  return first;
- }
- // Ocean cells are true modeled sea terminals. Land on the OUTER border
- // is only a provisional outlet; no edge inside the macro can be an outlet.
- for(let z=0;z<N;z++)for(let x=0;x<N;x++){
-  const id=z*N+x;
-  if(x===0||z===0||x===N-1||z===N-1||base[id]<=0){
-   seen[id]=1;level[id]=base[id]<=0?0:base[id];push(id,level[id]);
-  }
- }
- while(heap.length){
-  const {id}=pop(),x=id%N,z=Math.floor(id/N);
-  order.push(id);
-  for(const [dx,dz] of drainDirections){
-   const nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>=N||nz>=N)continue;
-   const next=nz*N+nx;if(seen[next])continue;
-   seen[next]=1;parent[next]=id;
-   level[next]=Math.max(base[next],level[id]+.02);
-   push(next,level[next]);
-  }
- }
- // Process upstream in reverse priority-flood ordering; each cell's
- // contributing area sums over every upstream cell inside this macro.
- for(let k=order.length-1;k>=0;k--){
-  const id=order[k],to=parent[id];if(to>=0)acc[to]+=acc[id];
- }
- // Order is downstream -> upstream: root[] is known when a child is read.
- const ocean=new Uint8Array(C),landBoundary=new Uint8Array(C);
- for(const id of order){
-  const to=parent[id];
-  root[id]=to<0?id:root[to];
-  const r=root[id];
-  ocean[id]=base[r]<=0?1:0;
-  landBoundary[id]=base[r]>0?1:0;
- }
- const outlets=[],stats={landOutlets:0,seaOutlets:0,minor:0,tributaries:0,trunks:0,uphill:0,internalEnds:0};
- for(let id=0;id<C;id++){
-  const to=parent[id],x=id%N,z=Math.floor(id/N);
-  if(to>=0){
-   if(acc[id]>=180)stats.trunks++;
-   else if(acc[id]>=32)stats.tributaries++;
-   else if(acc[id]>=5)stats.minor++;
-   if(level[id]+.001<level[to])stats.uphill++;
-  }else{
-   if(x!==0&&x!==N-1&&z!==0&&z!==N-1&&base[id]>0)stats.internalEnds++;
-   if(acc[id]>=32){
-    const sea=base[id]<=0;
-    outlets.push({x,z,sea,acc:acc[id],id});
-    if(sea)stats.seaOutlets++;else stats.landOutlets++;
-   }
-  }
- }
- const data={ix,iz,ox,oz,N,S,C,base,level,parent,acc,root,ocean,landBoundary,outlets,stats};
- // Two macro-watersheds maximum; navigation across their borders is
- // explicitly marked unresolved until a world-wide routing layer exists.
- if(watershedCache.size>=2)watershedCache.clear();
+ const data=solveDrainageDomain({ix,iz,height:baseTerrain});
+ if(watershedCache.size>=4)watershedCache.delete(watershedCache.keys().next().value);
  watershedCache.set(key,data);
  return data;
+}
+// Historic 8.192km page coordinates; four pages now share a single domain.
+function watershedAt(pageX,pageZ){
+ return drainageDomainAt(Math.floor(pageX/4),Math.floor(pageZ/4));
 }
 // Alpha 3.15: coarse flow framework (512 m spacing) covering 65.536 km.
 // This parent routing graph spans 4×4 local 16.384 km drainage domains.
@@ -2600,10 +2509,11 @@ function drawRegionalMap(){
 // between macros is explicit: outer boundaries are not hydrologically stitched.
 let explorerZoom=1,explorerCX=64,explorerCZ=64,explorerDrag=null,explorerSkipClick=false;
 function explorerMacro(){return watershedAt(drainInspectX,drainInspectZ)}
+function explorerGridSize(){return mapMode==='watershed'?DRAINAGE_N:128}
 function explorerClamp(){
- const half=64/explorerZoom;
- explorerCX=Math.max(half,Math.min(128-half,explorerCX));
- explorerCZ=Math.max(half,Math.min(128-half,explorerCZ));
+ const extent=explorerGridSize(),half=extent/(2*explorerZoom);
+ explorerCX=Math.max(half,Math.min(extent-half,explorerCX));
+ explorerCZ=Math.max(half,Math.min(extent-half,explorerCZ));
 }
 function explorerSetZoom(next,centerX=explorerCX,centerZ=explorerCZ){
  explorerZoom=Math.max(1,Math.min(8,next));
@@ -2611,7 +2521,7 @@ function explorerSetZoom(next,centerX=explorerCX,centerZ=explorerCZ){
 }
 function explorerView(){
  explorerClamp();
- const span=128/explorerZoom;
+ const span=explorerGridSize()/explorerZoom;
  return {x0:explorerCX-span/2,x1:explorerCX+span/2,z0:explorerCZ-span/2,z1:explorerCZ+span/2,span};
 }
 function explorerPoint(u,v){
@@ -2638,7 +2548,9 @@ function openWatershedInspection(){
  drainInspectX=Math.floor(focus.x/MACRO_SIZE)*2;
  drainInspectZ=Math.floor(focus.z/MACRO_SIZE)*2;
  const w=explorerMacro();
- explorerZoom=1;explorerCX=64;explorerCZ=64;explorerSkipClick=false;
+ explorerZoom=2;
+ explorerCX=(focus.x-w.ox)/w.S;explorerCZ=(focus.z-w.oz)/w.S;
+ explorerClamp();explorerSkipClick=false;
  watershedSelection=null;
  $('panel').classList.remove('open');
  $('mapbox').classList.add('open');
@@ -2719,7 +2631,7 @@ function drawWatershedMap(){
  }
  // Render the same filtered, spatially smoothed reaches used in the 3D world.
  // The watershed's gray network is only *potential* runoff and is not a water promise.
- const physical=naturalWaterwaysEnabled?naturalRivers(w.ix,w.iz):null;
+ const physical=naturalWaterwaysEnabled?naturalRivers(w.ix*2,w.iz*2):null;
  if(physical){
   ctx.save();
   ctx.strokeStyle='#45ddf4';
@@ -2771,9 +2683,9 @@ function drawWatershedMap(){
  }
  // The dotted center lines identify the old four-page subdivision.
  ctx.save();ctx.setLineDash([3,5]);ctx.strokeStyle='#ffffff80';ctx.lineWidth=1;
- ctx.beginPath();ctx.moveTo(px(64),py(0));ctx.lineTo(px(64),py(128));
- ctx.moveTo(px(0),py(64));ctx.lineTo(px(128),py(64));ctx.stroke();ctx.restore();
- ctx.strokeStyle='#ffad68';ctx.lineWidth=2;ctx.strokeRect(px(0),py(128),px(128)-px(0),py(0)-py(128));
+ ctx.beginPath();ctx.moveTo(px(N/2),py(0));ctx.lineTo(px(N/2),py(N));
+ ctx.moveTo(px(0),py(N/2));ctx.lineTo(px(N),py(N/2));ctx.stroke();ctx.restore();
+ ctx.strokeStyle='#ffad68';ctx.lineWidth=2;ctx.strokeRect(px(0),py(N),px(N)-px(0),py(0)-py(N));
  const playerX=px((player.x-w.ox)/w.S),playerY=py((player.z-w.oz)/w.S);
  if(playerX>=0&&playerX<=W&&playerY>=0&&playerY<=H){
   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(playerX,playerY,4,0,Math.PI*2);ctx.fill();
@@ -2785,7 +2697,7 @@ function drawWatershedMap(){
  $('regionalDrill').style.display='none';
  $('watershedLegend').style.display='block';
  $('drainageStats').style.display='block';
- $('mapFoot').textContent=(16.384/explorerZoom).toFixed(1)+'km map span · basin '+w.ix+','+w.iz+
+ $('mapFoot').textContent=(32.768/explorerZoom).toFixed(1)+'km map span · connected drainage domain '+w.ix+','+w.iz+
   ' · '+explorerZoom.toFixed(1)+'× zoom · drag to pan · tap to inspect';
  const km=n=>(n/1000).toFixed(2)+' km';
  let coarseContinuation='';
@@ -2798,6 +2710,7 @@ function drawWatershedMap(){
    (coarse.distance/1000).toFixed(1)+' km, destination '+coarse.outlet+
    '. Inferred only: the two resolutions are not yet geometrically stitched.';
  }
+ const longestRun=physical?.segments.reduce((best,seg)=>Math.max(best,seg.samples.at(-1)?.flowDistance||0),0)||0;
  const extra=selected?
   ' Selected channel: '+km(selected.distance)+' downstream · '+selected.drop.toFixed(0)+' m total drop'+
   ' · '+selected.areaKm2.toFixed(2)+' km² contributing area'+
@@ -2808,7 +2721,7 @@ function drawWatershedMap(){
   'Basin: '+w.stats.trunks+' trunk, '+w.stats.tributaries+' tributary, '+w.stats.minor+
   ' runoff links · '+w.stats.seaOutlets+' modeled sea outlets, '+w.stats.landOutlets+
   ' unresolved boundary outlets · '+w.stats.uphill+' uphill links.'+extra+
-  ' 3D rendered reaches: '+(physical?physical.segments.length:0)+'. Gray drainage routes are not guaranteed to have visible water. The local 128 m solver cannot yet join every regional outlet.';
+  ' 3D generated edges: '+(physical?physical.segments.length:0)+' · longest connected main-stem run: '+(longestRun/1000).toFixed(1)+' km. Gray runoff paths are not necessarily rivers. Outer 32.8 km drainage-domain boundaries remain unresolved.';
 }
 function regionDiagnostics(region){
  if(!region)return {segmentCount:0,lakeCount:0,landExit:0,seaExit:0,uphill:0,issues:[],outlets:[]};
@@ -3042,7 +2955,7 @@ $('perfResolution').oninput=e=>{renderResolutionScale=(+e.target.value)/100;$('p
  for(const tile of tiles.values())disposeGroundCover(tile);
  refreshGroundCover();
 };
-$('visibilityDetail').onchange=e=>{adaptiveVisibility=e.target.checked;$('visibilityOut').textContent=e.target.checked?'On':'Off';lastUpdateX=Infinity;planTerrain(true);for(const tile of tiles.values())disposeGroundCover(tile);refreshGroundCover()};$('undergrowth').onchange=e=>{setDenseUndergrowth(e.target.checked);$('undergrowthOut').textContent=e.target.checked?'On':'Off'};$('treeCrowns').onchange=e=>{switchTreeCrowns(e.target.checked);$('treeCrownsOut').textContent=e.target.checked?'On':'Off'};$('treeVariants').onchange=e=>{switchTreeVariants(e.target.checked);$('treeVarOut').textContent=e.target.checked?'On':'Off'};$('shrubVariants').onchange=e=>{switchShrubVariants(e.target.checked);$('shrubVarOut').textContent=e.target.checked?'On':'Off'};$('treeModels').onchange=e=>{switchTreeModels(e.target.checked);$('treeModelsOut').textContent=e.target.checked?'On':'Off'};$('streamsVisible').onchange=e=>{toggleStreams(e.target.checked);$('streamOut').textContent=e.target.checked?'On':'Off'};$('labPilot').onchange=e=>toggleLabPilot(e.target.checked);$('findStream').onclick=openDrainageInspection;$('findNaturalRiver').onclick=findNearbyStream;$('surfaceMode').onchange=e=>setTerrainSurfaceMode(e.target.value);$('smallPlants').onchange=e=>{setNaturalSmallPlants(e.target.checked);$('smallPlantsOut').textContent=e.target.checked?'On':'Off'};$('naturalColors').onchange=e=>{switchNaturalColors(e.target.checked);$('naturalOut').textContent=e.target.checked?'On':'Off'};$('groundCoverVisible').onchange=e=>{showGroundCover=e.target.checked;$('groundCoverOut').textContent=showGroundCover?'On':'Off';$('perfCover').checked=showGroundCover;applyPerfVisibility()};$('rockVisible').onchange=e=>{showRocks=e.target.checked;$('rockVisibleOut').textContent=showRocks?'On':'Off';$('perfRocks').checked=showRocks;applyPerfVisibility()};$('inspectTree').onclick=inspectTreeNearCrosshair;$('rootDebug').onchange=e=>{setRootMarkersVisible(e.target.checked);$('rootOut').textContent=e.target.checked?'On':'Off';toast(e.target.checked?'X-ray roots: yellow dots at bases, magenta poles':'Tree root markers hidden')};$('collisions').onchange=e=>{config.collisions=e.target.checked;$('collisionOut').textContent=config.collisions?'On':'Off';toast(config.collisions?'Scenery collisions enabled':'Scenery collisions disabled')};$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';clearVegetation();clearRocks();clearStreams();for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{if(mapMode==='drainage'){
+$('visibilityDetail').onchange=e=>{adaptiveVisibility=e.target.checked;$('visibilityOut').textContent=e.target.checked?'On':'Off';lastUpdateX=Infinity;planTerrain(true);for(const tile of tiles.values())disposeGroundCover(tile);refreshGroundCover()};$('undergrowth').onchange=e=>{setDenseUndergrowth(e.target.checked);$('undergrowthOut').textContent=e.target.checked?'On':'Off'};$('treeCrowns').onchange=e=>{switchTreeCrowns(e.target.checked);$('treeCrownsOut').textContent=e.target.checked?'On':'Off'};$('treeVariants').onchange=e=>{switchTreeVariants(e.target.checked);$('treeVarOut').textContent=e.target.checked?'On':'Off'};$('shrubVariants').onchange=e=>{switchShrubVariants(e.target.checked);$('shrubVarOut').textContent=e.target.checked?'On':'Off'};$('treeModels').onchange=e=>{switchTreeModels(e.target.checked);$('treeModelsOut').textContent=e.target.checked?'On':'Off'};$('streamsVisible').onchange=e=>{toggleStreams(e.target.checked);$('streamOut').textContent=e.target.checked?'On':'Off'};$('labPilot').onchange=e=>toggleLabPilot(e.target.checked);$('findStream').onclick=openDrainageInspection;$('findNaturalRiver').onclick=findNearbyStream;$('surfaceMode').onchange=e=>setTerrainSurfaceMode(e.target.value);$('smallPlants').onchange=e=>{setNaturalSmallPlants(e.target.checked);$('smallPlantsOut').textContent=e.target.checked?'On':'Off'};$('naturalColors').onchange=e=>{switchNaturalColors(e.target.checked);$('naturalOut').textContent=e.target.checked?'On':'Off'};$('groundCoverVisible').onchange=e=>{showGroundCover=e.target.checked;$('groundCoverOut').textContent=showGroundCover?'On':'Off';$('perfCover').checked=showGroundCover;applyPerfVisibility()};$('rockVisible').onchange=e=>{showRocks=e.target.checked;$('rockVisibleOut').textContent=showRocks?'On':'Off';$('perfRocks').checked=showRocks;applyPerfVisibility()};$('inspectTree').onclick=inspectTreeNearCrosshair;$('rootDebug').onchange=e=>{setRootMarkersVisible(e.target.checked);$('rootOut').textContent=e.target.checked?'On':'Off';toast(e.target.checked?'X-ray roots: yellow dots at bases, magenta poles':'Tree root markers hidden')};$('collisions').onchange=e=>{config.collisions=e.target.checked;$('collisionOut').textContent=config.collisions?'On':'Off';toast(config.collisions?'Scenery collisions enabled':'Scenery collisions disabled')};$('viewDistance').oninput=e=>{$('viewOut').textContent=e.target.value+' km';config.maxDistance=+e.target.value*1000;lastUpdateX=Infinity;planTerrain(true);scene.fog.density=.000085*(16000/config.maxDistance)**.6};$('detail').oninput=e=>{$('detailOut').textContent=e.target.value==16?'Fast':e.target.value==24?'Balanced':e.target.value==32?'Detailed':'Ultra';config.detail=+e.target.value;for(const k of [...tiles.keys()])deleteTile(k);planTerrain(true);toast('Geometry resolution: '+e.target.value+' segments per tile'+(+e.target.value>=40?' · closer terrain subdivisions':''))};$('speed').oninput=e=>{config.speed=+e.target.value;$('speedOut').textContent=config.speed+' km/h'};$('heightScale').oninput=e=>{config.heightScale=+e.target.value;$('heightOut').textContent=config.heightScale.toFixed(1)+'×';watershedCache.clear();regionalCache.clear();watershedSelection=null;regionalSelection=null;clearVegetation();clearRocks();clearStreams();for(const k of [...tiles.keys()])deleteTile(k);mapDirty=true;planTerrain(true)};$('applySeed').onclick=setSeed;$('teleport').onclick=()=>{reposition(Number($('teleX').value)||0,Number($('teleZ').value)||0);$('panel').classList.remove('open')};$('resetPosition').onclick=()=>reposition(0,0);$('randomSpot').onclick=()=>reposition((Math.random()-.5)*18000,(Math.random()-.5)*18000);$('mapCanvas').onclick=e=>{if(mapMode==='drainage'){
   const rect=e.target.getBoundingClientRect(),u=(e.clientX-rect.left)/rect.width,v=(e.clientY-rect.top)/rect.height;
   selectMapLocation(u,v);
    const x=(drainInspectX+u)*HYDRO_SIZE,z=(drainInspectZ+1-v)*HYDRO_SIZE;
@@ -3065,7 +2978,7 @@ $('visibilityDetail').onchange=e=>{adaptiveVisibility=e.target.checked;$('visibi
   return; }let r=e.target.getBoundingClientRect();selectMapLocation((e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height);renderMap()};$('mapLandscape').onclick=()=>{mapMode='landscape';renderMap()};$('mapDrainage').onclick=openDrainageInspection;$('mapWatershed').onclick=openWatershedInspection;$('mapRegional').onclick=openRegionalInspection;
 $('watershedIn').onclick=()=>explorerSetZoom(explorerZoom*2);
 $('watershedOut').onclick=()=>explorerSetZoom(explorerZoom/2);
-$('watershedReset').onclick=()=>explorerSetZoom(1,64,64);
+$('watershedReset').onclick=()=>explorerSetZoom(1,explorerGridSize()/2,explorerGridSize()/2);
 $('regionalDrill').onclick=()=>{
  if(!regionalSelection)return;
  const w=regionalAt(regionalInspectX,regionalInspectZ),id=regionalSelection.start;
@@ -3083,7 +2996,7 @@ $('mapCanvas').addEventListener('pointerdown',e=>{
 });
 $('mapCanvas').addEventListener('pointermove',e=>{
  if((mapMode!=='watershed'&&mapMode!=='regional')||!explorerDrag)return;
- const rect=e.target.getBoundingClientRect(),span=128/explorerZoom;
+ const rect=e.target.getBoundingClientRect(),span=explorerGridSize()/explorerZoom;
  const dx=(e.clientX-explorerDrag.x)/rect.width*span;
  const dz=(e.clientY-explorerDrag.y)/rect.height*span;
  if(Math.hypot(e.clientX-explorerDrag.x,e.clientY-explorerDrag.y)>7)explorerDrag.moved=true;
