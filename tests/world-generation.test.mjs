@@ -41,3 +41,17 @@ test('ocean remains an elevation feature without a river mesh',()=>{
  assert.equal(a.ground,-3);assert.equal(a.waterElevation,0);
  assert.equal(a.substrate,'seabed');
 });
+
+test('riverbed never overtops its water surface even in high-relief corridor',()=>{
+ const w=createWorldGenerator({
+   broadHeight:()=>260,
+   drainageAt:(_,z)=>({kind:'river',distance:Math.abs(z),width:4,
+     water:200,acc:500,maxCut:14})
+ });
+ for(const z of [0,.5,1.2,2,3,3.95]){
+   const p=w.sample(0,z);
+   assert.ok(p.ground<p.waterElevation,
+     'channel must be below water, including bank edge at z='+z);
+ }
+ assert.equal(w.water(0,4.5),null);
+});
