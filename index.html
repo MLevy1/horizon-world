@@ -293,27 +293,15 @@ function naturalRivers(ix,iz){
  const w=drainageDomainAt(domain.ix,domain.iz),N=w.N,S=w.S;
  const bins=new Map(),segments=[],byId=new Map();
  const candidate=new Uint8Array(w.C);
- // First classify every edge independently. Acceptance is later based on
- // whether the ENTIRE downstream path reaches the ocean using valid edges.
- // A rejected edge disqualifies its upstream branches, so no blue ribbons
- // abruptly stop in the middle of a hillside.
+ // Drainage topology is a first-class geographic fact.
+ // A local terrain spike, narrow valley, or steep reach must not veto the
+ // *entire upstream river*. Geometry is adapted later with bounded carving.
+ // Only a route's actual sea-connected drainage classification and flow area
+ // determine whether it belongs to the connected physical water network.
  for(let id=0;id<w.C;id++){
-  const down=w.parent[id],a=w.acc[id];
-  if(down<0||a<NATURAL_RIVER_THRESHOLD||w.base[id]<=0)continue;
-  const h0=w.base[id],h1=Math.max(0,w.base[down]);
-  const x0=w.ox+(id%N+.5)*S,z0=w.oz+(Math.floor(id/N)+.5)*S;
-  const x1=w.ox+(down%N+.5)*S,z1=w.oz+(Math.floor(down/N)+.5)*S;
-  const length=Math.hypot(x1-x0,z1-z0);
-  if(w.base[down]<=0&&h0>32)continue;
-  if(w.base[down]>0&&h1>h0+2)continue;
-  if(Math.abs(h0-h1)/length>.30)continue;
-  let incompatible=false;
-  for(const t of [.125,.25,.375,.5,.625,.75,.875]){
-   const x=x0+(x1-x0)*t,z=z0+(z1-z0)*t;
-   const model=h0+(h1-h0)*t;
-   if(baseTerrain(x,z)-model>22||model-baseTerrain(x,z)>9){incompatible=true;break}
-  }
-  if(!incompatible)candidate[id]=1;
+  const down=w.parent[id];
+  if(down<0||w.base[id]<=0||!w.ocean[id])continue;
+  if(w.acc[id]>=NATURAL_RIVER_THRESHOLD)candidate[id]=1;
  }
  // Priority flood is downstream-first. An eligible reach must connect through
  // eligible downstream edges to true sea, avoiding recursive path scans.
@@ -465,7 +453,7 @@ function naturalRivers(ix,iz){
  }
  const data={w,segments,bins,byId,headwaters:[...kept].filter(id=>bestUpstream(id)<0).length,
   ponds:pondSites.length,pondSites};
- if(naturalRiverCache.size>=2)naturalRiverCache.clear();
+ if(naturalRiverCache.size>=4)naturalRiverCache.delete(naturalRiverCache.keys().next().value);
  naturalRiverCache.set(key,data);
  return data;
 }
@@ -2293,7 +2281,7 @@ function drainageDomainAt(ix,iz){
  const key=watershedKey(ix,iz);
  if(watershedCache.has(key))return watershedCache.get(key);
  const data=solveDrainageDomain({ix,iz,height:baseTerrain});
- if(watershedCache.size>=2)watershedCache.clear();
+ if(watershedCache.size>=4)watershedCache.delete(watershedCache.keys().next().value);
  watershedCache.set(key,data);
  return data;
 }
