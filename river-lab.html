@@ -336,7 +336,8 @@ function view(name){
  };
  const v=views[name];camera.position.set(...v.pos);controls.target.set(...v.target);
  camera.up.set(0,1,0);controls.update();
- for(const id of Object.keys(views))$(id).classList.toggle('active',id===name);
+ for(const id of ['bank','aerial','top','section'])$(id).classList.toggle('active',id===name);
+ $('headwaterView').classList.toggle('active',name==='headwater');
 }
 for(const id of ['bank','aerial','top','section'])$(id).onclick=()=>view(id);
 $('headwaterView').onclick=()=>view('headwater');
