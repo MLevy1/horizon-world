@@ -168,7 +168,7 @@ function channelAt(x,z){
   if(d<dist){dist=d;nearest=zz}
  }
  const water=centerY(nearest),half=channelWidth(nearest);
- return {distance:dist,riverZ:nearest,water,width:half,depth:channelDepth(nearest),rise:bankRise(nearest),bankWidth:geom.bankWidth*bankGrowth(nearest),shoulder:geom.shoulder*bankGrowth(nearest)};
+ return {distance:dist,riverZ:nearest,water,width:half,depth:channelDepth(nearest),rise:bankRise(nearest),bankWidth:Math.max(.28,geom.bankWidth*bankGrowth(nearest)),shoulder:Math.max(1.2,geom.shoulder*bankGrowth(nearest))};
 }
 function profileHeight(d,c,base){
  const bedHalf=c.width*.54;
