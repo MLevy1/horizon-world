@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {channelBed,createGeography,ramp} from '../geography.js';
+import {channelBed,createGeography,ramp,headwaterGrowth} from '../geography.js';
 
 test('shared cross section never adds terrain or exceeds maximum cut',()=>{
   const c={kind:'river',distance:0,width:5,water:100,depth:1.2,bankWidth:3,shoulder:10};
@@ -52,4 +52,15 @@ test('seeded resolver is independent of traversal or tile order',()=>{
   assert.deepEqual(first,second);
   assert.equal(ramp(0,1,-2),0);
   assert.equal(ramp(0,1,2),1);
+});
+
+test('headwaters emerge continuously over a long connected reach',()=>{
+ assert.equal(headwaterGrowth(0),0);
+ assert.equal(headwaterGrowth(-100),0);
+ assert.equal(headwaterGrowth(1050),1);
+ assert.equal(headwaterGrowth(2000),1);
+ const samples=[0,100,250,500,750,1000,1050].map(d=>headwaterGrowth(d));
+ for(let i=1;i<samples.length;i++)assert.ok(samples[i]>=samples[i-1]);
+ assert.ok(headwaterGrowth(250)<.1,'early source should remain a tiny swale');
+ assert.ok(headwaterGrowth(900)>.5,'flow should gradually mature downstream');
 });
