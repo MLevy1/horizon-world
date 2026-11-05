@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Horizon 0.3 — Hydrology Atlas</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;color-scheme:dark;color:#e5eeeb;background:#13272c;--muted:#abc4c2;--border:#34545a}
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;background:#13272c}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;background:#182f35;border-bottom:1px solid var(--border)}
+header strong{font-size:19px;letter-spacing:.19em}header small{display:block;color:var(--muted);font-size:11px;letter-spacing:.12em}
+a{color:#b1e2d9;text-decoration:none}.back{border:1px solid var(--border);padding:10px 13px;border-radius:13px;white-space:nowrap}
+main{max-width:1140px;margin:auto;padding:18px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(260px,.7fr);gap:20px}
+.panel{background:#1a3439;border:1px solid var(--border);border-radius:18px;padding:16px;min-width:0}
+h1{font-size:23px;margin:0 0 8px}h2{font-size:17px;margin:0 0 10px}p{margin:7px 0;color:var(--muted);line-height:1.5;font-size:14px}
+button{cursor:pointer;background:#10282c;border:1px solid #45656c;color:#f0f6f4;padding:10px 12px;border-radius:11px;font:inherit}
+button:focus-visible,input:focus-visible{outline:2px solid #9ce4e0;outline-offset:2px}
+button[aria-pressed=true]{background:#3a6665}
+.controls,.zoom{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.controls button{flex:1;min-width:82px}
+.mapwrap{max-width:660px;margin:0 auto;position:relative;border:1px solid #5e7776;border-radius:13px;overflow:hidden;background:#174d63;aspect-ratio:1}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.compass{position:absolute;right:12px;top:10px;font-size:12px;pointer-events:none;color:#fff;text-shadow:0 1px 3px #000}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.metric{background:#112a30;padding:10px;border-radius:10px}.metric strong{display:block;font-size:17px;font-variant-numeric:tabular-nums}.metric small{color:var(--muted);font-size:12px}
+.value{font-variant-numeric:tabular-nums;font-weight:600;color:#e9f6ef}.info{padding:10px;background:#102b30;border-radius:11px;margin-top:8px}
+.info p{margin:5px 0}.hint{font-size:12px;color:#bdcfca}.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.swatch{width:11px;height:11px;display:inline-block;vertical-align:middle;border-radius:50%;margin-right:4px}
+label{font-size:13px;color:var(--muted)}input{background:#10282c;color:white;border:1px solid #45656c;padding:10px;border-radius:10px;width:100%}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+code{font-size:12px;color:#c5e5dc}
+#loading{font-size:13px;color:#e1d7a7;margin:8px 0}
+@media(max-width:740px){main{display:block;padding:12px}main>.panel{margin-bottom:12px}header{padding:12px}header strong{font-size:15px}h1{font-size:20px}.panel{padding:12px}.metrics{grid-template-columns:1fr 1fr}}
+</style></head>
+<body>
+<header><div><strong>HORIZON</strong><small>HYDROLOGY ATLAS · 0.3.0</small></div><a class="back" href="./?v=0.3.0">Return to world</a></header>
+<main>
+<section class="panel">
+<h1>One connected drainage system</h1>
+<p>First solve the whole regional watershed. Then shape the landscape. Rivers shown here are geographic connections, not 3D water meshes.</p>
+<div class="controls" role="group" aria-label="Map mode">
+<button data-mode="terrain" aria-pressed="true">Elevation</button>
+<button data-mode="drainage" aria-pressed="false">Drainage</button>
+<button data-mode="basins" aria-pressed="false">Outlets</button>
+</div>
+<div class="mapwrap"><canvas id="map" width="768" height="768" aria-label="Interactive hydrology map"></canvas><div class="compass">N ↑</div></div>
+<div class="zoom">
+<button id="out">− Zoom</button><button id="reset">Overview</button><button id="in">+ Zoom</button>
+<button id="origin">Center on 0,0</button>
+</div>
+<div class="legend">
+<span><span class="swatch" style="background:#66cfe6"></span>Stream</span>
+<span><span class="swatch" style="background:#23719d"></span>Sea</span>
+<span><span class="swatch" style="background:#e1af64"></span>Traced channel</span>
+<span><span class="swatch" style="background:#dd8181"></span>Boundary outlet</span>
+</div>
+<p class="hint">Tap to inspect flow and coordinates. Drag to pan and use zoom to examine tributaries. North is up. This map represents a finite simulation area.</p>
+</section>
+<aside class="panel">
+<h2>Model</h2>
+<label for="seed">World seed</label>
+<div class="grid2" style="grid-template-columns:1fr auto"><input id="seed" value="HORIZON-01"><button id="generate">Generate</button></div>
+<p id="loading">Calculating complete drainage graph…</p>
+<div class="metrics">
+<div class="metric"><strong id="area">—</strong><small>Simulation span</small></div>
+<div class="metric"><strong id="ocean">—</strong><small>Sea cells</small></div>
+<div class="metric"><strong id="rivers">—</strong><small>Major river cells</small></div>
+<div class="metric"><strong id="uphill">—</strong><small>Uphill flow links</small></div>
+</div>
+<h2>Selected location</h2>
+<div id="selection" class="info"><p>Tap a land location to inspect it and trace its path to the outlet.</p></div>
+<div class="actions"><button id="trace" disabled>Trace source to outlet</button><button id="copy" disabled>Copy coordinates</button></div>
+<h2 style="margin-top:21px">Domain limits</h2>
+<p>The entire <span class="value">65.536 × 65.536 km</span> grid is solved together at 256 m spacing. River flow never resets at a rendering-tile boundary.</p>
+<p>Sea-connected outlets and flows reaching the edge of the modeled world are distinguished. A boundary outlet is <strong>unresolved beyond the domain</strong>, not assumed to join the sea.</p>
+<p id="boundaries" class="hint"></p>
+<p class="hint">Accumulation is contributing area (km²), not a simulated discharge in cubic metres per second. Lake permanence, seasonal rainfall, sediment transport and 3D water are not yet modeled.</p>
+</aside>
+</main>
+<script>
+window.addEventListener('error',e=>{document.getElementById('loading').textContent='Startup error: '+(e.message||'unable to load model')},true);
+window.addEventListener('unhandledrejection',e=>{document.getElementById('loading').textContent='Calculation error: '+(e.reason?.message||e.reason)});
+</script>
+<script type="module">
+import {DOMAIN,solveHydrology} from './hydrology-model.mjs?v=0.3.0';
+const $=id=>document.getElementById(id),canvas=$('map'),ctx=canvas.getContext('2d'),off=document.createElement('canvas');
+off.width=DOMAIN.n;off.height=DOMAIN.n;const oct=off.getContext('2d');
+let model=null,mode='terrain',selected=-1,trace=[],zoom=1,cx=127.5,cy=127.5,drag=null,buffers={};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const color=(r,g,b)=>[clamp(Math.round(r),0,255),clamp(Math.round(g),0,255),clamp(Math.round(b),0,255),255];
+function makePixels(){
+ const n=DOMAIN.n,terrain=new ImageData(n,n),drainage=new ImageData(n,n),basins=new ImageData(n,n);
+ const out=[terrain,drainage,basins];
+ for(let z=0;z<n;z++)for(let x=0;x<n;x++){
+  const i=z*n+x,j=((n-1-z)*n+x)*4,h=model.raw[i],acc=model.accumulated[i],water=h<=0;
+  const relief=clamp((h+80)/1200,0,1),flow=Math.log2(1+acc);
+  const t=water?color(30,100+relief*40,138+relief*25):
+   h<150?color(102+relief*65,132+relief*61,94+relief*50):
+   h<650?color(125+relief*72,141+relief*65,112+relief*72):
+   color(178+relief*53,171+relief*57,159+relief*61);
+  const dr=water?color(29,93,129):color(49+flow*12,91+flow*12,78+flow*12);
+  let b;
+  if(water)b=color(28,96,127);
+  else if(model.kind[i]===2)b=color(137,98,98);
+  else{const outlet=model.outlet[i],ox=outlet%n,oz=(outlet/n)|0;
+   const hue=((Math.floor(ox/12)*47+Math.floor(oz/12)*71)%110);
+   b=color(66+hue,103+(hue%55),79+(hue%70));
+  }
+  for(const [k,c] of [t,dr,b].entries())out[k].data.set(c,j);
+ }
+ buffers={terrain,drainage,basins};
+}
+const screen=(i)=>{
+ const x=i%DOMAIN.n,z=Math.floor(i/DOMAIN.n);
+ const span=DOMAIN.n/zoom;
+ return {x:((x-cx)/span+.5)*canvas.width,y:((DOMAIN.n-1-z-cy)/span+.5)*canvas.height};
+};
+const fromScreen=(x,y)=>{
+ const span=DOMAIN.n/zoom;
+ const col=Math.floor(cx+(x/canvas.width-.5)*span);
+ const invRow=Math.floor(cy+(y/canvas.height-.5)*span);
+ const row=DOMAIN.n-1-invRow;
+ return col<0||row<0||col>=DOMAIN.n||row>=DOMAIN.n?-1:row*DOMAIN.n+col;
+};
+function drawLine(a,b,stroke,width){
+ const A=screen(a),B=screen(b);
+ ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();
+}
+function draw(){
+ if(!model)return;
+ oct.putImageData(buffers[mode],0,0);
+ const span=DOMAIN.n/zoom,x=cx-span/2,y=cy-span/2;
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.imageSmoothingEnabled=zoom<2;
+ ctx.drawImage(off,x,y,span,span,0,0,canvas.width,canvas.height);
+ const scale=canvas.width/span;
+ for(let i=0;i<model.parent.length;i++){
+  const p=model.parent[i],a=model.accumulated[i];
+  if(p<0||model.raw[i]<=0||a<2.5)continue;
+  const pt=screen(i);
+  if(pt.x< -20||pt.x>canvas.width+20||pt.y< -20||pt.y>canvas.height+20)continue;
+  const width=a>=12?2.0:1.0;
+  drawLine(i,p,a>=12?'#76e4f0':'#64bacb',width*(zoom>=2?1.2:1));
+ }
+ if(trace.length>1)for(let i=0;i<trace.length-1;i++)drawLine(trace[i],trace[i+1],'#ffbe66',3.5);
+ if(selected>=0){
+  const p=screen(selected);
+  ctx.beginPath();ctx.arc(p.x,p.y,7,0,Math.PI*2);
+  ctx.strokeStyle='#ffffff';ctx.lineWidth=2.5;ctx.stroke();
+ }
+}
+const fmt=v=>Math.round(v).toLocaleString();
+function inspect(i){
+ if(!model||i<0)return;
+ selected=i;trace=[];
+ const p=model.point(i),out=model.point(p.outletIndex);
+ const route=model.downstream(i);
+ $('selection').innerHTML='<p><span class="value">X '+fmt(p.x)+' · Z '+fmt(p.z)+'</span></p>'+
+  '<p>Broad elevation: <span class="value">'+fmt(p.raw)+' m</span></p>'+
+  '<p>Drainage elevation: <span class="value">'+fmt(p.drainageElevation)+' m</span></p>'+
+  '<p>Contributing area: <span class="value">'+p.areaKm2.toFixed(2)+' km²</span></p>'+
+  '<p>Outlet: <span class="value">'+(p.outletType==='sea'?'Sea':'World boundary (unresolved)')+'</span></p>'+
+  '<p>Outlet position: X '+fmt(out.x)+' · Z '+fmt(out.z)+'</p>'+
+  '<p>Downstream links: '+(route.length-1)+'</p>';
+ $('trace').disabled=false;$('copy').disabled=false;draw();
+}
+function traceSelected(){
+ if(selected<0)return;
+ const up=model.upstream(selected).reverse(),down=model.downstream(selected).slice(1);
+ trace=up.concat(down);draw();
+}
+function generate(){
+ const seed=$('seed').value.trim()||'HORIZON-01';
+ $('loading').textContent='Solving complete model for '+seed+'…';
+ $('generate').disabled=true;
+ // Let the loading state paint before synchronous whole-domain calculation.
+ requestAnimationFrame(()=>setTimeout(()=>{
+  try{
+   model=solveHydrology({seed});
+   makePixels();selected=-1;trace=[];cx=127.5;cy=127.5;zoom=1;
+   const st=model.stats;
+   $('area').textContent=st.coverageKm.toFixed(1)+' km';
+   $('ocean').textContent=st.oceanCells.toLocaleString();
+   $('rivers').textContent=st.riverCells.toLocaleString();
+   $('uphill').textContent=st.uphill.toLocaleString();
+   $('boundaries').textContent=st.unresolvedCells.toLocaleString()+' land cells drain to '+st.boundaryOutlets+' boundary seed cells. Those downstream connections are not yet resolved.';
+   $('loading').textContent='Model generated. Tap to inspect and trace.';
+   $('selection').textContent='Tap any location to inspect its drainage path.';
+   $('trace').disabled=true;$('copy').disabled=true;
+   draw();
+  }catch(err){$('loading').textContent='Error: '+err.message;console.error(err)}
+  finally{$('generate').disabled=false}
+ },10));
+}
+$('generate').onclick=generate;
+$('trace').onclick=traceSelected;
+$('copy').onclick=()=>{
+ if(selected<0)return;
+ const p=model.point(selected);
+ navigator.clipboard?.writeText(Math.round(p.x)+', '+Math.round(p.z)).catch(()=>{});
+};
+for(const b of document.querySelectorAll('[data-mode]'))b.onclick=()=>{
+ mode=b.dataset.mode;for(const el of document.querySelectorAll('[data-mode]'))el.setAttribute('aria-pressed',String(el===b));
+ draw();
+};
+$('in').onclick=()=>{zoom=clamp(zoom*2,1,16);draw()};
+$('out').onclick=()=>{zoom=clamp(zoom/2,1,16);draw()};
+$('reset').onclick=()=>{zoom=1;cx=127.5;cy=127.5;draw()};
+$('origin').onclick=()=>{cx=DOMAIN.n/2-.5;cy=DOMAIN.n/2-.5;draw()};
+canvas.addEventListener('pointerdown',e=>{
+ const box=canvas.getBoundingClientRect();
+ canvas.setPointerCapture(e.pointerId);
+ drag={x:(e.clientX-box.left)/box.width*canvas.width,y:(e.clientY-box.top)/box.height*canvas.height,
+  startX:e.clientX,startY:e.clientY,cx,cy};
+});
+canvas.addEventListener('pointermove',e=>{
+ if(!drag)return;
+ const span=DOMAIN.n/zoom;
+ cx=clamp(drag.cx-(e.clientX-drag.startX)/canvas.clientWidth*span,0,DOMAIN.n-1);
+ cy=clamp(drag.cy-(e.clientY-drag.startY)/canvas.clientHeight*span,0,DOMAIN.n-1);
+ draw();
+});
+canvas.addEventListener('pointerup',e=>{
+ if(!drag)return;
+ const moved=Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY);
+ if(moved<7){
+  const box=canvas.getBoundingClientRect();
+  const x=(e.clientX-box.left)/box.width*canvas.width,y=(e.clientY-box.top)/box.height*canvas.height;
+  inspect(fromScreen(x,y));
+ }
+ drag=null;
+});
+generate();
+</script>
+</body></html>

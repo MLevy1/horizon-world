@@ -1,11 +1,12 @@
-# Horizon — exploration baseline v0.2.0
+# Horizon 0.3.0
 
-The current build restores the established exploration features from the
-Alpha 4.3 code while presenting a smaller user interface. Incomplete river
-rendering is off by default. See [BASELINE.md](BASELINE.md) for the exact scope.
+The existing 3D explorer is preserved alongside a hydrology-first
+geographic atlas.
 
-The historical repository contains many experimental commits; this source
-tree is meant to become a single initial commit in a new repository.
+- [3D world](index.html)
+- [Hydrology atlas](hydrology.html)
+- [Hydrology model assumptions and roadmap](HYDROLOGY-03.md)
 
-Serve over HTTP or GitHub Pages; JavaScript modules will not work reliably
-when the HTML is opened directly from disk.
+Run `node --test tests/hydrology.test.mjs` to verify the whole-domain graph.
+The new drainage model is bounded, not an infinite planet. It is not yet
+connected to the experimental 3D river renderer.
