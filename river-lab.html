@@ -427,8 +427,6 @@ function createWater(){
 }
 // Separate standing-water mesh: a level basin surface with its own shoreline.
 // The river overlaps the first 40m, lying slightly below the pond surface.
-const stillPondTexture=riverTexture.clone();
-stillPondTexture.offset.set(0,0);stillPondTexture.needsUpdate=true;
 const pondWaterMaterial=new THREE.MeshPhongMaterial({
  color:0x378fa5,side:THREE.DoubleSide,
  shininess:28,specular:0x6a9fad,depthWrite:true
@@ -443,7 +441,7 @@ function createPondWater(){
   const margin=Math.min(.55,p.width*.10);
   const left=p.left+margin,right=p.right-margin;
   for(const x of [left,right]){
-   pos.push(x,pondLevel()+.055,z);
+   pos.push(x,pondLevel()+.105,z);
    uv.push(x/52,z/52);
   }
   if(i){const k=i*2;indices.push(k-2,k,k-1,k-1,k,k+1)}
