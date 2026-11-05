@@ -281,6 +281,13 @@ function naturalRivers(ix,iz){
   const control1={x:p1.x-(after.x-p0.x)*.20,z:p1.z-(after.z-p0.z)*.20};
   const width0=naturalRiverWidth(w.acc[id]),width1=naturalRiverWidth(w.acc[down]);
   const head=up<0,samples=[],length=Math.hypot(p1.x-p0.x,p1.z-p0.z);
+  // Pond candidates come from *actual filled depressions* in the selected
+  // priority-flood watershed, not random circular water decals. A pool is
+  // admitted only along a gently graded, ocean-connected graph edge.
+  const depression=Math.max(0,w.level[id]-w.base[id],w.level[down]-w.base[down]);
+  const labPond=labPilotEnabled&&depression>1.2&&Math.abs(w.base[id]-w.base[down])<1.3&&
+   w.acc[down]>=150&&Math.abs(w.level[down]-w.base[down])<7;
+  const pondHalfWidth=labPond?Math.min(33,Math.max(width0,width1)+7+depression*2):0;
   const steps=Math.max(10,Math.ceil(length/10));
   for(let k=0;k<=steps;k++){
    const t=k/steps,u=1-t;
@@ -289,10 +296,16 @@ function naturalRivers(ix,iz){
    const model=w.base[id]+(Math.max(0,w.base[down])-w.base[id])*t-.08;
    const y=Math.min(model,baseTerrain(x,z)+.12);
    const taper=head?Math.min(1,.08+.92*t/.76):1;
-   const width=(width0+(width1-width0)*t)*taper;
+   let width=(width0+(width1-width0)*t)*taper;
+   if(labPond){
+    // Continuously expand and contract the SAME strip into a pool.
+    // No second mesh/material seam, and endpoints agree with river links.
+    const basin=Math.pow(Math.sin(Math.PI*t),2);
+    width+=pondHalfWidth*basin;
+   }
    samples.push({x,z,y,width});
   }
-  const seg={id,down,head,acc:w.acc[id],samples,
+  const seg={id,down,head,acc:w.acc[id],labPond,depression:labPond?depression:0,samples,
    x0:p0.x,z0:p0.z,x1:p1.x,z1:p1.z,width:Math.max(width0,width1)};
   segments.push(seg);byId.set(id,seg);
   // Index short sampled edges into 128m cells, including valley shoulders.
@@ -429,6 +442,7 @@ function tileHasDrainage(d){
   const minX=Math.floor(d.x/MACRO_SIZE),maxX=Math.floor((d.x+d.size)/MACRO_SIZE);
   const minZ=Math.floor(d.z/MACRO_SIZE),maxZ=Math.floor((d.z+d.size)/MACRO_SIZE);
   for(let ix=minX;ix<=maxX;ix++)for(let iz=minZ;iz<=maxZ;iz++){
+   if(labPilotEnabled&&!pilotMacroActive(ix,iz))continue;
    for(const seg of naturalRivers(ix,iz).segments){
     if(Math.max(seg.x0,seg.x1)+55<d.x||Math.min(seg.x0,seg.x1)-55>d.x+d.size)continue;
     if(Math.max(seg.z0,seg.z1)+55<d.z||Math.min(seg.z0,seg.z1)-55>d.z+d.size)continue;
@@ -1877,7 +1891,7 @@ function buildStream(ix,iz,key){
  const z0=iz*HYDRO_SIZE,z1=z0+HYDRO_SIZE;
  const macroMinX=Math.floor(x0/MACRO_SIZE),macroMaxX=Math.floor((x1-1)/MACRO_SIZE);
  const macroMinZ=Math.floor(z0/MACRO_SIZE),macroMaxZ=Math.floor((z1-1)/MACRO_SIZE);
- let selected=0;
+ let selected=0,ponds=0;
  for(let mi=macroMinX;mi<=macroMaxX;mi++)for(let mz=macroMinZ;mz<=macroMaxZ;mz++){
   if(labPilotEnabled&&!pilotMacroActive(mi,mz))continue;
   for(const seg of naturalRivers(mi,mz).segments){
@@ -1891,7 +1905,7 @@ function buildStream(ix,iz,key){
     for(let i=0;i<uv.count;i++)uvs.push(uv.getX(i),uv.getY(i));
    }
    for(let i=0;i<idx.count;i++)indices.push(idx.getX(i)+start);
-   geo.dispose();selected++;
+   geo.dispose();selected++;if(seg.labPond)ponds++;
   }
  }
  if(indices.length){
@@ -1904,7 +1918,7 @@ function buildStream(ix,iz,key){
   mesh.frustumCulled=true;group.add(mesh);
  }
  group.visible=showStreams;scene.add(group);
- streamTiles.set(key,{group,ix,iz,selected});
+ streamTiles.set(key,{group,ix,iz,selected,ponds});
 }
 function planStreams(force=false){
  if(!naturalWaterwaysEnabled||labPilotEnabled&&!labPilotMacro)return;
@@ -1946,6 +1960,7 @@ function findNearbyStream(){
  if(!best){toast('No suitable modeled waterways near this region');return}
  if(labPilotEnabled){
   const macro=watershedKey(best.ix,best.iz);
+  $('labPilotOut').textContent='Watershed '+macro;
   if(labPilotMacro!==macro){
    labPilotMacro=macro;
    clearVegetation();clearRocks();clearStreams();
@@ -2716,7 +2731,8 @@ function reportPerf(now){
   'Terrain '+tiles.size+' tiles · '+buildQueue.length+' queued\n'+
   'Vegetation '+vegetationTiles.size+' tiles · '+vegetationQueue.length+' queued\n'+
   'Rocks '+rockTiles.size+' tiles · '+rockQueue.length+' queued\n'+
-  'River segments '+streamTiles.size+' · '+streamQueue.length+' queued · '+drainageRegions.size+' drainage regions\n'+
+  'River segments '+streamTiles.size+' · '+streamQueue.length+' queued · '+drainageRegions.size+' drainage regions'+
+  (labPilotEnabled?' · Lab pilot '+(labPilotMacro||'choose a watershed')+' · eligible pool reaches '+[...streamTiles.values()].reduce((n,e)=>n+(e.ponds||0),0):'')+'\n'+
   'Adaptive visibility '+(adaptiveVisibility?'on':'off')+' · smooth cover '+(smoothGroundCover?'on':'off')+' · altitude '+Math.round(visibilityLast.altitude)+' m · ground detail '+visibilityLast.groundDetail+' / base '+visibilityLast.groundBase+' tiles\n'+
   'Trees '+num(treeCount)+' · rocks '+num(rockCount)+' · ground '+num(coverCount)+'\n'+
   Object.keys(perfStats.elapsed).map(k=>k+': '+perfStats.elapsed[k].toFixed(1)+' ms / '+perfStats.ops[k]+' operations').join('\n')+
