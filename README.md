@@ -1,6 +1,6 @@
-# Horizon 0.8.2 — Walk the world
+# Horizon 0.8.3 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.8.2).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.8.3).
 
 The main page is a first-person terrain explorer with keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -14,7 +14,9 @@ darkens with depth and reflects more sky at grazing angles. WebGL adds animated
 fine surface ripples and sun highlights; compatibility rendering uses simpler
 static optics. Press **C** or **Crouch** for a low 0.45 m viewpoint and slower
 movement; **Stand up** restores 1.7 m. Local water depth appears while wading.
-Vegetation remains later work.
+Nearby rocks now form seeded irregular clusters, with partly buried bases,
+climate-aware materials and collision around larger boulders. Their placement
+persists as terrain streams. Trees, shrubs and grass remain later work.
 
 The current viewer is a reviewable checkpoint. Further visual refinement and
 touch-control checks are tracked in [BUILD-PLAN.md](BUILD-PLAN.md).

@@ -521,3 +521,24 @@ scene reflections/refraction and flow-aligned rapids remain future work.
 
 Validation: shallow channel mesh/eye/shore integration, essential existing movement
 and material checks, and direct browser river entry and posture comparison.
+
+
+## Rock and boulder checkpoint — 0.8.3
+
+Seeded cube-sphere addresses place irregular clusters throughout the planet.
+Slope, riverbank proximity, cooled lava, seasonal snow and glacier coverage
+influence density and appearance. Deep water and glacier interiors are excluded.
+Each stone varies in scale, proportions, rotation, clipped faces and coherent
+surface distortion. Bases are buried into the visible terrain; exposed upper
+faces can retain snow. Existing rock/lava textures cover their surfaces.
+
+Only a 155 m neighborhood is materialized. Nearby stones use 320 triangles; beyond
+80 m they use 80, with the existing fog masking the outer range. Rock meshes are
+batched into one opaque draw before the translucent water. Conservative horizontal
+footprints block larger stones; climbing/stepping onto stones and cast shadows
+remain future work. Travel/install searches a nearby clear spot when a boulder
+occupies the arrival point. Geometry is regenerated from stable IDs, never stored
+for the whole planet. No tree or ground-cover implementation is part of this step.
+
+Validation focuses on placement identity across overlapping views, deep-water
+exclusion, finite geometry, blocking footprints, and browser inspection/walking.
