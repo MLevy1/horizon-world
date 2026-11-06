@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.5.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.6.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -119,7 +119,7 @@ support, rather than replace, complete-planet validation.
 | 1c. Global lake integration — completed in 0.7.3 | Connect those pools to active global drainage, channels and the atlas inspector. | Full-planet water budget; every active path ends at an ocean or a valid closed pool; no drainage cycles. Publish the lake checkpoint. |
 | 2a. River profiles — completed in 0.7.4 | Establish shared river water heights, bed depths and widths along the entire active network. | Water never flows uphill; junctions share heights; beds remain below water. |
 | 2b. Profile inspection — completed in 0.7.5 | Add a river cross-section/profile view using those shared definitions. | Inspector displays the same geometry data that terrain generation will consume. Publish the river checkpoint. |
-| 3a. Terrain sampling | Add one spherical terrain-and-water sampler used across the whole world. | Consistent values across longitude wrap and at both poles; river/lake contacts agree. |
+| 3a. Terrain sampling — completed in 0.7.6 | Add one spherical terrain-and-water sampler used across the whole world. | Consistent values across longitude wrap and at both poles; river/lake contacts agree. |
 | 3b. Physical shorelines | Derive lake/ocean shores and river contacts from that shared surface. | Shore heights agree with water levels; no separate overlapping water patches at mouths. Publish the shoreline checkpoint. |
 | 4a. Bare global mesh | Build the full-planet land and water meshes from the shared sampler. | Complete spherical coverage and connected water geometry; no vegetation or decorative terrain detail. |
 | 4b. 3D navigation | Add navigation and inspect the bare world at global and local scales. | Usable navigation and visible terrain/water joins on the published Pages viewer. |
@@ -200,7 +200,7 @@ backwater, receiving-bank spill crests, dimension bounds, dry edges, lake-port f
 complete seed and deterministic generation. Existing global budgets remain
 conserved.
 
-Current checkpoint: **0.7.5**, task 2b. The atlas offers Inspect river profile
+Task 2b, saved in **0.7.5**. The atlas offers Inspect river profile
 on river cells and active lake outlets. Its dialog shows a downstream elevation
 plot, a slider, current dimensions and an illustrative minimum channel section.
 Routes follow the saved global edges and stop at the next lake or ocean.
@@ -216,7 +216,28 @@ interpolation, dry styling, section dimensions and deeper waterbody contacts.
 Existing global topology and budgets remain unchanged. The static build and
 browser inspection verify opening the dialog and updating stations.
 
-**Next task: 3a, terrain sampling only.** Add one spherical terrain-and-water
-sampler using the authoritative scaffold and river/pool definitions. Verify
-longitude wrapping, both poles and water contacts before the separate shoreline
-and 3D mesh tasks. Do not combine these into one large turn.
+Current checkpoint: **0.7.6**, task 3a. `surface-sampler.mjs` exposes one
+read-only global query for scaffold elevation, standing-water planes and nearby
+channel profile/design data. It uses the real spherical triangular mesh and
+projective interpolation, with unique polar caps and longitude wrapping.
+Compact trigonometric caches and a 3D bucket index cover all 85,338 active
+profile edges. The index includes arc curvature and bank-support bounds; it
+never clips a search to a geographic test region.
+
+The atlas adds a Surface sample readout. Map clicks probe their continuous
+coordinates; shortcuts probe the selected node. Scaffold, standing water and
+river design are intentionally separate query fields at this stage. The
+sampler does not yet carve banks, blend river/lake surfaces or create meshes.
+
+Verification: all **57 tests pass**. Every default-planet scaffold vertex is
+reproduced; every profile midpoint and canonical endpoint is found; wet pool
+nodes keep their own water plane and exposed margins remain unfilled. Tests
+also cover shared-edge interpolation, all latitude bands, wrapped longitudes,
+both poles and invalid queries. Existing hydrology/budgets are unchanged.
+The static build succeeds; browser probes verify both a channel node and an
+arbitrary off-node ocean coordinate.
+
+**Next task: 3b1, water-contact fitting only.** Compose the shared scaffold,
+river bed/bank definitions and fixed lake/ocean planes into consistent sampled
+surfaces. Check all global contacts. Keep shoreline boundary extraction (3b2)
+and bare-global-mesh generation (4a) as separate turns to avoid oversized work.

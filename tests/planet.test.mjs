@@ -7,9 +7,11 @@ import {annualPartition,lakeBalance,makeClimate} from '../climate.mjs';
 import {poolWetFraction} from '../pools.mjs';
 import {sampleRiverEdge,FLOW_EPSILON_M3S} from '../river-profiles.mjs';
 import {inspectionRoute,inspectionStation} from '../profile-view.mjs';
+import {createSurfaceSampler} from '../surface-sampler.mjs';
 import {solvePlanet,neighbors,lonLat,cellAt,traceDownstream,catchmentMask,DEFAULT_WORLD,traceActive,tracePotential,createGrid} from '../planet.mjs';
 
 const planet=solvePlanet();
+const surface=createSurfaceSampler(planet);
 const digest=m=>{
   const hash=createHash('sha256');
   for(const key of ['height','level','receiver','ocean','waterbody','catchment','discharge','outlet','channel','activeTerminal','wetness'])hash.update(new Uint8Array(m[key].buffer));
@@ -198,6 +200,45 @@ test('inspection routes cover every global profile edge and finish at exact lake
     for(const edge of r.edges)covered[edge]=1;
   }
   for(const value of covered)assert.equal(value,1);
+});
+
+test('the spherical scaffold sampler reproduces every vertex of the complete default planet',()=>{
+  const m=planet;
+  for(let i=0;i<m.grid.count;i++){
+    const [lon,lat]=lonLat(m.grid,i),q=surface.mesh.locate(lon,lat);
+    assert.ok(Math.abs(q.terrainM-m.height[i])<1e-5,`scaffold vertex ${i}`);
+  }
+  for(const lat of [-90,-89.9999,-45,0,45,89.9999,90])assert.equal(surface.sample(-180,lat).terrainM,surface.sample(180,lat).terrainM);
+});
+
+test('the global 3D channel index finds every profile midpoint and exact canonical endpoint',()=>{
+  const p=planet.riverProfiles;assert.equal(surface.stats.globalEdges,p.from.length);
+  for(let e=0;e<p.from.length;e++){
+    const a=surface.mesh.directionAt(p.from[e]),b=surface.mesh.directionAt(p.to[e]);
+    const river=surface.riverAtDirection(a.map((v,k)=>v+b[k]));
+    assert.ok(river&&river.distanceM<1e-5,`missing edge ${e}`);assert.equal(river.edge,e);
+    assert.ok(Math.abs(river.waterM-(p.waterM[p.from[e]]+p.waterM[p.to[e]])/2)<1e-5);
+    assert.ok(Math.abs(river.bedM-(p.bedM[p.from[e]]+p.bedM[p.to[e]])/2)<1e-5);
+  }
+  for(let i=0;i<planet.grid.count;i++)if(p.corridor[i]){
+    const river=surface.riverAtDirection(surface.mesh.directionAt(i));assert.ok(river);
+    assert.ok(Math.abs(river.waterM-p.waterM[i])<1e-5);assert.ok(Math.abs(river.bedM-p.bedM[i])<1e-5);
+  }
+});
+
+test('standing water queries preserve actual pool planes and sea level without flooding exposed margins',()=>{
+  const m=planet;
+  for(let i=0;i<m.grid.count;i++){
+    if(m.waterbody[i]>=0){
+      const body=m.waterbodies[m.waterbody[i]];if(m.height[i]>=body.waterLevelM-1e-7)continue;
+      const q=surface.sample(...lonLat(m.grid,i));assert.ok(q.standingWater);assert.equal(q.standingWater.waterM,body.waterLevelM);
+      assert.equal(q.standingWater.id,body.id);assert.ok(q.standingWater.depthM>0);
+    }else if((m.basinId[i]>=0||m.ocean[i])&&i%97===0){
+      const q=surface.sample(...lonLat(m.grid,i));
+      if(m.ocean[i]&&m.height[i]<0){assert.equal(q.standingWater.kind,'ocean');assert.equal(q.standingWater.waterM,0);}
+      else assert.equal(q.standingWater,null);
+    }
+  }
 });
 
 test('mesh edges are reciprocal across longitude and both unique poles; coordinate lookup round-trips',()=>{

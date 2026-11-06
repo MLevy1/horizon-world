@@ -1,6 +1,6 @@
-# Horizon 0.7.5 — Global hydrology atlas
+# Horizon 0.7.6 — Global hydrology atlas
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.5).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.6).
 
 A fresh hydrology-only foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
@@ -72,6 +72,8 @@ Serve the repository root or `dist/` over HTTP. Module workers do not run from a
   and longitudinal edge sampling across the complete active network.
 - `profile-view.mjs`: downstream inspection routes, exact station sampling and
   SVG profile/design-section diagrams from that shared data.
+- `surface-sampler.mjs`: shared spherical scaffold interpolation, standing-water
+  queries and a complete 3D index of nearby channel profiles.
 - `geology.mjs`: spherical volcanic landforms, cooled lava deposits and water links.
 - `climate.mjs`: global climate fields, annual runoff partition and lake balances.
 - `cryosphere.mjs`: monthly snow balance, retained ice, glacier routing and meltwater.
@@ -235,3 +237,31 @@ Dry portions use dashed design levels and no filled section water. These are
 annual estimates, not time-varying river stages. The viewer reads the same
 complete global data used by future geometry; it does not generate local trials.
 The next task is the spherical terrain-and-water sampler (3a).
+
+## Shared spherical sampler — 0.7.6
+
+`createSurfaceSampler(model).sample(longitude, latitude)` queries the existing
+complete planet. Coordinates are degrees; elevations and channel distances are
+metres. The result contains `terrainM` (the broad scaffold), the containing
+triangle and projective weights, `standingWater` (pool/ocean plane and depth,
+or null), and `river` (nearby profile, closest position, distance, width, center
+bed, wet flag and proposed core bed, or null outside its design corridor).
+
+The sampler uses the actual staggered triangular mesh, including longitude
+wrap and unique polar nodes. Normalized chord/ray interpolation matches shared
+mesh edges. Compact latitude/longitude caches avoid storing a second full
+position mesh. A 3D unit-sphere bucket index includes every active profile edge,
+with conservative bounds for arc curvature and channel support. It has no
+special seam or polar search window. Querying never regenerates local terrain.
+
+The atlas inspector's **Surface sample** block reports the sampled scaffold,
+standing-water level and nearby channel offset. Map clicks probe the actual
+clicked coordinates; shortcuts probe their selected node. Narrow-stream snapping
+still selects a drainage cell, while the separately labeled surface probe
+reports its own coordinates.
+
+This checkpoint supplies shared inputs, not a finished combined terrain mesh.
+The raw scaffold, fixed standing-water planes and channel designs remain
+explicit separate fields. Bank shaping, river/lake shoreline intersections and
+composition of those fields into physical surfaces are the next task (3b).
+No detailed terrain, vegetation or 3D landscape is added here.
