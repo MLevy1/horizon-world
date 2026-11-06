@@ -567,3 +567,13 @@ cast shadows, wind, seasonal changes and grass remain future visual work.
 Validation is limited to climate exclusions, stable overlapping-view identities,
 finite geometry/budget checks, essential existing movement checks and browser
 inspection/walking.
+
+
+## Woodland density correction — 0.8.5
+
+Suitable woodland now has 12 candidate addresses per placement cell instead of
+5, with higher acceptance in moist climates. This targets roughly three to five
+times the previous stand density while retaining seeded clearings and habitat
+exclusions. Foliage sprays are wider and near crowns fuller. Detailed branching
+is limited to 40 m; distant trees use fewer leaf sprays to contain geometry cost.
+The global placement identity and collision approach are preserved.

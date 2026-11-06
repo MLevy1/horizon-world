@@ -1,6 +1,6 @@
-import {meshWaterDepths,waterOpacity} from './explorer-water.mjs?v=0.8.4';
-import {makeTerrainTextures,sampleTerrainTextureLevel,MATERIALS} from './terrain-materials.mjs?v=0.8.4';
-import {dot,frame} from './explorer-world.mjs?v=0.8.4';
+import {meshWaterDepths,waterOpacity} from './explorer-water.mjs?v=0.8.5';
+import {makeTerrainTextures,sampleTerrainTextureLevel,MATERIALS} from './terrain-materials.mjs?v=0.8.5';
+import {dot,frame} from './explorer-world.mjs?v=0.8.5';
 const SKY=[.56,.71,.78],NEAR=.08,FAR=260,FOV=1/Math.tan(70*Math.PI/360);
 export function createExplorerRenderer(canvas){
   let mesh=null,resources=[],detail=true;const gl=canvas.getContext('webgl2',{alpha:false,antialias:true});
