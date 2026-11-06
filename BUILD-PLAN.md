@@ -100,6 +100,30 @@ profiles, spherical footprint continuity, descending pre-deposit lava paths,
 linked water inventories and demonstrable changes to globally solved drainage.
 The site retains its 128 km diameter and 1,179,650-cell global network.
 
-Next short checkpoint: shared terrain-and-water geometry. Establish riverbed
-and water-surface profiles, physical shorelines, contracted-basin splitting and
-a consistent terrain sampler before building the bare global 3D landscape.
+## Next work — small, resumable chunks
+
+The previous proposed geometry checkpoint bundled too much work into one turn.
+It is replaced by the tasks below. Each row is a separate work session and saved
+commit, with a brief handoff recording what passed and the next task. Stop after
+one row; do not expand the session to include the next row. Publish visible
+changes through the existing GitHub Pages workflow.
+
+All production features still cover the complete planet. Smaller tasks refer to
+the implementation scope, never bounded map regions. Focused automated examples
+support, rather than replace, complete-planet validation.
+
+| Task | Scope | Completion check |
+| --- | --- | --- |
+| 1a. Basin structure | Inventory local depressions and the ridges/spill connections inside every potential lake basin. Preserve the current viewer while adding this foundation. | Deterministic inventory for the full planet; every connection uses adjacent mesh cells. |
+| 1b. Independent pools | Solve water levels and exchanges between depressions, allowing a contracted lake to separate into pools at different levels. | Conservation and spill-direction checks, including independent closed pools and merging when water reaches a connecting ridge. |
+| 1c. Global lake integration | Connect those pools to active global drainage, channels and the atlas inspector. | Full-planet water budget; every active path ends at an ocean or a valid closed pool; no drainage cycles. Publish the lake checkpoint. |
+| 2a. River profiles | Establish shared river water heights, bed depths and widths along the entire active network. | Water never flows uphill; junctions share heights; beds remain below water. |
+| 2b. Profile inspection | Add a river cross-section/profile view using those shared definitions. | Inspector displays the same geometry data that terrain generation will consume. Publish the river checkpoint. |
+| 3a. Terrain sampling | Add one spherical terrain-and-water sampler used across the whole world. | Consistent values across longitude wrap and at both poles; river/lake contacts agree. |
+| 3b. Physical shorelines | Derive lake/ocean shores and river contacts from that shared surface. | Shore heights agree with water levels; no separate overlapping water patches at mouths. Publish the shoreline checkpoint. |
+| 4a. Bare global mesh | Build the full-planet land and water meshes from the shared sampler. | Complete spherical coverage and connected water geometry; no vegetation or decorative terrain detail. |
+| 4b. 3D navigation | Add navigation and inspect the bare world at global and local scales. | Usable navigation and visible terrain/water joins on the published Pages viewer. |
+
+Current saved release: **0.7.0**. No geometry changes from the timed-out attempt
+were implemented or published. This update saves only the smaller work plan.
+**Next task: 1a, basin structure only.**
