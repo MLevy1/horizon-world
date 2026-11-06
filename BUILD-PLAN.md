@@ -481,3 +481,21 @@ Browser verification: walked over 60 m with streaming, changed view direction,
 travelled to volcanic ground, opened the full-world map, and selected another
 location whose submerged terrain correctly enabled underwater viewing.
 Essential movement/collision/join and request-queue checks pass.
+
+
+## Ground material checkpoint — 0.8.1
+
+The walking viewer now uses six shared seamless procedural image layers: soil,
+sand, rock, snow, cooled lava and wet gravel. Continuous climate, slope and water
+contact masks blend them over the existing mesh. World-space projection preserves
+texture phase when streamed patches change. WebGL uses triplanar sampling, mipmaps
+and small height-derived lighting relief; compatibility rendering uses a simpler
+projected, distance-filtered texture path. No extra terrain triangles or external
+texture downloads are introduced. The image set plus mips is about 2 MiB, in
+addition to material masks and renderer buffers. Textures can be toggled during
+exploration without rebuilding terrain.
+
+Water appearance is the next separate checkpoint. This is an initial material
+pass; final landforms, lighting, vegetation and photorealism remain unfinished.
+Validation covers normalized masks, world phase/mip layout, existing essential
+movement/streaming checks, and direct browser walking/visual comparison.
