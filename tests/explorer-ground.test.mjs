@@ -11,3 +11,10 @@ test('ground detail covers each environment and excludes submerged placements',(
  }
  assert.equal(buildGroundField({...options,environment:()=>({...base,depthM:2})}).indices.length,0);
 });
+
+test('cutout plant bases follow the displayed slope across their whole width',async()=>{
+ const {createGroundCollider,unit,direction}=await import('../explorer-world.mjs');
+ const b=createTerrainChunkBuilder({grid:{radiusKm:64},sample:(lon,lat)=>({fitted:{groundM:100+lon*200+lat*130,waterM:null}})}),mesh=b.combine(neighborhood(coordinateTile(0,0,8),1).map(t=>b.build(t,{resolution:16}))),ground=createGroundCollider(mesh.ground,direction(0,0),64000),a=buildGroundField({seed:'sloping-plants',lon:0,lat:0,radiusM:64000,mesh,environment:()=>base,rangeM:30});let roots=0;
+ for(let i=0;i<a.positions.length/3;i++)if(a.foliage[i*3+2]===2&&a.foliage[i*3+1]===1){const p=Array.from(a.positions.subarray(i*3,i*3+3)),h=ground(unit(p));assert.ok(Math.abs(Math.hypot(...p)-64000-h+.055)<1e-6,JSON.stringify({i,p,h,delta:Math.hypot(...p)-64000-h+.055}));roots++;}
+ assert.ok(roots>50);assert.ok(a.foliage.some((v,i)=>i%3===2&&v===2));
+});

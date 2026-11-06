@@ -1,4 +1,4 @@
-import {meshCamera,inspectionZoom} from './mesh-camera.mjs?v=0.8.7';
+import {meshCamera,inspectionZoom} from './mesh-camera.mjs?v=0.8.8';
 /** CPU compatibility path: rasterizes the same complete indexed buffers. */
 export function createSoftwareMeshPreview(canvas,mesh){
   const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('Could not create the mesh preview.');

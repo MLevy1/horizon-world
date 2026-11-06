@@ -1,4 +1,4 @@
-import {coordinateTile,terrainVertex,tileNeighbor,tileKey,neighborhood,EDGES} from './terrain-chunks.mjs?v=0.8.7';
+import {coordinateTile,terrainVertex,tileNeighbor,tileKey,neighborhood,EDGES} from './terrain-chunks.mjs?v=0.8.8';
 const length=a=>Math.hypot(...a),distance=(a,b)=>length(a.map((v,k)=>v-b[k]));
 const children=t=>[0,1,2,3].map(k=>({face:t.face,level:t.level+1,x:t.x*2+k%2,y:t.y*2+(k>>1)}));
 export function coveringTile(tiles,tile){

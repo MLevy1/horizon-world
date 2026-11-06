@@ -609,3 +609,10 @@ browser interaction was not verified.
 Preserved the 0.8.6 canopy. Added a separate, seeded near-ground geometry layer: fern rosettes, grass tufts, dry scrub, reeds, branched deadwood and mineral clusters. Moisture, temperature, snow, lava, slope and bank proximity choose the cover. Samples reject water and existing large rock footprints; terrain-ray intersections place bases on the displayed mesh. All detail shares one batch in both renderers, with a 72 m range. No extra movement obstacles.
 
 Validation: habitat, finite/indexed geometry, water exclusion and shared placement identities across streamed views; full-world worker checks at every travel destination. iPhone frame rate and the final appearance on device still require review. Snowfields intentionally keep sparse exposed rock. The existing Volcano travel destination can land on dry terrain outside lava, so its immediate ground may show desert scrub rather than rubble.
+
+
+## 0.8.8 — Grounded botanical cover and desert structure
+
+Replaced opaque fern and grass triangles with three crossed, alpha-tested botanical cards per clump. A deterministic, mipmapped canvas atlas supplies fine grass blades, fern pinnae and branching dry scrub. Both renderers select the ground atlas independently of tree foliage. Bases sample the displayed ground across each object width, embed 5.5 cm and reject missing ray hits instead of falling back to a potentially floating center height. Pebbles use irregular seven-sided rounded shoulders instead of four-face pyramids. Desert density doubles, shrub dimensions vary, larger dry shrubs are lower and wider, and desert materials blend patchy gravel/mineral surfaces into sand. The existing climate and topography are retained; this does not convert every desert to a Sonoran cactus ecosystem.
+
+Validation: slope regression checks every cutout root against the displayed terrain; streamed identities, habitat selection, geometry bounds and water exclusion; explorer/plant/rock/water/material regression suite; build; compatibility-rendered woodland and desert review. Native iPhone WebGL performance and appearance remain to be reviewed.

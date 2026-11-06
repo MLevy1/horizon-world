@@ -1,6 +1,6 @@
-import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.8.7';
-import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.8.7';
-import {rockBlocks} from './explorer-rocks.mjs?v=0.8.7';
+import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.8.8';
+import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.8.8';
+import {rockBlocks} from './explorer-rocks.mjs?v=0.8.8';
 const hash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;};
 const random=seed=>()=>{seed=(seed+0x6d2b79f5)|0;let t=Math.imul(seed^(seed>>>15),1|seed);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
@@ -9,7 +9,7 @@ export function plantHabitat(e){
  if(e.depthM>.02||e.glacier>.2||e.lava>.3||e.slope>.3||e.temperature< -5||e.elevationM>2600)return {density:0,kind:'bare'};
  const warmth=clamp((e.temperature+3)/9),moisture=clamp((e.aridity-.15)/.7),slope=1-clamp(e.slope/.3),snow=1-clamp((e.snow-.55)/.4);
  const trees=warmth*moisture*slope*snow;
- return trees>.18?{density:trees*(.78+.15*e.shore),kind:e.temperature<8||e.snow>.4?'conifer':'broadleaf'}:{density:.16*warmth*slope*snow,kind:'shrub'};
+ return trees>.18?{density:trees*(.78+.15*e.shore),kind:e.temperature<8||e.snow>.4?'conifer':'broadleaf'}:{density:(e.aridity<.4?.42:.16)*warmth*slope*snow,kind:'shrub'};
 }
 /** Seeded plant addresses and per-plant shape seeds survive streaming and LOD. */
 export function buildPlantField({seed,lon,lat,radiusM,mesh,environment,rangeM=140}){
@@ -20,7 +20,7 @@ export function buildPlantField({seed,lon,lat,radiusM,mesh,environment,rangeM=14
   const id=tileKey(tile)+':'+candidate,rnd=random(hash(seed+':plants:'+id)),d=terrainVertex(tile,256,1+Math.floor(rnd()*254),1+Math.floor(rnd()*254)).direction,dist=Math.hypot(...d.map((v,k)=>v-anchor[k]))*radiusM;if(dist>rangeM)continue;
   const ll=coordinates(d),e=environment(ll.lon,ll.lat),habitat=plantHabitat(e),grove=.5+.25*Math.sin((d[0]*.8+d[2]*.6)*radiusM/85+phase)+.25*Math.sin((d[1]*.7-d[2]*.4)*radiusM/43-phase);if(candidate>=32){if(habitat.kind==='bare'||habitat.kind==='shrub')continue;habitat.kind='shrub';habitat.density*=.6;}if(rnd()>habitat.density*(.15+grove*.95))continue;
   const h=ground(d);if(h===null||rockBlocks(mesh.rocks?.placements,d,h,radiusM))continue;
-  const shape=random(hash(seed+':plant-shape:'+id)),shrub=habitat.kind==='shrub',pine=habitat.kind==='conifer',height=shrub?1.0+shape()*2.4:pine?12+shape()*12:14+shape()*12,width=height*(pine?.26:.42),yaw=shape()*6.28,f=frame(d,yaw),origin=d.map(v=>v*(radiusM+h-.12)),leanX=(shape()-.5)*height*.14,leanZ=(shape()-.5)*height*.14,trunk=shrub?.055:.18+height*.018,tone=.8+shape()*.3,bark=[.24,.19,.13].map(v=>v*tone),leaf=(pine?[.105,.23,.125]:shrub?[.25,.32,.14]:[.17,.32,.12]).map(v=>v*tone),near=dist<40;
+  const shape=random(hash(seed+':plant-shape:'+id)),shrub=habitat.kind==='shrub',pine=habitat.kind==='conifer',height=shrub?.6+shape()*1.2:pine?12+shape()*12:14+shape()*12,width=height*(shrub?.9:pine?.26:.42),yaw=shape()*6.28,f=frame(d,yaw),origin=d.map(v=>v*(radiusM+h-.12)),leanX=(shape()-.5)*height*.14,leanZ=(shape()-.5)*height*.14,trunk=shrub?.055:.18+height*.018,tone=.8+shape()*.3,bark=[.24,.19,.13].map(v=>v*tone),leaf=(pine?[.105,.23,.125]:shrub?[.25,.32,.14]:[.17,.32,.12]).map(v=>v*tone),near=dist<40;
   const world=p=>origin.map((v,k)=>v+f.right[k]*p[0]+d[k]*p[1]+f.forward[k]*p[2]);
   function branch(a,b,r0,r1){const axis=unit(b.map((v,k)=>v-a[k])),ref=Math.abs(axis[1])>.9?[1,0,0]:[0,1,0],right=unit(cross(axis,ref)),up=cross(axis,right),sides=near?7:5;for(let j=0;j<sides;j++){const ring=(base,r,t)=>base.map((v,k)=>v+r*(right[k]*Math.cos(t)+up[k]*Math.sin(t))),t=j/sides*6.283185,u=(j+1)/sides*6.283185,p=world(ring(a,r0,t)),q=world(ring(a,r0,u)),r=world(ring(b,r1,u)),s=world(ring(b,r1,t));triangle(p,q,r,bark);triangle(p,r,s,bark);}}
   let previous=[0,0,0];for(let j=1;j<=3;j++){const t=j/3,next=[leanX*t*t,height*t*(pine?1:.82),leanZ*t*t];branch(previous,next,trunk*(1-(j-1)/3)*.85+.008,trunk*(1-t)*.85+.008);previous=next;}
