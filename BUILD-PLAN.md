@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.0.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.1.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -114,7 +114,7 @@ support, rather than replace, complete-planet validation.
 
 | Task | Scope | Completion check |
 | --- | --- | --- |
-| 1a. Basin structure | Inventory local depressions and the ridges/spill connections inside every potential lake basin. Preserve the current viewer while adding this foundation. | Deterministic inventory for the full planet; every connection uses adjacent mesh cells. |
+| 1a. Basin structure — completed in 0.7.1 | Inventory local depressions and the ridges/spill connections inside every potential lake basin. Preserve the current viewer while adding this foundation. | Deterministic inventory for the full planet; every connection uses adjacent mesh cells. |
 | 1b. Independent pools | Solve water levels and exchanges between depressions, allowing a contracted lake to separate into pools at different levels. | Conservation and spill-direction checks, including independent closed pools and merging when water reaches a connecting ridge. |
 | 1c. Global lake integration | Connect those pools to active global drainage, channels and the atlas inspector. | Full-planet water budget; every active path ends at an ocean or a valid closed pool; no drainage cycles. Publish the lake checkpoint. |
 | 2a. River profiles | Establish shared river water heights, bed depths and widths along the entire active network. | Water never flows uphill; junctions share heights; beds remain below water. |
@@ -124,6 +124,19 @@ support, rather than replace, complete-planet validation.
 | 4a. Bare global mesh | Build the full-planet land and water meshes from the shared sampler. | Complete spherical coverage and connected water geometry; no vegetation or decorative terrain detail. |
 | 4b. 3D navigation | Add navigation and inspect the bare world at global and local scales. | Usable navigation and visible terrain/water joins on the published Pages viewer. |
 
-Current saved release: **0.7.0**. No geometry changes from the timed-out attempt
-were implemented or published. This update saves only the smaller work plan.
-**Next task: 1a, basin structure only.**
+Current saved release: **0.7.1**. Task 1a adds `basins.mjs` and the model's
+`basinStructure` inventory: local-depression membership, downhill paths, pit
+elevations, lowest saddle connections and the existing potential outer spill
+for every lake/pond basin. Equal-height components route toward lower edges
+where present; enclosed flat floors share one pit. This inventory does not
+change the current water levels, annual budgets or displayed drainage.
+
+Verification: all **25 tests pass**, including full-default-planet cell coverage,
+connected basin graphs, exhaustive lowest-saddle checks, same-seed inventory
+determinism, a second complete planet, flat floors/shelves, seam wrapping and
+polar connections. Existing hydrology, climate, snow and geology checks pass.
+The static build succeeds and the browser worker finishes the full planet.
+
+**Next task: 1b, independent pool balances only.** Use the saved depression and
+spill inventory to solve exchanges and separate pool levels. Active global
+rerouting and atlas inspection remain task 1c; do not combine them with 1b.

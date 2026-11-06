@@ -10,6 +10,8 @@ const planet=solvePlanet();
 const digest=m=>{
   const hash=createHash('sha256');
   for(const key of ['height','level','receiver','ocean','waterbody','catchment','discharge','outlet','channel','activeTerminal','wetness'])hash.update(new Uint8Array(m[key].buffer));
+  for(const key of ['cellDepression','downhill'])hash.update(new Uint8Array(m.basinStructure[key].buffer));
+  hash.update(JSON.stringify(m.basinStructure.connections));
   return hash.digest('hex');
 };
 
@@ -25,6 +27,57 @@ test('the published model solves the entire closed planet, with every requested 
     assert.ok(m.ocean[m.outlet[i]],'every terminal is part of the connected ocean');
     if(m.receiver[i]<0)assert.ok(m.ocean[i],'only the ocean terminates a flow');
   }
+});
+
+test('every global potential lake cell belongs to one local depression and a connected spill inventory',()=>{
+  const m=planet,s=m.basinStructure,g=m.grid,near=new Int32Array(g.width);
+  assert.equal(s.validation.ok,true,JSON.stringify(s.validation));
+  assert.equal(s.basins.length,m.waterbodies.length);
+  assert.ok(s.stats.multiDepressionBasins>0);
+  assert.ok(s.depressions.length>s.basins.length);
+  let covered=0,area=0;
+  for(const basin of s.basins){
+    assert.equal(basin.cells.length,m.waterbodies[basin.id].cells);
+    const reached=new Set(),queue=[s.connections[basin.outletConnection].from];
+    for(let a=0;a<queue.length;a++){
+      const id=queue[a];if(reached.has(id))continue;reached.add(id);
+      for(const edge of s.depressions[id].connectionIds){
+        const c=s.connections[edge],next=c.from===id?c.to:c.from;
+        if(next>=0&&!reached.has(next))queue.push(next);
+      }
+    }
+    assert.equal(reached.size,basin.depressionIds.length);
+    for(const i of basin.cells){
+      covered++;assert.equal(m.waterbody[i],basin.id);
+      const d=s.depressions[s.cellDepression[i]],p=s.downhill[i];assert.equal(d.basinId,basin.id);
+      if(i<g.north)area+=g.rowArea[(i/g.width)|0];
+      if(p<0)assert.equal(i,d.pitCell);
+      else{assert.ok(near.subarray(0,neighbors(g,i,near)).includes(p));assert.ok(m.height[p]<=m.height[i]);}
+    }
+  }
+  assert.equal(covered,s.stats.coveredCells);
+  assert.ok(Math.abs(area-s.depressions.reduce((sum,d)=>sum+d.areaKm2,0))<1e-7);
+  for(let i=0;i<g.count;i++)assert.equal(s.cellDepression[i]>=0,m.waterbody[i]>=0);
+});
+
+test('every recorded internal spill is the lowest real mesh-edge connection between its two depressions',()=>{
+  const m=planet,s=m.basinStructure,g=m.grid,near=new Int32Array(g.width),minima=new Map();
+  for(const basin of s.basins)for(const i of basin.cells){
+    const n=neighbors(g,i,near),from=s.cellDepression[i];
+    for(let k=0;k<n;k++){
+      const j=near[k],to=s.cellDepression[j];
+      if(j<=i||m.waterbody[j]!==basin.id||from===to)continue;
+      const key=[Math.min(from,to),Math.max(from,to)].join(':');
+      const candidate=[Math.max(m.height[i],m.height[j]),i,j],old=minima.get(key);
+      if(!old||candidate[0]<old[0]||(candidate[0]===old[0]&&(i<old[1]||(i===old[1]&&j<old[2]))))minima.set(key,candidate);
+    }
+  }
+  for(const c of s.connections)if(c.kind==='saddle'){
+    const key=[c.from,c.to].join(':');
+    assert.deepEqual([c.spillM,Math.min(c.fromCell,c.toCell),Math.max(c.fromCell,c.toCell)],minima.get(key));
+    minima.delete(key);
+  }
+  assert.equal(minima.size,0,'no adjacent depression pair was omitted');
 });
 
 test('mesh edges are reciprocal across longitude and both unique poles; coordinate lookup round-trips',()=>{

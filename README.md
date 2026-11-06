@@ -1,6 +1,6 @@
-# Horizon 0.7.0 — Global hydrology atlas
+# Horizon 0.7.1 — Global hydrology atlas
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.0).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.1).
 
 A fresh hydrology-only foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
@@ -61,14 +61,16 @@ Serve the repository root or `dist/` over HTTP. Module workers do not run from a
 `file://` page. GitHub Pages serves the repository root on `main`.
 
 - `planet.mjs`: pure, complete planetary drainage model and validation.
+- `basins.mjs`: local-depression catchments and lowest internal spill connections
+  for every potential lake basin; inventory only at this checkpoint.
 - `geology.mjs`: spherical volcanic landforms, cooled lava deposits and water links.
 - `climate.mjs`: global climate fields, annual runoff partition and lake balances.
 - `cryosphere.mjs`: monthly snow balance, retained ice, glacier routing and meltwater.
 - `planet-worker.mjs`: background generation.
 - `atlas.mjs`: map/globe renderer and inspection controls.
 - `index.html`, `atlas.css`: viewer interface.
-- `tests/planet.test.mjs`: nineteen topology, connectivity, conservation and
-  determinism tests, including the entire published default planet.
+- `tests/*.test.mjs`: full-planet topology, connectivity, conservation and
+  determinism checks, plus flat-bottom, saddle, seam and polar basin examples.
 
 The retired explorer remains available in Git history. This version uses the
 new planet model only.
@@ -91,8 +93,11 @@ basin footprint remains selectable, with exposed margins shown in brown.
 The model assumes a common level within each inventoried reservoir basin. It
 does not yet resolve independently isolated subpools below internal saddles.
 Flow-permanence labels are annual yield heuristics, not seasonal forecasts.
-Shared terrain-and-water geometry is the next checkpoint. Glacier deformation
-and dynamic advance/retreat remain future work.
+The 0.7.1 checkpoint inventories the local depressions and lowest connecting
+ridges inside every potential lake basin. The inventory preserves the current
+water levels, water budgets and displayed network. Independent pool balances and
+active routing come in separate tasks; see [BUILD-PLAN.md](BUILD-PLAN.md).
+Glacier deformation and dynamic advance/retreat remain future work.
 
 Background for annual evapotranspiration partition:
 [Yang & Yang (2011)](https://doi.org/10.1029/2010WR009287).

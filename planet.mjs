@@ -1,13 +1,14 @@
 import {makeVolcanicGeography,linkVolcanoWater} from './geology.mjs?v=0.7.0';
 import {solveCryosphere} from './cryosphere.mjs?v=0.7.0';
 import {makeClimate,lakeBalance,wetFraction,flowRegime} from './climate.mjs?v=0.7.0';
+import {buildBasinInventory} from './basins.mjs?v=0.7.1';
 
 /** Horizon 0.7: one closed, deterministic planet. Distances km, elevations m.
  * No rendering, terrain tiles, scene, camera or vegetation dependencies.
  * Depression filling follows Priority-Flood (Barnes, Lehman & Mulla, 2014).
  * The grid is a staggered triangular mesh, closed by two unique polar nodes.
  */
-export const VERSION = '0.7.0';
+export const VERSION = '0.7.1';
 export const DEFAULT_WORLD = Object.freeze({width:1536, height:768, radiusKm:64});
 const TAU = Math.PI * 2;
 const YEAR_SECONDS = 365.25 * 86400;
@@ -294,7 +295,9 @@ export function solvePlanet({seed='HORIZON-01',world=DEFAULT_WORLD,progress=()=>
     let i=wb.outletReceiver;
     while(i>=0&&!ocean[i]&&waterbody[i]<0&&!channel[i]){channel[i]=classify(i);i=receiver[i];}
   }
-  const model={version:VERSION,seed,grid,height,level,rainfall,ocean,receiver,waterbody,waterbodies,catchment,discharge,outlet,channel,longest,trunk,climate,wetness,activeTerminal,cryosphere,geology};
+  progress('Inventorying depressions and internal spill connections',.82);
+  const basinStructure=buildBasinInventory({grid,height,waterbody,waterbodies,neighbors,distanceKm:neighborDistance,cellsByBasin:lakeCells});
+  const model={version:VERSION,seed,grid,height,level,rainfall,ocean,receiver,waterbody,waterbodies,catchment,discharge,outlet,channel,longest,trunk,climate,wetness,activeTerminal,cryosphere,geology,basinStructure};
   linkVolcanoWater(model);
   const network=buildNetwork(model);
   Object.assign(model,network);
@@ -368,6 +371,7 @@ function buildNetwork(m) {
 export function validatePlanet(m) {
   const {grid:g,receiver:r,ocean,level,waterbody,waterbodies,catchment,outlet,discharge}=m,N=g.count;
   const errors=[],near=new Int32Array(g.width),degree=new Uint16Array(N),queue=new Int32Array(N);
+  if(!m.basinStructure.validation.ok)errors.push(...m.basinStructure.validation.errors);
   let uphill=0,invalid=0,unresolved=0,badNeighbors=0,invalidTerminal=0,exitCount=new Uint32Array(waterbodies.length);
   for(let i=0;i<N;i++){
     const p=r[i];

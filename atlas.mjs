@@ -1,5 +1,5 @@
-import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.0';
-import {ZONES,flowRegime} from './climate.mjs?v=0.7.0';
+import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.1';
+import {ZONES,flowRegime} from './climate.mjs?v=0.7.1';
 
 const $=id=>document.getElementById(id);
 const canvas=$('map'),ctx=canvas.getContext('2d'),stage=$('map-stage');
