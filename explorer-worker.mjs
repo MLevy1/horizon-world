@@ -1,8 +1,8 @@
-import {terrainMaterialWeights,smooth} from './terrain-materials.mjs?v=0.8.1';
-import {solvePlanet,lonLat,cellAt,transferBuffers} from './planet.mjs?v=0.8.1';
-import {createSurfaceSampler} from './surface-sampler.mjs?v=0.8.1';
-import {createTerrainChunkBuilder,tileKey} from './terrain-chunks.mjs?v=0.8.1';
-import {direction,coordinates,frame,dot,unit,explorerTiles} from './explorer-world.mjs?v=0.8.1';
+import {terrainMaterialWeights,smooth} from './terrain-materials.mjs?v=0.8.2';
+import {solvePlanet,lonLat,cellAt,transferBuffers} from './planet.mjs?v=0.8.2';
+import {createSurfaceSampler} from './surface-sampler.mjs?v=0.8.2';
+import {createTerrainChunkBuilder,tileKey} from './terrain-chunks.mjs?v=0.8.2';
+import {direction,coordinates,frame,dot,unit,explorerTiles} from './explorer-world.mjs?v=0.8.2';
 let model,surface,builder,cache=new Map(),bytes=0;
 function color(i){const m=model;if(m.geology.lava[i])return [.24,.22,.20];if(m.cryosphere.glacier[i]||m.cryosphere.snowMonths[i]>7)return [.79,.84,.85];if(m.climate.zone[i]===1)return [.59,.48,.31];if(m.climate.zone[i]===2)return [.48,.45,.31];if(m.climate.zone[i]===0)return [.44,.47,.44];return [.37,.43,.31];}
 function spawn(lon,lat){const d=direction(lon,lat),f=frame(d);let best=null;search:for(const offset of [8,16,32,64,0])for(const sign of [-1,1]){const v=unit(d.map((x,k)=>x+f.east[k]*offset*sign/(model.grid.radiusKm*1000))),c=coordinates(v),q=surface.sample(c.lon,c.lat);if(q.fitted.waterM===null){best={...c,groundM:q.fitted.groundM};break search;}if(best)break;}return best||{lon,lat,groundM:surface.sample(lon,lat).fitted.groundM};}

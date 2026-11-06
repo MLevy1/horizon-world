@@ -499,3 +499,25 @@ Water appearance is the next separate checkpoint. This is an initial material
 pass; final landforms, lighting, vegetation and photorealism remain unfinished.
 Validation covers normalized masks, world phase/mip layout, existing essential
 movement/streaming checks, and direct browser walking/visual comparison.
+
+
+## Water appearance and shallow river access — 0.8.2
+
+Water opacity/color now use the separation between each clipped water vertex and
+its actual matching ground vertex. Shallow beds show through; deeper water darkens
+and grazing angles reflect more sky. Ground renders before translucent water.
+WebGL adds small animated normal ripples and a sun highlight at a maximum idle
+water redraw rate of 20 Hz; it does not displace shorelines or water profiles.
+Compatibility rendering uses static depth/angle optics and retains redraw-on-input
+to avoid adding continuous CPU rasterization cost. No new water geometry is added.
+
+The starting HORIZON-01 bend has about 0.61 m of visible mesh depth, consistent
+with its fitted profile (~0.613 m). Its bed existed, but the opaque surface hid it
+and a standing 1.7 m eye remained above water. A low crouch (0.45 m eye, slower
+walking) now lets you inspect beneath sufficiently deep shallows, with a local
+water-depth HUD. C toggles it on keyboard; a touch button provides the same action.
+Shallow headwaters remain shallow. Swimming, diving movement, geometric waves,
+scene reflections/refraction and flow-aligned rapids remain future work.
+
+Validation: shallow channel mesh/eye/shore integration, essential existing movement
+and material checks, and direct browser river entry and posture comparison.
