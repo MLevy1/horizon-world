@@ -602,3 +602,10 @@ geometry checks; shader compilation/linking in a standalone GLES context; direct
 rendered inspection with the actual compatibility renderer. Browser automation
 was unavailable during this checkpoint (repeated service timeouts), so live
 browser interaction was not verified.
+
+
+## 0.8.7 — Ground detail across environments
+
+Preserved the 0.8.6 canopy. Added a separate, seeded near-ground geometry layer: fern rosettes, grass tufts, dry scrub, reeds, branched deadwood and mineral clusters. Moisture, temperature, snow, lava, slope and bank proximity choose the cover. Samples reject water and existing large rock footprints; terrain-ray intersections place bases on the displayed mesh. All detail shares one batch in both renderers, with a 72 m range. No extra movement obstacles.
+
+Validation: habitat, finite/indexed geometry, water exclusion and shared placement identities across streamed views; full-world worker checks at every travel destination. iPhone frame rate and the final appearance on device still require review. Snowfields intentionally keep sparse exposed rock. The existing Volcano travel destination can land on dry terrain outside lava, so its immediate ground may show desert scrub rather than rubble.
