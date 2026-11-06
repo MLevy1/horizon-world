@@ -4,6 +4,7 @@ import {createHash} from 'node:crypto';
 import {volcanicProfile,applyVolcanicSites} from '../geology.mjs';
 import {annualSnowBudget,seasonalCycle} from '../cryosphere.mjs';
 import {annualPartition,lakeBalance,makeClimate} from '../climate.mjs';
+import {poolWetFraction} from '../pools.mjs';
 import {solvePlanet,neighbors,lonLat,cellAt,traceDownstream,catchmentMask,DEFAULT_WORLD,traceActive,createGrid} from '../planet.mjs';
 
 const planet=solvePlanet();
@@ -12,6 +13,7 @@ const digest=m=>{
   for(const key of ['height','level','receiver','ocean','waterbody','catchment','discharge','outlet','channel','activeTerminal','wetness'])hash.update(new Uint8Array(m[key].buffer));
   for(const key of ['cellDepression','downhill'])hash.update(new Uint8Array(m.basinStructure[key].buffer));
   hash.update(JSON.stringify(m.basinStructure.connections));
+  hash.update(JSON.stringify(m.poolBalances));
   return hash.digest('hex');
 };
 
@@ -78,6 +80,38 @@ test('every recorded internal spill is the lowest real mesh-edge connection betw
     minima.delete(key);
   }
   assert.equal(minima.size,0,'no adjacent depression pair was omitted');
+});
+
+test('independent pools cover every global basin and conserve water through the potential outer-spill graph',()=>{
+  const m=planet,r=m.poolBalances,s=m.basinStructure;
+  assert.equal(r.validation.ok,true,JSON.stringify(r.validation));
+  assert.equal(r.basins.length,m.waterbodies.length);
+  assert.ok(r.stats.splitBasins>0&&r.stats.mergedPools>0);
+  assert.ok(Math.abs(r.stats.runoffM3s-m.stats.totalRunoffM3s)<1e-8);
+  assert.ok(Math.abs(r.stats.runoffM3s-r.stats.netEvaporationM3s-r.stats.deliveredFlowM3s)<1e-7);
+  const loss=new Float64Array(r.pools.length),area=new Float64Array(r.pools.length);
+  for(const b of s.basins)for(const i of b.cells){
+    const id=r.depressionPool[s.cellDepression[i]],p=r.pools[id];assert.equal(p.basinId,b.id);
+    const a=i<m.grid.north?m.grid.rowArea[(i/m.grid.width)|0]:0,f=poolWetFraction(m.height[i],p.waterLevelM);
+    loss[id]+=Math.max(0,m.climate.effectiveEvaporationMm[i]-m.climate.liquidInputMm[i]+m.climate.runoffMm[i])*a*1000/(365.25*86400)*f;
+    area[id]+=a*f;
+  }
+  for(const p of r.pools){
+    assert.ok(Math.abs(loss[p.id]-p.netEvaporationM3s)<1e-7);
+    assert.ok(Math.abs(area[p.id]-p.wetAreaKm2)<1e-7);
+    assert.ok(p.waterLevelM<=p.spillM+1e-7);
+    if(p.joinedAtM!==null)assert.ok(p.waterLevelM>=p.joinedAtM-1e-7,'merged pools remain joined by wetted ridges');
+    if(p.closed)assert.equal(p.outflowM3s,0);
+    else if(p.downstreamPoolId>=0)assert.ok(p.waterLevelM>=r.pools[p.downstreamPoolId].waterLevelM-1e-7);
+  }
+});
+
+test('real multi-pool basins retain different wet surface levels instead of sharing water across dry ridges',()=>{
+  const r=planet.poolBalances;
+  assert.ok(r.basins.some(b=>{
+    const wet=[...b.poolIds].map(id=>r.pools[id]).filter(p=>p.wetAreaKm2>0);
+    return wet.some(a=>wet.some(b=>Math.abs(a.waterLevelM-b.waterLevelM)>.01));
+  }));
 });
 
 test('mesh edges are reciprocal across longitude and both unique poles; coordinate lookup round-trips',()=>{

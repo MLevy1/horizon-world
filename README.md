@@ -1,6 +1,6 @@
-# Horizon 0.7.1 — Global hydrology atlas
+# Horizon 0.7.2 — Global hydrology atlas
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.1).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.2).
 
 A fresh hydrology-only foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
@@ -62,7 +62,9 @@ Serve the repository root or `dist/` over HTTP. Module workers do not run from a
 
 - `planet.mjs`: pure, complete planetary drainage model and validation.
 - `basins.mjs`: local-depression catchments and lowest internal spill connections
-  for every potential lake basin; inventory only at this checkpoint.
+  for every potential lake basin.
+- `pools.mjs`: independent annual pool balances, spill exchanges and merging,
+  computed for every basin separately from the displayed active network.
 - `geology.mjs`: spherical volcanic landforms, cooled lava deposits and water links.
 - `climate.mjs`: global climate fields, annual runoff partition and lake balances.
 - `cryosphere.mjs`: monthly snow balance, retained ice, glacier routing and meltwater.
@@ -90,13 +92,22 @@ spill connections remain in the geographic graph, available for a wetter state.
 The blue surface is a cell-resolved annual reservoir estimate; the original
 basin footprint remains selectable, with exposed margins shown in brown.
 
-The model assumes a common level within each inventoried reservoir basin. It
-does not yet resolve independently isolated subpools below internal saddles.
-Flow-permanence labels are annual yield heuristics, not seasonal forecasts.
-The 0.7.1 checkpoint inventories the local depressions and lowest connecting
-ridges inside every potential lake basin. The inventory preserves the current
-water levels, water budgets and displayed network. Independent pool balances and
-active routing come in separate tasks; see [BUILD-PLAN.md](BUILD-PLAN.md).
+The displayed water model still assumes a common level within each inventoried
+reservoir basin. The separate 0.7.2 `poolBalances` solver now resolves independent
+pools below connecting ridges across the complete planet. Supply enters its
+actual local depression. A pool evaporates, spills across a real connecting
+mesh edge or merges with its neighbor when both can sustain a joined surface.
+Each potential basin and the complete outer-spill graph conserve liquid runoff.
+
+Pool wet area ramps from zero to the full cell area over one metre above its
+bed; this fixed subcell approximation is unchanged by merging. Stored volume
+is the integral of that area-stage curve. The annual equilibrium model has no
+transient filling time, groundwater exchange or seasonal lake-level history.
+
+The new results do not yet replace the atlas water surfaces, active receiver
+links or channel paths. That integration is the next separate task (1c) in
+[BUILD-PLAN.md](BUILD-PLAN.md). Flow-permanence labels remain annual yield
+heuristics, not seasonal forecasts.
 Glacier deformation and dynamic advance/retreat remain future work.
 
 Background for annual evapotranspiration partition:
