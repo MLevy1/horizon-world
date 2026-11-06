@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.6.0.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.0.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -83,5 +83,23 @@ explicit parameter. Detailed glacier movement and ice-surface deformation are
 not simulated. All 15 tests cover both the original global model and the new
 snow, seasonal, glacier and combined water-budget checks.
 
-Next checkpoint: volcanic locations and geography. Detailed terrain and
-vegetation remain outside this hydrology-first map.
+Volcanic locations and geography are completed in the checkpoint below.
+Detailed terrain and vegetation remain outside this hydrology-first map.
+
+## Volcanic geography checkpoint — 0.7.0
+
+Completed: deterministic volcanic belts/hotspot chain placement across the
+complete sphere; composite cones, shields, calderas and cinder cones; cooled
+lava-deposit paths; elevation changes applied before the global water solve;
+geology map view, centre markers and inspection shortcuts. The current default
+has 22 volcanic centres, 38 cooled deposit paths and 14 summit/crater basins.
+A basin may be wet or dry under the modeled climate.
+
+All 19 tests cover the original hydrology/climate/snow model and volcanic
+profiles, spherical footprint continuity, descending pre-deposit lava paths,
+linked water inventories and demonstrable changes to globally solved drainage.
+The site retains its 128 km diameter and 1,179,650-cell global network.
+
+Next short checkpoint: shared terrain-and-water geometry. Establish riverbed
+and water-surface profiles, physical shorelines, contracted-basin splitting and
+a consistent terrain sampler before building the bare global 3D landscape.

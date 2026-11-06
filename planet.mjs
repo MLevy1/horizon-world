@@ -1,12 +1,13 @@
-import {solveCryosphere} from './cryosphere.mjs?v=0.6.0';
-import {makeClimate,lakeBalance,wetFraction,flowRegime} from './climate.mjs?v=0.6.0';
+import {makeVolcanicGeography,linkVolcanoWater} from './geology.mjs?v=0.7.0';
+import {solveCryosphere} from './cryosphere.mjs?v=0.7.0';
+import {makeClimate,lakeBalance,wetFraction,flowRegime} from './climate.mjs?v=0.7.0';
 
-/** Horizon 0.4: one closed, deterministic planet. Distances km, elevations m.
+/** Horizon 0.7: one closed, deterministic planet. Distances km, elevations m.
  * No rendering, terrain tiles, scene, camera or vegetation dependencies.
  * Depression filling follows Priority-Flood (Barnes, Lehman & Mulla, 2014).
  * The grid is a staggered triangular mesh, closed by two unique polar nodes.
  */
-export const VERSION = '0.6.0';
+export const VERSION = '0.7.0';
 export const DEFAULT_WORLD = Object.freeze({width:1536, height:768, radiusKm:64});
 const TAU = Math.PI * 2;
 const YEAR_SECONDS = 365.25 * 86400;
@@ -106,7 +107,7 @@ class Heap {
   }
 }
 
-export function solvePlanet({seed='HORIZON-01',world=DEFAULT_WORLD,progress=()=>{},heightAt=null}={}) {
+export function solvePlanet({seed='HORIZON-01',world=DEFAULT_WORLD,progress=()=>{},heightAt=null,volcanism=true}={}) {
   seed=String(seed).trim().slice(0,100)||'HORIZON-01';
   const grid=createGrid(world),{width:w,height:h,count:N,north}=grid;
   const noise=makeNoise(hashSeed(seed)),near=new Int32Array(w);
@@ -148,6 +149,8 @@ export function solvePlanet({seed='HORIZON-01',world=DEFAULT_WORLD,progress=()=>
     seaLevel=(lo+hi)/2;
     for(let i=0;i<N;i++)height[i]-=seaLevel;
   }
+  progress('Building volcanic landforms and cooled lava deposits',.24);
+  const geology=makeVolcanicGeography({grid,height,seed,neighbors,cellAt,lonLat,enabled:volcanism&&!heightAt});
   progress('Connecting the planetary ocean',.25);
   // Only the largest CONNECTED sea is an ocean. Enclosed low areas become lakes.
   const seen=new Uint8Array(N),queue=new Int32Array(N);
@@ -291,7 +294,8 @@ export function solvePlanet({seed='HORIZON-01',world=DEFAULT_WORLD,progress=()=>
     let i=wb.outletReceiver;
     while(i>=0&&!ocean[i]&&waterbody[i]<0&&!channel[i]){channel[i]=classify(i);i=receiver[i];}
   }
-  const model={version:VERSION,seed,grid,height,level,rainfall,ocean,receiver,waterbody,waterbodies,catchment,discharge,outlet,channel,longest,trunk,climate,wetness,activeTerminal,cryosphere};
+  const model={version:VERSION,seed,grid,height,level,rainfall,ocean,receiver,waterbody,waterbodies,catchment,discharge,outlet,channel,longest,trunk,climate,wetness,activeTerminal,cryosphere,geology};
+  linkVolcanoWater(model);
   const network=buildNetwork(model);
   Object.assign(model,network);
   const mouths=model.nodes.filter(n=>n.kind==='mouth');

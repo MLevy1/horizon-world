@@ -7,11 +7,11 @@
   <meta name="description" content="Horizon: the complete hydrology of a seeded planet. Explore connected headwaters, streams, rivers, ponds, lakes and ocean outlets.">
   <title>Horizon — Global Hydrology</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23101c22'/%3E%3Cpath d='M11 4q12 6 4 13t3 11M24 7q-3 6-9 10' fill='none' stroke='%2397dedb' stroke-width='3'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./atlas.css?v=0.6.0">
+  <link rel="stylesheet" href="./atlas.css?v=0.7.0">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="./" aria-label="Horizon home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 3q16 6 5 15t4 11M25 7q-4 6-10 11"/></svg><span>HORIZON<small>GLOBAL HYDROLOGY · 0.6.0</small></span></a>
+    <a class="brand" href="./" aria-label="Horizon home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 3q16 6 5 15t4 11M25 7q-4 6-10 11"/></svg><span>HORIZON<small>GLOBAL HYDROLOGY · 0.7.0</small></span></a>
     <div class="top-note"><span class="status-dot"></span><span id="top-status">Generating the whole planet</span></div>
     <button class="quiet about-trigger" id="about-open">About this world <span aria-hidden="true">↗</span></button>
   </header>
@@ -38,11 +38,12 @@
       </section>
       <section class="layers-section" aria-labelledby="layers-title">
         <div class="section-heading"><h2 id="layers-title">Map layers</h2><button id="layers-reset" class="text-button">Reset</button></div>
-        <label class="climate-view-label" for="climate-layer">GLOBAL CLIMATE VIEW</label>
-        <select id="climate-layer" aria-label="Climate view"><option value="water">Water & dry regions</option><option value="temperature">Temperature</option><option value="precipitation">Precipitation</option><option value="aridity">Moisture / aridity</option><option value="snow">Snow & ice</option><option value="melt">Meltwater supply</option></select>
+        <label class="climate-view-label" for="climate-layer">GLOBAL MAP VIEW</label>
+        <select id="climate-layer" aria-label="Map view"><option value="water">Water & dry regions</option><option value="temperature">Temperature</option><option value="precipitation">Precipitation</option><option value="aridity">Moisture / aridity</option><option value="snow">Snow & ice</option><option value="melt">Meltwater supply</option><option value="geology">Volcanic geography</option></select>
         <div class="climate-legend"><strong id="climate-legend-title"></strong><div id="climate-ramp"></div><span id="climate-legend-labels"></span></div>
         <p class="climate-summary" id="climate-summary">Calculating climate and water availability…</p>
         <p class="climate-summary" id="snow-summary">Calculating snow and glacier storage…</p>
+        <p class="climate-summary" id="geology-summary">Defining volcanic geography…</p>
         <div class="layer-grid">
           <label><input type="checkbox" id="layer-rivers" checked><span class="layer-swatch river"></span>Rivers</label>
           <label><input type="checkbox" id="layer-streams" checked><span class="layer-swatch stream"></span>Streams</label>
@@ -51,6 +52,7 @@
           <label><input type="checkbox" id="layer-basins"><span class="layer-swatch basin"></span>Catchments</label>
           <label><input type="checkbox" id="layer-arrows"><span class="layer-swatch arrow">→</span>Flow direction</label>
           <label><input type="checkbox" id="layer-snow" checked><span class="layer-swatch snow"></span>Snow & ice</label>
+          <label><input type="checkbox" id="layer-volcanoes" checked><span class="layer-swatch volcano">△</span>Volcanoes</label>
           <label><input type="checkbox" id="layer-dry"><span class="layer-swatch dry"></span>Potential spills</label>
         </div>
       </section>
@@ -86,10 +88,10 @@
     <button class="dialog-close quiet" id="about-close" aria-label="Close about dialog">✕</button>
     <span class="eyebrow">HORIZON · A FRESH FOUNDATION</span><h2>A complete world of water.</h2>
     <p>This version starts with hydrology. It generates one closed planet, then resolves its ocean, drainage divides, headwaters, streams, rivers, ponds, lakes and spill outlets as a single connected system.</p>
-    <dl><dt>World</dt><dd>A fictional planet, 128 km in diameter; about 51,472 km² of surface.</dd><dt>Coverage</dt><dd>1,179,650 flow cells. Longitude is connected across the map seam; both poles are part of the same graph.</dd><dt>Map resolution</dt><dd>About 262 m between flow cells at the equator. Zooming changes the view of the existing network.</dd><dt>Water</dt><dd>Annual precipitation is partitioned between evaporation and runoff. Lakes contract when inflow cannot sustain a spill. Active flow ends at an ocean or closed basin; possible overflow connections remain available in the global graph.</dd><dt>Climate</dt><dd>Temperature follows latitude and elevation. An approximate circulation transports moisture around complete latitude rings, including windward rainfall and leeward drying. These annual fields change runoff and lake water balances; they are procedural estimates, not a weather forecast.</dd><dt>Snow & glaciers</dt><dd>A monthly temperature-index estimate partitions snowfall, snowmelt and sublimation after two snow spin-up years. The following annual surplus forms ice. Ice exports only along adjacent descending bed elevations; melt returns to the same liquid-water network. Annual ice gain, sea calving and seasonal storage changes are accounted for explicitly. This does not simulate glacier speed or ice-surface deformation.</dd><dt>Land</dt><dd>Only broad drainage elevations are calculated to establish flow direction. There are no detailed terrain meshes, vegetation, buildings or 3D river surfaces.</dd></dl>
+    <dl><dt>World</dt><dd>A fictional planet, 128 km in diameter; about 51,472 km² of surface.</dd><dt>Coverage</dt><dd>1,179,650 flow cells. Longitude is connected across the map seam; both poles are part of the same graph.</dd><dt>Map resolution</dt><dd>About 262 m between flow cells at the equator. Zooming changes the view of the existing network.</dd><dt>Water</dt><dd>Annual precipitation is partitioned between evaporation and runoff. Lakes contract when inflow cannot sustain a spill. Active flow ends at an ocean or closed basin; possible overflow connections remain available in the global graph.</dd><dt>Climate</dt><dd>Temperature follows latitude and elevation. An approximate circulation transports moisture around complete latitude rings, including windward rainfall and leeward drying. These annual fields change runoff and lake water balances; they are procedural estimates, not a weather forecast.</dd><dt>Snow & glaciers</dt><dd>A monthly temperature-index estimate partitions snowfall, snowmelt and sublimation after two snow spin-up years. The following annual surplus forms ice. Ice exports only along adjacent descending bed elevations; melt returns to the same liquid-water network. Annual ice gain, sea calving and seasonal storage changes are accounted for explicitly. This does not simulate glacier speed or ice-surface deformation.</dd><dt>Volcanic geography</dt><dd>Seeded volcanic arcs and hotspot chains place composite cones, shields, calderas and cinder cones across the sphere. Broad landforms and cooled downhill lava deposits modify the elevation scaffold before oceans, drainage, climate and glaciers are solved. Rust/orange areas are solid geological deposits. This model does not simulate plate motion, eruptions or molten lava.</dd><dt>Land</dt><dd>Only broad drainage elevations are calculated to establish flow direction. There are no detailed terrain meshes, vegetation, buildings or 3D river surfaces.</dd></dl>
     <p class="muted">Lake and pond names refer to their mapped basin inventory (0.35 km² threshold). The blue surface follows estimated annual water availability; exposed basin margins are brown. Dashed waterways indicate seasonal or ephemeral flow estimates. Potential spills are dormant overflow links. Snow values are liquid-water equivalent (SWE), not snow depth. Snow cover and frozen-water shading are annual estimates. Glacier thickness, deformation, evolving shorelines, time-varying river flow and groundwater remain future steps.</p>
     <a href="https://github.com/MLevy1/horizon-world" target="_blank" rel="noopener">View the source ↗</a>
   </dialog>
-  <script type="module" src="./atlas.mjs?v=0.6.0"></script>
+  <script type="module" src="./atlas.mjs?v=0.7.0"></script>
 </body>
 </html>

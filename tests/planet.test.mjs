@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
+import {volcanicProfile,applyVolcanicSites} from '../geology.mjs';
 import {annualSnowBudget,seasonalCycle} from '../cryosphere.mjs';
 import {annualPartition,lakeBalance,makeClimate} from '../climate.mjs';
-import {solvePlanet,neighbors,lonLat,cellAt,traceDownstream,catchmentMask,DEFAULT_WORLD,traceActive} from '../planet.mjs';
+import {solvePlanet,neighbors,lonLat,cellAt,traceDownstream,catchmentMask,DEFAULT_WORLD,traceActive,createGrid} from '../planet.mjs';
 
 const planet=solvePlanet();
 const digest=m=>{
@@ -96,7 +97,7 @@ test('global catchment area and annual runoff are conserved through ocean delive
 });
 
 test('same seed reproduces the complete network; another seed creates a different valid planet',()=>{
-  const repeat=solvePlanet({seed:planet.seed});assert.equal(digest(repeat),digest(planet));
+  const repeat=solvePlanet({seed:planet.seed});assert.equal(digest(repeat),digest(planet));assert.deepEqual(repeat.geology.sites,planet.geology.sites);
   const other=solvePlanet({seed:'ANOTHER-PLANET'});assert.notEqual(digest(other),digest(planet));
   assert.equal(other.validation.ok,true);assert.equal(other.grid.count,planet.grid.count);
   for(const key of ['headwaters','streams','rivers','ponds','lakes','mouths'])assert.ok(other.stats[key]>0,key);
@@ -204,4 +205,59 @@ test('the full planet stores glacier water and routes melt into its actual drain
     const path=traceActive(m,glacier.outletCell),end=path.at(-1),wb=m.waterbody[end]>=0?m.waterbodies[m.waterbody[end]]:null;
     assert.ok(m.ocean[end]||wb?.closed);
   }
+});
+
+
+test('volcanic profiles create the requested distinct landforms with feathered boundaries',()=>{
+  const base={baseM:100,reliefM:600,radiusKm:3};
+  for(let type=0;type<4;type++){
+    const site={...base,type};assert.equal(volcanicProfile(site,3).blend,0);
+    assert.ok(volcanicProfile(site,2.99).blend<.01);
+    assert.ok(Number.isFinite(volcanicProfile(site,0).heightM));
+  }
+  const caldera={...base,type:2};
+  assert.ok(volcanicProfile(caldera,0).heightM<volcanicProfile(caldera,1.05).heightM);
+  assert.equal(new Set(planet.geology.sites.map(s=>s.type)).size,4);
+});
+
+test('the entire planet is re-solved around actual volcanic elevation changes',()=>{
+  const original=solvePlanet({volcanism:false}),m=planet;let modified=0,rerouted=0;
+  for(let i=0;i<m.grid.count;i++){
+    const difference=m.height[i]-original.height[i];
+    assert.ok(Math.abs(difference-m.geology.change[i])<.001);
+    if(difference!==0)modified++;
+    else if(m.geology.ids[i]<0)assert.equal(m.height[i],original.height[i]);
+    if(m.receiver[i]!==original.receiver[i])rerouted++;
+  }
+  assert.ok(modified>1000&&rerouted>100);
+  assert.equal(modified,m.geology.stats.affectedCells);
+  assert.equal(m.validation.ok,true);assert.equal(m.grid.count,original.grid.count);
+});
+
+test('cooled lava paths followed adjacent descending ground and every volcanic basin links to the solved water inventory',()=>{
+  const m=planet,near=new Int32Array(m.grid.width);
+  assert.ok(m.geology.flows.length>0&&m.geology.stats.lavaCells>0&&m.geology.stats.craterBasins>0);
+  for(const flow of m.geology.flows){
+    assert.ok(flow.path.length>=2&&flow.lengthKm>0);
+    const unique=new Set(flow.path);assert.equal(unique.size,flow.path.length);
+    for(let k=1;k<flow.path.length;k++){
+      const n=neighbors(m.grid,flow.path[k-1],near);assert.ok(near.subarray(0,n).includes(flow.path[k]));
+      assert.ok(flow.preDepositElevations[k]<flow.preDepositElevations[k-1]);
+    }
+    for(const cell of flow.path)assert.ok(m.geology.lava[cell]&&m.geology.depositM[cell]>0);
+  }
+  for(const site of m.geology.sites){
+    assert.equal(site.craterWaterbody,m.waterbody[site.centerCell]);
+    for(const id of site.waterbodyIds)assert.ok(id>=0&&id<m.waterbodies.length);
+  }
+});
+
+test('spherical volcanic footprints cross longitude and include a polar cap without map-edge clipping',()=>{
+  const grid=createGrid({width:192,height:96,radiusKm:64}),height=new Float32Array(grid.count);
+  const sites=[{id:0,type:1,lon:179.5,lat:0,radiusKm:8,reliefM:300,baseM:0},
+    {id:1,type:1,lon:50,lat:89.5,radiusKm:5,reliefM:300,baseM:0}];
+  const g=applyVolcanicSites({grid,height,sites}),row=48;
+  assert.equal(g.ids[row*grid.width],0);assert.equal(g.ids[row*grid.width+grid.width-1],0);
+  assert.ok(height[row*grid.width]>0&&height[row*grid.width+grid.width-1]>0);
+  assert.equal(g.ids[grid.north],1);assert.equal(g.ids[grid.south],-1);
 });

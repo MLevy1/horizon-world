@@ -20,3 +20,6 @@ dialog{max-width:570px;width:calc(100% - 36px);max-height:calc(100dvh - 48px);ov
 
 .layer-swatch.snow{height:7px;background:#b7dfea;border:1px solid #ecf8f4;border-radius:2px}
 #snow-summary{margin-top:-9px;color:#c5e4e7}
+
+.layer-swatch.volcano{height:13px;background:transparent;color:#e4ac71;font-size:12px;line-height:1}
+#geology-summary{margin-top:-9px;color:#dbb18a}

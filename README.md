@@ -1,6 +1,6 @@
-# Horizon 0.6.0 — Global hydrology atlas
+# Horizon 0.7.0 — Global hydrology atlas
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.6.0).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.0).
 
 A fresh hydrology-only foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
@@ -17,6 +17,8 @@ touch-control checks are tracked in [BUILD-PLAN.md](BUILD-PLAN.md).
 - Longitude connections and two unique polar nodes; no outer boundary exits.
 - One connected ocean, retained flat ponds/lakes, one spill outlet per waterbody.
 - Explicit headwaters, tributaries, confluences, waterbody links and ocean mouths.
+- Seeded volcanic arcs and hotspot chains, broad cones/shields/calderas and
+  cooled downhill lava deposits, applied before the water solve.
 - A global annual climate model: temperature, precipitation, evaporative demand,
   moisture/aridity and desert/cold region estimates.
 - Climate-dependent runoff, lake evaporation, contracting water surfaces, closed
@@ -39,8 +41,8 @@ Ponds have mapped area below 0.35 km²; larger inland waterbodies are lakes.
 Switch between the world map and globe, drag to navigate, and use the zoom
 buttons, mouse wheel or pinch gesture. Select a waterway to inspect its flow and
 trace to the ocean; highlight its catchment or jump to a large river system.
-The **Global climate view** selector switches between water availability,
-temperature, precipitation, moisture/aridity, snow/ice and meltwater supply,
+The **Global map view** selector switches between water availability,
+temperature, precipitation, moisture/aridity, snow/ice, meltwater supply and volcanic geography,
 with legends and units.
 Layer controls show rivers, streams, headwaters, inland water, geographic
 catchments, flow direction and dormant potential spills. Closed-basin shortcuts
@@ -59,12 +61,13 @@ Serve the repository root or `dist/` over HTTP. Module workers do not run from a
 `file://` page. GitHub Pages serves the repository root on `main`.
 
 - `planet.mjs`: pure, complete planetary drainage model and validation.
+- `geology.mjs`: spherical volcanic landforms, cooled lava deposits and water links.
 - `climate.mjs`: global climate fields, annual runoff partition and lake balances.
 - `cryosphere.mjs`: monthly snow balance, retained ice, glacier routing and meltwater.
 - `planet-worker.mjs`: background generation.
 - `atlas.mjs`: map/globe renderer and inspection controls.
 - `index.html`, `atlas.css`: viewer interface.
-- `tests/planet.test.mjs`: fifteen topology, connectivity, conservation and
+- `tests/planet.test.mjs`: nineteen topology, connectivity, conservation and
   determinism tests, including the entire published default planet.
 
 The retired explorer remains available in Git history. This version uses the
@@ -88,8 +91,8 @@ basin footprint remains selectable, with exposed margins shown in brown.
 The model assumes a common level within each inventoried reservoir basin. It
 does not yet resolve independently isolated subpools below internal saddles.
 Flow-permanence labels are annual yield heuristics, not seasonal forecasts.
-Volcanic geography is the next separate task. Glacier deformation and dynamic
-advance/retreat remain future work.
+Shared terrain-and-water geometry is the next checkpoint. Glacier deformation
+and dynamic advance/retreat remain future work.
 
 Background for annual evapotranspiration partition:
 [Yang & Yang (2011)](https://doi.org/10.1029/2010WR009287).
@@ -123,3 +126,33 @@ the total historical thickness or volume of an existing real glacier.
 Background:
 [USACE snowpack mass accounting](https://www.hec.usace.army.mil/confluence/hmsdocs/hmstrm/snow-accumulation-and-melt/snowpack-mass-and-energy-accounting)
 and [USGS glacier mass balance](https://www.usgs.gov/programs/climate-research-and-development-program/science/mass-balance-methods-measuring-glacier).
+
+## Volcanic geography checkpoint
+
+The original sea datum is established first. Seeded procedural volcanic arcs,
+a hotspot chain and isolated centers then sculpt the broad elevation scaffold.
+The modeled forms are composite cones, shields, calderas and cinder cones, with
+smoothly blended outer margins. All placement and distances use the sphere,
+including longitude wrapping and the polar caps. This is a procedural geography
+model, not a plate-tectonic or eruption-history reconstruction.
+
+Short downhill paths from flank vents lay down **cooled, solid lava deposits**.
+Those deposits modify elevations before oceans, drainage, climate, lakes and
+snow/glacier budgets are solved for the complete planet. The solver determines
+whether a summit/crater contains water or remains dry. Basin IDs in the geology
+inventory link directly to the same hydrology model displayed on the map.
+
+The geology view shows base geography in gray, volcanic edifices in rust,
+cooled deposits in orange, and craters in dark brown. Water remains blue.
+Submarine features have muted blue-gray shading. Volcano markers and shortcuts
+allow inspection of type, ground elevation, edifice radius, elevation change,
+deposit thickness and associated summit/crater water.
+
+These broad landforms belong to the authoritative elevation data. A future
+terrain renderer must refine that data rather than adding these shapes again
+on top of the solved rivers and lakes. The remaining terrain/water checkpoint
+will establish channel cross-sections, water profiles and physical shorelines.
+
+Background:
+[USGS volcanic forms](https://pubs.usgs.gov/gip/volc/types.html) and
+[NPS lava deposits and drainage](https://home.nps.gov/zion/learn/nature/volcanoes-of-zion-and-southwest-utah.htm).
