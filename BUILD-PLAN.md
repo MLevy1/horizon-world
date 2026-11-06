@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.12.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.13.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -382,3 +382,28 @@ shore intersections, dry designs, downhill heads, ambiguous fixed planes,
 shared shore roots, global normals across LODs, cube-face and stitched LOD
 water borders, actual planetary ground/water edge topology and a real closed
 lake's independent level. Build and whitespace checks pass.
+
+
+## C3 — camera-driven chunk streaming, 0.7.13
+
+Completed: camera-driven mixed LOD selection, balanced 2:1 edges across all cube
+faces, bounded reusable chunk geometry (16 MiB LRU), one active worker request
+with latest-view coalescing and stale-response rejection. Drag/touch, scroll,
+keyboard, zoom buttons and presets navigate the inspector. Existing water and
+ground clipping/stitching are used without a separate regional simulation.
+The last complete view stays visible until its replacement is ready; continuous
+first-person movement is later work. Closing the inspector releases caches.
+
+Verification: **114 tests pass**. Selection partitions its roots without overlaps
+or missing area, neighboring leaves stay 2:1 balanced, and assembled mixed-detail
+meshes have no internal cracks at face corners, polar areas and shores. Transfer
+and eviction preserve geometry. Rapid requests coalesce and old-world replies
+cannot install themselves. A real default-planet river uses mixed detail and
+reuses chunks after camera movement. Build and whitespace checks pass.
+
+Next small task: natural landform shaping in the shared global surface. Start
+with continuous river courses and asymmetric banks while preserving downstream
+profiles, junction anchors and standing-water contacts. Then refine irregular
+shorelines, valley/ridge structure and erosion/sediment forms. Keep these shared
+between geometry, water clipping and inspection; avoid a detached showcase or
+random noise intended only to disguise the underlying grid.

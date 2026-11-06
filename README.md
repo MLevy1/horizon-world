@@ -1,6 +1,6 @@
-# Horizon 0.7.12 — Global hydrology and chunked terrain
+# Horizon 0.7.13 — Global hydrology and chunked terrain
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.12).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.13).
 
 A hydrology-first foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
@@ -516,3 +516,32 @@ shore intersections, dry designs, downhill heads, ambiguous fixed planes,
 shared shore roots, global normals across LODs, cube-face and stitched LOD
 water borders, actual planetary ground/water edge topology and a real closed
 lake's independent level. Build and whitespace checks pass.
+
+
+## Camera-driven terrain streaming — 0.7.13
+
+Map layers → Inspect terrain chunks now supports drag/touch movement, scroll
+zoom, +/− buttons, arrow keys and zoom presets. The worker chooses finer chunks
+around the view and coarser chunks farther away. The selected quadtree is balanced
+at 2:1 before applying the existing shared ground/water border stitching.
+
+Only one view request runs at a time. New input replaces the waiting request;
+stale results are discarded. The last complete image remains visible while a
+new view is built. This inspector updates in completed views; it is not yet a
+continuous first-person renderer. Closing the inspector releases its worker and
+geometry caches; changing the seed also resets them.
+
+A 16 MiB LRU cache holds reusable chunk buffers, separate from transferred view
+buffers and the existing bounded 65,536-sample cache. The displayed cache budget
+covers cached chunk arrays, not total app memory. The typical initial river view
+uses LOD 10–12. View meshes use 32 subdivisions per chunk; ambiguous water levels
+request finer sampling only within a 300,000-input-triangle refinement budget,
+and unresolved boundaries remain flagged. Neither the global hydrology nor the
+shared fitted surface changes as the camera moves.
+
+Verification: **114 tests pass**, including mixed-detail selection/coverage,
+2:1 balancing across seams/corners/poles, stitched mesh topology, chunk reuse,
+cache eviction, safe buffer transfer, request coalescing/reset, screen-scaled
+movement and real global water geometry. Natural river/shore/valley shaping
+remains the next geometry task; smoother lighting and streaming alone do not
+make the final geography realistic.

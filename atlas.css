@@ -35,3 +35,5 @@ dialog{max-width:570px;width:calc(100% - 36px);max-height:calc(100dvh - 48px);ov
 #channel-samples-open{margin-top:16px;width:100%}.fitted-water-dot{fill:#a0d9e0}.fitted-constraint-block{margin:16px 0 24px}.source-design{border-top:1px solid var(--line);padding-top:16px}.source-design summary{cursor:pointer;font-size:12px;color:var(--accent);margin-bottom:16px}#constraint-state{font-size:11px;color:var(--accent)}
 
 .mesh-controls select{background:#14262e;color:var(--text);border:1px solid #425c64;padding:7px;border-radius:5px}.chunk-pan{display:flex;gap:9px;flex-wrap:wrap}.chunk-pan button{font-size:11px;padding:8px 14px}#chunk-location{font-variant-numeric:tabular-nums;color:var(--accent)}
+
+#mesh-canvas{touch-action:none;cursor:grab}#mesh-canvas:active{cursor:grabbing}#mesh-canvas:focus-visible{outline:2px solid var(--accent);outline-offset:3px}#chunk-cache{font-variant-numeric:tabular-nums;font-size:11px}

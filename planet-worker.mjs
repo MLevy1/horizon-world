@@ -1,11 +1,17 @@
-import {createTerrainChunkBuilder} from './terrain-chunks.mjs?v=0.7.12';
-import {buildChannelConstraints} from './channel-constraints.mjs?v=0.7.12';
-import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.12';
-import {extractShorelines,packShorelines} from './shorelines.mjs?v=0.7.12';
-import {solvePlanet,transferBuffers} from './planet.mjs?v=0.7.12';
-let terrainBuilder=null;
+import {createTerrainChunkBuilder} from './terrain-chunks.mjs?v=0.7.13';
+import {createTerrainStream} from './terrain-stream.mjs?v=0.7.13';
+import {buildChannelConstraints} from './channel-constraints.mjs?v=0.7.13';
+import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.13';
+import {extractShorelines,packShorelines} from './shorelines.mjs?v=0.7.13';
+import {solvePlanet,transferBuffers} from './planet.mjs?v=0.7.13';
+let terrainBuilder=null,terrainStream=null;
 self.onmessage=({data})=>{
   try{
+    if(data.type==='terrain-view'){
+      if(!terrainStream){if(!data.model)throw Error('Terrain worker needs global surface data');terrainStream=createTerrainStream(createSurfaceSampler(data.model));}
+      const patch=terrainStream.view(data.lon,data.lat,{level:data.level,aspect:data.aspect,tilt:data.tilt});
+      postMessage({type:'terrain-view',requestId:data.requestId,patch},transferBuffers(patch));return;
+    }
     if(data.type==='terrain-patch'){
       if(!terrainBuilder){if(!data.model)throw Error('Terrain worker needs global surface data');terrainBuilder=createTerrainChunkBuilder(createSurfaceSampler(data.model));}
       const patch=terrainBuilder.patch(data.lon,data.lat,{level:data.level,resolution:64});
