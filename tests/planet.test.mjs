@@ -5,7 +5,7 @@ import {volcanicProfile,applyVolcanicSites} from '../geology.mjs';
 import {annualSnowBudget,seasonalCycle} from '../cryosphere.mjs';
 import {annualPartition,lakeBalance,makeClimate} from '../climate.mjs';
 import {poolWetFraction} from '../pools.mjs';
-import {solvePlanet,neighbors,lonLat,cellAt,traceDownstream,catchmentMask,DEFAULT_WORLD,traceActive,createGrid} from '../planet.mjs';
+import {solvePlanet,neighbors,lonLat,cellAt,traceDownstream,catchmentMask,DEFAULT_WORLD,traceActive,tracePotential,createGrid} from '../planet.mjs';
 
 const planet=solvePlanet();
 const digest=m=>{
@@ -26,20 +26,21 @@ test('the published model solves the entire closed planet, with every requested 
   for(const key of ['headwaters','streams','rivers','ponds','lakes','mouths'])assert.ok(m.stats[key]>0,key);
   assert.ok(m.stats.seamCrossings>0,'the default drainage crosses the longitude seam');
   for(let i=0;i<m.grid.count;i++){
-    assert.ok(m.ocean[m.outlet[i]],'every terminal is part of the connected ocean');
-    if(m.receiver[i]<0)assert.ok(m.ocean[i],'only the ocean terminates a flow');
+    assert.equal(m.receiver[m.outlet[i]],-1);
+    assert.ok(m.ocean[m.potentialOutlet[i]],'potential routes retain their ocean destination');
+    if(m.receiver[i]<0&&!m.ocean[i])assert.ok(m.waterbodies[m.waterbody[i]].closed);
   }
 });
 
 test('every global potential lake cell belongs to one local depression and a connected spill inventory',()=>{
   const m=planet,s=m.basinStructure,g=m.grid,near=new Int32Array(g.width);
   assert.equal(s.validation.ok,true,JSON.stringify(s.validation));
-  assert.equal(s.basins.length,m.waterbodies.length);
+  assert.equal(s.basins.length,m.basins.length);
   assert.ok(s.stats.multiDepressionBasins>0);
   assert.ok(s.depressions.length>s.basins.length);
   let covered=0,area=0;
   for(const basin of s.basins){
-    assert.equal(basin.cells.length,m.waterbodies[basin.id].cells);
+    assert.equal(basin.cells.length,m.basins[basin.id].cells);
     const reached=new Set(),queue=[s.connections[basin.outletConnection].from];
     for(let a=0;a<queue.length;a++){
       const id=queue[a];if(reached.has(id))continue;reached.add(id);
@@ -50,7 +51,7 @@ test('every global potential lake cell belongs to one local depression and a con
     }
     assert.equal(reached.size,basin.depressionIds.length);
     for(const i of basin.cells){
-      covered++;assert.equal(m.waterbody[i],basin.id);
+      covered++;assert.equal(m.basinId[i],basin.id);
       const d=s.depressions[s.cellDepression[i]],p=s.downhill[i];assert.equal(d.basinId,basin.id);
       if(i<g.north)area+=g.rowArea[(i/g.width)|0];
       if(p<0)assert.equal(i,d.pitCell);
@@ -59,7 +60,7 @@ test('every global potential lake cell belongs to one local depression and a con
   }
   assert.equal(covered,s.stats.coveredCells);
   assert.ok(Math.abs(area-s.depressions.reduce((sum,d)=>sum+d.areaKm2,0))<1e-7);
-  for(let i=0;i<g.count;i++)assert.equal(s.cellDepression[i]>=0,m.waterbody[i]>=0);
+  for(let i=0;i<g.count;i++)assert.equal(s.cellDepression[i]>=0,m.basinId[i]>=0);
 });
 
 test('every recorded internal spill is the lowest real mesh-edge connection between its two depressions',()=>{
@@ -68,7 +69,7 @@ test('every recorded internal spill is the lowest real mesh-edge connection betw
     const n=neighbors(g,i,near),from=s.cellDepression[i];
     for(let k=0;k<n;k++){
       const j=near[k],to=s.cellDepression[j];
-      if(j<=i||m.waterbody[j]!==basin.id||from===to)continue;
+      if(j<=i||m.basinId[j]!==basin.id||from===to)continue;
       const key=[Math.min(from,to),Math.max(from,to)].join(':');
       const candidate=[Math.max(m.height[i],m.height[j]),i,j],old=minima.get(key);
       if(!old||candidate[0]<old[0]||(candidate[0]===old[0]&&(i<old[1]||(i===old[1]&&j<old[2]))))minima.set(key,candidate);
@@ -85,7 +86,7 @@ test('every recorded internal spill is the lowest real mesh-edge connection betw
 test('independent pools cover every global basin and conserve water through the potential outer-spill graph',()=>{
   const m=planet,r=m.poolBalances,s=m.basinStructure;
   assert.equal(r.validation.ok,true,JSON.stringify(r.validation));
-  assert.equal(r.basins.length,m.waterbodies.length);
+  assert.equal(r.basins.length,m.basins.length);
   assert.ok(r.stats.splitBasins>0&&r.stats.mergedPools>0);
   assert.ok(Math.abs(r.stats.runoffM3s-m.stats.totalRunoffM3s)<1e-8);
   assert.ok(Math.abs(r.stats.runoffM3s-r.stats.netEvaporationM3s-r.stats.deliveredFlowM3s)<1e-7);
@@ -114,6 +115,39 @@ test('real multi-pool basins retain different wet surface levels instead of shar
   }));
 });
 
+test('installed pools have connected wet footprints and exposed margins carry the rebuilt channels',()=>{
+  const m=planet,near=new Int32Array(m.grid.width),seen=new Uint8Array(m.grid.count);
+  for(const wb of m.waterbodies){
+    const queue=[wb.outletCell];seen[wb.outletCell]=1;
+    for(let a=0;a<queue.length;a++){
+      const i=queue[a];assert.equal(m.level[i],wb.waterLevelM);
+      const n=neighbors(m.grid,i,near);
+      for(let k=0;k<n;k++){const j=near[k];if(!seen[j]&&m.waterbody[j]===wb.id){seen[j]=1;queue.push(j);}}
+    }
+    assert.equal(queue.length,wb.cells,'every mapped pool is connected at its actual level');
+    assert.equal(m.receiver[wb.outletCell],wb.closed?-1:wb.spillToCell);
+  }
+  let exposed=0,restored=0;
+  for(let i=0;i<m.grid.count;i++)if(m.basinId[i]>=0&&m.waterbody[i]<0){
+    exposed++;if(m.channel[i])restored++;
+    const p=m.waterbodies[m.cellPool[i]];
+    assert.ok(m.height[i]>p.waterLevelM);assert.equal(m.level[i],m.height[i]);
+  }
+  assert.ok(exposed>0&&restored>0);
+  assert.ok(Math.abs(m.stats.deliveredFlowM3s-m.poolBalances.stats.deliveredFlowM3s)<1e-7);
+});
+
+test('dormant spills remain adjacent optional links and never appear as active closed-pool outflows',()=>{
+  const m=planet,near=new Int32Array(m.grid.width);
+  assert.equal(m.potentialSpills.length,m.waterbodies.filter(w=>w.closed).length);
+  for(const edge of m.potentialSpills){
+    assert.equal(edge.dormantSpill,true);assert.equal(edge.dischargeM3s,0);
+    assert.equal(edge.path.length,2);const n=neighbors(m.grid,edge.path[0],near);
+    assert.ok(near.subarray(0,n).includes(edge.path[1]));assert.ok(m.waterbodies[edge.waterbody].closed);
+  }
+  for(const node of m.nodes)if(node.waterbody>=0&&m.waterbodies[node.waterbody].closed)assert.equal(node.outgoing,-1);
+});
+
 test('mesh edges are reciprocal across longitude and both unique poles; coordinate lookup round-trips',()=>{
   const g=planet.grid,a=new Int32Array(g.width),b=new Int32Array(g.width),cells=[g.north,g.south];
   for(let y=0;y<g.height;y++)cells.push(y*g.width,y*g.width+g.width-1);
@@ -136,16 +170,16 @@ test('the ocean is one connected component, not a collection of negative-height 
   const first=m.ocean.findIndex(Boolean);let a=0,b=1;queue[0]=first;seen[first]=1;
   while(a<b){const i=queue[a++],n=neighbors(g,i,near);for(let k=0;k<n;k++){const j=near[k];if(m.ocean[j]&&!seen[j]){seen[j]=1;queue[b++]=j;}}}
   assert.equal(b,m.stats.oceanCells);
-  let enclosed=0;for(let i=0;i<g.count;i++)if(m.height[i]<0&&!m.ocean[i]){assert.ok(m.waterbody[i]>=0);enclosed++;}
+  let enclosed=0;for(let i=0;i<g.count;i++)if(m.height[i]<0&&!m.ocean[i]){assert.ok(m.basinId[i]>=0);enclosed++;}
   assert.ok(enclosed>0,'enclosed below-sea-level basins are inland water');
 });
 
-test('every pond and lake is level, has one spill outlet and independently balances its inputs',()=>{
+test('every pond and lake is level, has one exit or a closed sink and independently balances its inputs',()=>{
   const m=planet,exits=new Uint32Array(m.waterbodies.length),rainInput=new Float64Array(m.waterbodies.length),externalInput=new Float64Array(m.waterbodies.length);
   for(let i=0;i<m.grid.count;i++){
     const id=m.waterbody[i],p=m.receiver[i];
     if(id>=0){
-      const wb=m.waterbodies[id];assert.equal(m.level[i],wb.surfaceM);assert.ok(m.height[i]<wb.surfaceM);
+      const wb=m.waterbodies[id];assert.ok(Math.abs(m.level[i]-wb.waterLevelM)<1e-3);assert.ok(m.height[i]<=wb.waterLevelM+1e-5);
       if(p<0||m.waterbody[p]!==id)exits[id]++;
       const area=i<m.grid.north?m.grid.rowArea[(i/m.grid.width)|0]:0;
       rainInput[id]+=area*m.climate.runoffMm[i]*1000/(365.25*86400);
@@ -155,11 +189,11 @@ test('every pond and lake is level, has one spill outlet and independently balan
   for(const wb of m.waterbodies){
     assert.equal(exits[wb.id],1);
     assert.ok(Math.abs(m.discharge[wb.outletCell]+wb.netEvaporationM3s-externalInput[wb.id]-rainInput[wb.id])<1e-7);
-    const path=traceDownstream(m,wb.outletCell);assert.ok(m.ocean[path.at(-1)]);
+    const path=traceDownstream(m,wb.outletCell);assert.equal(path.at(-1),m.outlet[wb.outletCell]);
   }
 });
 
-test('the compact graph connects every source and waterbody to a mouth without omitted channel cells',()=>{
+test('the compact graph connects every source and waterbody to an ocean or closed pool without omitted channel cells',()=>{
   const m=planet,covered=new Uint8Array(m.grid.count);
   for(const edge of m.reaches){
     assert.equal(m.nodes[edge.from].outgoing,edge.id);assert.ok(m.nodes[edge.to].incoming.includes(edge.id));
@@ -169,13 +203,13 @@ test('the compact graph connects every source and waterbody to a mouth without o
   for(const start of m.nodes){
     let node=start,steps=0;
     while(node.outgoing>=0){assert.ok(++steps<m.nodes.length);node=m.nodes[m.reaches[node.outgoing].to];}
-    assert.equal(node.kind,'mouth');assert.ok(m.ocean[node.cell]);
+    assert.ok(m.ocean[node.cell]||(node.waterbody>=0&&m.waterbodies[node.waterbody].closed));
   }
 });
 
 test('global catchment area and annual runoff are conserved through ocean delivery and lake evaporation',()=>{
   assert.ok(Math.abs(planet.stats.totalRunoffM3s-planet.stats.deliveredFlowM3s-planet.stats.lakeExtraEvaporationM3s)<1e-7);
-  assert.ok(Math.abs(planet.stats.landAreaKm2-planet.stats.deliveredAreaKm2)<1e-7);
+  assert.ok(Math.abs(planet.stats.landAreaKm2-planet.stats.deliveredAreaKm2-planet.stats.closedAreaKm2)<1e-7);
   const node=planet.nodes.find(n=>n.kind==='headwater'&&planet.waterbody[planet.receiver[n.cell]]<0);
   const mask=catchmentMask(planet,node.cell);let area=0;
   for(let i=0;i<planet.grid.north;i++)if(mask[i])area+=planet.grid.rowArea[(i/planet.grid.width)|0];
@@ -234,8 +268,8 @@ test('closed basins are valid active-flow destinations while their possible over
     if(wb.closed){
       assert.equal(wb.outflowM3s,0);assert.equal(m.activeTerminal[wb.outletCell],wb.outletCell);
       assert.equal(traceActive(m,wb.outletCell).length,1);
-      assert.ok(m.ocean[traceDownstream(m,wb.outletCell).at(-1)]);
-      assert.ok(wb.waterLevelM<wb.surfaceM);
+      assert.ok(m.ocean[tracePotential(m,wb.outletCell).at(-1)]);
+      assert.ok(wb.waterLevelM<=wb.surfaceM);
     }
   }
 });
@@ -282,7 +316,7 @@ test('the full planet stores glacier water and routes melt into its actual drain
   assert.ok(Math.abs(s.glacierFormationM3s-s.glacierMeltM3s-s.iceStorageChangeM3s-s.calvingM3s)<1e-8);
   let meltCells=0;
   for(let i=0;i<m.grid.count;i++){
-    if(c.iceExportM3s[i]>0){assert.ok(m.receiver[i]>=0);assert.ok(m.height[m.receiver[i]]<m.height[i]);}
+    if(c.iceExportM3s[i]>0){assert.ok(m.potentialReceiver[i]>=0);assert.ok(m.height[m.potentialReceiver[i]]<m.height[i]);}
     if(c.glacier[i])assert.ok(c.glacierId[i]>=0);
     if(c.iceMeltMm[i]>0){assert.ok(m.climate.liquidInputMm[i]>=c.iceMeltMm[i]-.01);meltCells++;}
     assert.ok(c.freezeMonths[i]<=12&&c.snowMonths[i]<=12);

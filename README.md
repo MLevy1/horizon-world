@@ -1,6 +1,6 @@
-# Horizon 0.7.2 — Global hydrology atlas
+# Horizon 0.7.3 — Global hydrology atlas
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.2).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.3).
 
 A fresh hydrology-only foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
@@ -15,7 +15,7 @@ touch-control checks are tracked in [BUILD-PLAN.md](BUILD-PLAN.md).
 - Entire fictional planet: 128 km diameter, about 51,472 km² of surface.
 - 1,179,650 flow cells, computed together before displaying the map.
 - Longitude connections and two unique polar nodes; no outer boundary exits.
-- One connected ocean, retained flat ponds/lakes, one spill outlet per waterbody.
+- One connected ocean, independent level pools, active spill outlets and closed sinks.
 - Explicit headwaters, tributaries, confluences, waterbody links and ocean mouths.
 - Seeded volcanic arcs and hotspot chains, broad cones/shields/calderas and
   cooled downhill lava deposits, applied before the water solve.
@@ -34,7 +34,8 @@ it does not generate independent local regions. Features below this grid scale,
 detailed glacier motion, time-varying river seasons and groundwater are future steps.
 Seasonal/ephemeral channel styles are estimates from annual water yield, rather
 than daily simulated flow.
-Ponds have mapped area below 0.35 km²; larger inland waterbodies are lakes.
+Ponds have wet area below 0.35 km²; larger inland waterbodies are lakes.
+Dry/playa pools are counted separately from the visible pond inventory.
 
 ## Viewer
 
@@ -64,7 +65,9 @@ Serve the repository root or `dist/` over HTTP. Module workers do not run from a
 - `basins.mjs`: local-depression catchments and lowest internal spill connections
   for every potential lake basin.
 - `pools.mjs`: independent annual pool balances, spill exchanges and merging,
-  computed for every basin separately from the displayed active network.
+  authoritative for every basin in the displayed active network.
+- `lake-routing.mjs`: connected wet footprints, exposed-margin drainage, real
+  closed-pool sinks and optional dormant spill edges.
 - `geology.mjs`: spherical volcanic landforms, cooled lava deposits and water links.
 - `climate.mjs`: global climate fields, annual runoff partition and lake balances.
 - `cryosphere.mjs`: monthly snow balance, retained ice, glacier routing and meltwater.
@@ -92,22 +95,29 @@ spill connections remain in the geographic graph, available for a wetter state.
 The blue surface is a cell-resolved annual reservoir estimate; the original
 basin footprint remains selectable, with exposed margins shown in brown.
 
-The displayed water model still assumes a common level within each inventoried
-reservoir basin. The separate 0.7.2 `poolBalances` solver now resolves independent
-pools below connecting ridges across the complete planet. Supply enters its
-actual local depression. A pool evaporates, spills across a real connecting
-mesh edge or merges with its neighbor when both can sustain a joined surface.
-Each potential basin and the complete outer-spill graph conserve liquid runoff.
+Version 0.7.3 installs independent pool levels and spill directions in the
+actual global cell graph. Lake basins can split into distinct wet surfaces.
+Exposed margins become land and can carry streams down to their receiving pool.
+Closed pools terminate their active paths; overflowing pools connect onward to
+another pool or the ocean. Catchment area is conserved across ocean delivery
+and closed-pool destinations. Annual evaporation and ocean outflow conserve the
+same liquid input, including snow and glacier melt.
+
+The potential basin inventory and original ocean-connected receiver graph are
+preserved as `basins`, `basinId`, `potentialReceiver` and `potentialOutlet`.
+Dormant potential spills are separate optional mesh-edge links, never active
+closed-pool outflows. Ice routing retains its original descending scaffold;
+liquid runoff uses the installed pool graph.
 
 Pool wet area ramps from zero to the full cell area over one metre above its
-bed; this fixed subcell approximation is unchanged by merging. Stored volume
-is the integral of that area-stage curve. The annual equilibrium model has no
-transient filling time, groundwater exchange or seasonal lake-level history.
+bed. Stored volume integrates that same area-stage curve. This annual procedural
+model has no transient filling time, groundwater exchange or seasonal lake-level
+history. Physical river cross-sections and subcell shorelines are later tasks.
 
-The new results do not yet replace the atlas water surfaces, active receiver
-links or channel paths. That integration is the next separate task (1c) in
-[BUILD-PLAN.md](BUILD-PLAN.md). Flow-permanence labels remain annual yield
-heuristics, not seasonal forecasts.
+Use the **Split lake basin** shortcut, then **Inspect next pool**, to compare
+pool levels and destinations. Exposed basin margins remain inspectable. The
+inspector reports pool count, current water level and potential spill height.
+Flow-permanence labels remain annual yield heuristics, not seasonal forecasts.
 Glacier deformation and dynamic advance/retreat remain future work.
 
 Background for annual evapotranspiration partition:

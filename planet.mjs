@@ -1,15 +1,16 @@
 import {makeVolcanicGeography,linkVolcanoWater} from './geology.mjs?v=0.7.0';
 import {solveCryosphere} from './cryosphere.mjs?v=0.7.0';
-import {makeClimate,lakeBalance,wetFraction,flowRegime} from './climate.mjs?v=0.7.0';
+import {makeClimate,flowRegime} from './climate.mjs?v=0.7.0';
 import {buildBasinInventory} from './basins.mjs?v=0.7.1';
 import {solvePoolBalances} from './pools.mjs?v=0.7.2';
+import {installPoolRouting} from './lake-routing.mjs?v=0.7.3';
 
 /** Horizon 0.7: one closed, deterministic planet. Distances km, elevations m.
  * No rendering, terrain tiles, scene, camera or vegetation dependencies.
  * Depression filling follows Priority-Flood (Barnes, Lehman & Mulla, 2014).
  * The grid is a staggered triangular mesh, closed by two unique polar nodes.
  */
-export const VERSION = '0.7.2';
+export const VERSION = '0.7.3';
 export const DEFAULT_WORLD = Object.freeze({width:1536, height:768, radiusKm:64});
 const TAU = Math.PI * 2;
 const YEAR_SECONDS = 365.25 * 86400;
@@ -113,7 +114,7 @@ export function solvePlanet({seed='HORIZON-01',world=DEFAULT_WORLD,progress=()=>
   seed=String(seed).trim().slice(0,100)||'HORIZON-01';
   const grid=createGrid(world),{width:w,height:h,count:N,north}=grid;
   const noise=makeNoise(hashSeed(seed)),near=new Int32Array(w);
-  const height=new Float32Array(N),level=new Float32Array(N),rainfall=new Float32Array(N);
+  const height=new Float32Array(N),level=new Float64Array(N),rainfall=new Float32Array(N);
   const ocean=new Uint8Array(N),receiver=new Int32Array(N),waterbody=new Int32Array(N);
   receiver.fill(-1);waterbody.fill(-1);
   progress('Defining continents and drainage divides',.03);
@@ -249,10 +250,23 @@ export function solvePlanet({seed='HORIZON-01',world=DEFAULT_WORLD,progress=()=>
   const climate=makeClimate({grid,height,ocean,noise});rainfall.set(climate.precipitation);
   progress('Accumulating snow and routing glacier meltwater',.69);
   const cryosphere=solveCryosphere({grid,height,ocean,receiver,order,climate,neighbors});
+  const basins=waterbodies.slice(),basinId=waterbody.slice(),potentialReceiver=receiver.slice(),potentialLevel=level.slice();
+  const potentialOutlet=new Int32Array(N),lakeCells=basins.map(()=>[]);
+  for(let i=0;i<N;i++)if(basinId[i]>=0)lakeCells[basinId[i]].push(i);
+  for(let k=N-1;k>=0;k--){const i=order[k];potentialOutlet[i]=receiver[i]<0?i:potentialOutlet[receiver[i]];}
+  progress('Inventorying depressions and internal spill connections',.72);
+  const basinStructure=buildBasinInventory({grid,height,waterbody,waterbodies,neighbors,distanceKm:neighborDistance,cellsByBasin:lakeCells});
+  progress('Balancing independent pools across the entire planet',.75);
+  const poolBalances=solvePoolBalances({grid,height,climate,ocean,receiver,waterbody,waterbodies,basinStructure,order});
+  progress('Connecting actual pools and exposed basin margins',.79);
+  const {cellPool,wetness,potentialSpills}=installPoolRouting({grid,height,receiver,level,waterbody,waterbodies,basins,structure:basinStructure,poolBalances,neighbors,lonLat});
+  degree.fill(0);a=0;b=0;
+  for(let i=0;i<N;i++)if(receiver[i]>=0)degree[receiver[i]]++;
+  for(let i=0;i<N;i++)if(!degree[i])order[b++]=i;
+  while(a<b){const i=order[a++],p=receiver[i];if(p>=0&&!--degree[p])order[b++]=p;}
+  if(b!==N)throw Error('Active pool drainage contains a cycle');
   const catchment=new Float64Array(N),discharge=new Float64Array(N),outlet=new Int32Array(N),longest=new Float32Array(N);
-  const activeTerminal=new Int32Array(N),wetness=new Float32Array(N);
-  const trunk=new Int32Array(N);trunk.fill(-1);
-  const lakeCells=waterbodies.map(()=>[]);
+  const activeTerminal=outlet,trunk=new Int32Array(N);trunk.fill(-1);
   let landArea=0,totalRunoff=0,totalPrecipitation=0,landEvaporation=0,extraLakeEvaporation=0;
   for(let i=0;i<N;i++)if(!ocean[i]){
     const area=i<north?grid.rowArea[(i/w)|0]:0;
@@ -260,52 +274,42 @@ export function solvePlanet({seed='HORIZON-01',world=DEFAULT_WORLD,progress=()=>
     landArea+=area;totalRunoff+=discharge[i];
     totalPrecipitation+=area*rainfall[i]*1000/YEAR_SECONDS;
     landEvaporation+=area*(climate.liquidInputMm[i]-climate.runoffMm[i])*1000/YEAR_SECONDS;
-    if(waterbody[i]>=0){const wb=waterbodies[waterbody[i]];wb.localRunoffM3s+=discharge[i];lakeCells[wb.id].push(i);}
+    if(waterbody[i]>=0)waterbodies[waterbody[i]].localRunoffM3s+=discharge[i];
   }
-  // Topological ordering ensures upstream lake evaporation is applied BEFORE
-  // its outflow contributes to the next lake or the ocean.
   for(let k=0;k<N;k++){
     const i=order[k],p=receiver[i],id=waterbody[i];
     if(id>=0&&waterbodies[id].outletCell===i){
       const wb=waterbodies[id];wb.inputBeforeEvaporationM3s=discharge[i];
-      Object.assign(wb,lakeBalance({cells:lakeCells[id],grid,height,climate,spillM:wb.surfaceM,availableM3s:discharge[i]}));
+      if(Math.abs(discharge[i]-wb.availableM3s)>1e-7)throw Error('Installed pool inputs disagree with solved balances');
       discharge[i]=wb.outflowM3s;extraLakeEvaporation+=wb.netEvaporationM3s;
-      for(const cell of lakeCells[id])wetness[cell]=wetFraction(height[cell],wb.surfaceM,wb.waterLevelM);
     }
     if(p<0)continue;
     catchment[p]+=catchment[i];discharge[p]+=discharge[i];
     const length=longest[i]+neighborDistance(grid,i,p);
     if(length>longest[p]){longest[p]=length;trunk[p]=i;}
   }
-  for(let k=N-1;k>=0;k--){
-    const i=order[k],id=waterbody[i];outlet[i]=receiver[i]<0?i:outlet[receiver[i]];
-    activeTerminal[i]=id>=0&&waterbodies[id].closed&&waterbodies[id].outletCell===i?i:receiver[i]<0?i:activeTerminal[receiver[i]];
-  }
+  for(let k=N-1;k>=0;k--){const i=order[k];outlet[i]=receiver[i]<0?i:outlet[receiver[i]];}
   for(let i=0;i<N;i++){
-    const lake=waterbody[i],p=receiver[i];
-    if(p>=0&&waterbody[p]>=0&&lake!==waterbody[p]){
+    const id=waterbody[i],p=receiver[i];
+    if(p>=0&&waterbody[p]>=0&&id!==waterbody[p]){
       const wb=waterbodies[waterbody[p]];wb.inlets.push(i);wb.inflowM3s+=discharge[i];
     }
   }
-  progress('Connecting headwaters, tributaries and river mouths',.76);
-  const channel=new Uint8Array(N);
-  const classify=i=>catchment[i]>=140?3:catchment[i]>=12?2:1;
+  progress('Connecting headwaters, tributaries and river mouths',.86);
+  const channel=new Uint8Array(N),classify=i=>catchment[i]>=140?3:catchment[i]>=12?2:1;
   for(let i=0;i<N;i++)if(!ocean[i]&&waterbody[i]<0&&catchment[i]>=.50)channel[i]=classify(i);
-  // Even a small pond owns a real outflow, connected all the way downstream.
-  for(const wb of waterbodies){
+  for(const wb of waterbodies)if(!wb.closed){
     let i=wb.outletReceiver;
     while(i>=0&&!ocean[i]&&waterbody[i]<0&&!channel[i]){channel[i]=classify(i);i=receiver[i];}
   }
-  progress('Inventorying depressions and internal spill connections',.82);
-  const basinStructure=buildBasinInventory({grid,height,waterbody,waterbodies,neighbors,distanceKm:neighborDistance,cellsByBasin:lakeCells});
-  progress('Balancing independent pools across the entire planet',.86);
-  const poolBalances=solvePoolBalances({grid,height,climate,ocean,receiver,waterbody,waterbodies,basinStructure,order});
-  const model={version:VERSION,seed,grid,height,level,rainfall,ocean,receiver,waterbody,waterbodies,catchment,discharge,outlet,channel,longest,trunk,climate,wetness,activeTerminal,cryosphere,geology,basinStructure,poolBalances};
+  const model={version:VERSION,seed,grid,height,level,rainfall,ocean,receiver,waterbody,waterbodies,catchment,discharge,outlet,channel,longest,trunk,climate,wetness,activeTerminal,cryosphere,geology,
+    basinId,basins,potentialReceiver,potentialLevel,potentialOutlet,basinStructure,poolBalances,cellPool,potentialSpills};
   linkVolcanoWater(model);
   const network=buildNetwork(model);
   Object.assign(model,network);
   const mouths=model.nodes.filter(n=>n.kind==='mouth');
   let deliveredArea=0,deliveredFlow=0,seamCrossings=0,poleConnections=0;
+  const closedArea=waterbodies.filter(w=>w.closed).reduce((sum,w)=>sum+catchment[w.outletCell],0);
   for(let i=0;i<N;i++){
     const p=receiver[i];
     if(p>=0){
@@ -317,9 +321,9 @@ export function solvePlanet({seed='HORIZON-01',world=DEFAULT_WORLD,progress=()=>
   model.stats={cells:N,landCells:N-oceanCells,oceanCells,worldAreaKm2:4*Math.PI*grid.radiusKm**2,landAreaKm2:landArea,
     oceanAreaKm2:4*Math.PI*grid.radiusKm**2-landArea,circumferenceKm:TAU*grid.radiusKm,equatorSpacingM:TAU*grid.radiusKm/w*1000,
     headwaters:model.nodes.filter(n=>n.kind==='headwater').length,streams:model.reaches.filter(e=>e.kind==='stream').length,
-    rivers:model.reaches.filter(e=>e.kind==='river'||e.kind==='major').length,ponds:waterbodies.filter(x=>x.kind==='pond').length,
+    rivers:model.reaches.filter(e=>e.kind==='river'||e.kind==='major').length,ponds:waterbodies.filter(x=>x.kind==='pond'&&x.status!=='playa').length,
     lakes:waterbodies.filter(x=>x.kind==='lake').length,mouths:mouths.length,edges:model.reaches.length,nodes:model.nodes.length,
-    totalRunoffM3s:totalRunoff,deliveredFlowM3s:deliveredFlow,deliveredAreaKm2:deliveredArea,seamCrossings,poleConnections,
+    totalRunoffM3s:totalRunoff,deliveredFlowM3s:deliveredFlow,deliveredAreaKm2:deliveredArea,closedAreaKm2:closedArea,splitBasins:poolBalances.stats.splitBasins,seamCrossings,poleConnections,
     precipitationM3s:totalPrecipitation,landEvaporationM3s:landEvaporation,
     frozenBudgetM3s:cryosphere.stats.sublimationM3s+cryosphere.stats.iceStorageChangeM3s+cryosphere.stats.seasonalStorageChangeM3s+cryosphere.stats.calvingM3s,lakeExtraEvaporationM3s:extraLakeEvaporation,
     desertAreaKm2:climate.desertAreaKm2,coldAreaKm2:climate.coldAreaKm2,
@@ -342,7 +346,7 @@ function buildNetwork(m) {
   };
   const lakeNodes=waterbodies.map(wb=>addNode(wb.outletCell,wb.kind,wb.id));
   for(let i=0;i<N;i++)if(channel[i]&&channel[receiver[i]])upstream[receiver[i]]++;
-  for(const wb of waterbodies)if(channel[wb.outletReceiver])upstream[wb.outletReceiver]++;
+  for(const wb of waterbodies)if(!wb.closed&&channel[wb.outletReceiver])upstream[wb.outletReceiver]++;
   for(let i=0;i<N;i++)if(channel[i]&&upstream[i]!==1)addNode(i,upstream[i]===0?'headwater':'confluence');
   const mouth=i=>nodeAt[i]>=0?nodeAt[i]:addNode(i,'mouth');
   function reach(from,start) {
@@ -366,7 +370,7 @@ function buildNetwork(m) {
     nodes[from].outgoing=id;nodes[to].incoming.push(id);
   }
   const startNodes=nodes.slice();
-  for(const n of startNodes)reach(n.id,n.cell);
+  for(const n of startNodes)if(n.waterbody<0||!waterbodies[n.waterbody].closed)reach(n.id,n.cell);
   // Reaches are the navigable global graph; no renderer invents additional links.
   return {nodes,reaches};
 }
@@ -380,7 +384,7 @@ export function validatePlanet(m) {
   for(let i=0;i<N;i++){
     const p=r[i];
     if(p>=N||p===i||p< -1){invalid++;continue;}
-    if(p<0){if(!ocean[i])unresolved++;}
+    if(p<0){if(!ocean[i]&&!(waterbody[i]>=0&&waterbodies[waterbody[i]].closed&&waterbodies[waterbody[i]].outletCell===i))unresolved++;}
     else{
       degree[p]++;
       if(level[p]>level[i]+1e-4)uphill++;
@@ -390,7 +394,7 @@ export function validatePlanet(m) {
       const evaporatingOutlet=waterbody[p]>=0&&waterbodies[waterbody[p]].outletCell===p;
       if(catchment[p]+1e-8<catchment[i]||(!evaporatingOutlet&&discharge[p]+1e-8<discharge[i]))invalid++;
     }
-    if(outlet[i]<0||outlet[i]>=N||!ocean[outlet[i]])invalidTerminal++;
+    if(outlet[i]<0||outlet[i]>=N||r[outlet[i]]!==-1)invalidTerminal++;
     const terminal=m.activeTerminal[i],terminalBody=waterbody[terminal];
     if(!ocean[terminal]&&!(terminalBody>=0&&waterbodies[terminalBody].closed&&waterbodies[terminalBody].outletCell===terminal))invalidTerminal++;
   }
@@ -398,10 +402,10 @@ export function validatePlanet(m) {
   while(a<b){const i=queue[a++],p=r[i];if(p>=0&&!--degree[p])queue[b++]=p;}
   let lakeErrors=0,balanceErrors=0;
   for(const wb of waterbodies){
-    if(exitCount[wb.id]!==1||waterbody[wb.outletCell]!==wb.id||waterbody[wb.outletReceiver]===wb.id)lakeErrors++;
+    if(exitCount[wb.id]!==Number(!wb.closed)||waterbody[wb.outletCell]!==wb.id||waterbody[wb.outletReceiver]===wb.id)lakeErrors++;
     if(Math.abs(wb.outflowM3s+wb.netEvaporationM3s-wb.inflowM3s-wb.localRunoffM3s)>Math.max(1e-7,wb.outflowM3s*1e-9))balanceErrors++;
   }
-  const areaError=Math.abs(m.stats.deliveredAreaKm2-m.stats.landAreaKm2),flowError=Math.abs(m.stats.deliveredFlowM3s+m.stats.lakeExtraEvaporationM3s-m.stats.totalRunoffM3s);
+  const areaError=Math.abs(m.stats.deliveredAreaKm2+m.stats.closedAreaKm2-m.stats.landAreaKm2),flowError=Math.abs(m.stats.deliveredFlowM3s+m.stats.lakeExtraEvaporationM3s-m.stats.totalRunoffM3s);
   if(uphill)errors.push(`${uphill} uphill receivers`);
   if(invalid)errors.push(`${invalid} invalid flow links`);
   if(unresolved||invalidTerminal)errors.push(`${unresolved+invalidTerminal} unresolved terminals`);
@@ -413,7 +417,7 @@ export function validatePlanet(m) {
   const precipitationError=Math.abs(m.stats.precipitationM3s-m.stats.landEvaporationM3s-m.stats.lakeExtraEvaporationM3s-m.stats.deliveredFlowM3s-m.stats.frozenBudgetM3s);
   if(m.cryosphere.stats.iceBalanceErrorM3s>1e-7)errors.push('Glacier budget is not conserved');
   if(precipitationError>Math.max(1e-7,m.stats.precipitationM3s*1e-9))errors.push('Precipitation budget is not conserved');
-  for(const n of m.nodes)if(n.kind!=='mouth'&&n.outgoing<0)errors.push('Disconnected network node');
+  for(const n of m.nodes)if(n.kind!=='mouth'&&n.outgoing<0&&!(n.waterbody>=0&&waterbodies[n.waterbody].closed))errors.push('Disconnected network node');
   return {ok:errors.length===0,errors,resolvedCells:N-unresolved,unresolvedCells:unresolved,uphillLinks:uphill,cycles:N-b,
     lakeErrors,balanceErrors,areaErrorKm2:areaError,flowErrorM3s:flowError,precipitationErrorM3s:precipitationError,checkedWaterbodies:waterbodies.length};
 }
@@ -425,12 +429,13 @@ export function traceDownstream(m,start) {
   if(path.length>m.grid.count)throw Error('Drainage cycle');
   return path;
 }
+export function tracePotential(m,start){
+  return traceDownstream({...m,receiver:m.potentialReceiver},start);
+}
 export function traceActive(m,start){
   const path=[];let i=start;
   while(i>=0&&path.length<=m.grid.count){
-    path.push(i);const id=m.waterbody[i];
-    if(id>=0&&m.waterbodies[id].closed)break;
-    i=m.receiver[i];
+    path.push(i);i=m.receiver[i];
   }
   if(path.length>m.grid.count)throw Error('Drainage cycle');
   return path;

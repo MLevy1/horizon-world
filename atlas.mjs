@@ -1,5 +1,5 @@
-import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.2';
-import {ZONES,flowRegime} from './climate.mjs?v=0.7.2';
+import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.3';
+import {ZONES,flowRegime} from './climate.mjs?v=0.7.3';
 
 const $=id=>document.getElementById(id);
 const canvas=$('map'),ctx=canvas.getContext('2d'),stage=$('map-stage');
@@ -45,6 +45,7 @@ function makeTexture(){
       else if(m.climate.zone[i]===1)color=[99,86,58];
       else if(m.climate.zone[i]===2)color=[76,77,58];
       else if(m.climate.zone[i]===0)color=[63,77,82];
+      if(layers.lakes&&!wb&&m.basinId[i]>=0&&state.climateLayer==='water')color=[109,94,74];
       if(layers.basins)color=colorForBasin(m.activeTerminal[i]);
       if(layers.lakes&&wb){
         if(wb.status!=='playa'&&m.wetness[i]>.35)color=palette.lake;
@@ -126,7 +127,7 @@ function xy(cell,previous=null){
   return {x,y:y+.5};
 }
 function preparePaths(){
-  state.paths=state.model.reaches.map(reach=>{
+  state.paths=[...state.model.reaches,...state.model.potentialSpills].map(reach=>{
     const points=new Float32Array(reach.path.length*2);let prev=null;
     for(let k=0;k<reach.path.length;k++){const p=xy(reach.path[k],prev);points[k*2]=p.x;points[k*2+1]=p.y;prev=p;}
     return {reach,points};
@@ -332,6 +333,7 @@ function selectAt(lx,ly){
     let best=10**2,candidate=-1;
     for(const {reach} of state.paths){
       if(reach.kind==='stream'?!layers.streams:!layers.rivers)continue;
+      if(reach.dormantSpill&&!layers.dry)continue;
       for(const cell of reach.path){const [x,y,z]=projectCell(cell);if(z<.02)continue;const d=(x-lx)**2+(y-ly)**2;if(d<best){best=d;candidate=cell;}}
     }
     if(candidate>=0)i=candidate;
@@ -343,18 +345,22 @@ function selectCell(i,{focus=false}={}){
   const m=state.model;if(!m)return;state.selected=i;state.trace=traceActive(m,i);state.showTrace=!m.ocean[i];state.showCatchment=false;state.mask=null;
   $('clear-selection').hidden=false;$('selection-actions').hidden=!!m.ocean[i];$('trace-button').classList.toggle('active',state.showTrace);$('catchment-button').classList.remove('active');
   const ice=m.cryosphere,glacierId=ice.glacierId[i],volcanoId=m.geology.ids[i],volcano=volcanoId>=0?m.geology.sites[volcanoId]:null;
-  const [lon,lat]=lonLat(m.grid,i),wb=m.waterbody[i]>=0?m.waterbodies[m.waterbody[i]]:null;
-  let kind=wb?wb.kind:m.ocean[i]?'ocean':m.channel[i]===3?'major river':m.channel[i]===2?'river':m.channel[i]?'stream':'drainage cell';
+  const [lon,lat]=lonLat(m.grid,i),poolId=m.cellPool[i],wb=poolId>=0?m.waterbodies[poolId]:null;
+  const exposed=poolId>=0&&m.waterbody[i]<0,parts=wb?m.basins[wb.basinId].poolIds:[];
+  const wetParts=[...parts].filter(id=>m.waterbodies[id].status!=='playa');
+  const levelParts=wb?[wb.id,...wetParts.filter(id=>id!==wb.id)]:[];
+  let kind=m.waterbody[i]>=0?(wb.status==='playa'?'dry pool':wb.kind):m.ocean[i]?'ocean':m.channel[i]===3?'major river':m.channel[i]===2?'river':m.channel[i]?'stream':'drainage cell';
+  if(exposed&&!m.channel[i])kind='exposed basin margin';
   const head=state.heads.some(n=>n.cell===i);if(head)kind='headwater';if(glacierId>=0)kind='glacier / ice region';if(volcano)kind=volcano.typeName;
-  const name=volcano?volcano.name:glacierId>=0?'Glacier region '+String(glacierId+1).padStart(2,'0'):wb?(wb.status==='playa'?'Dry basin ':wb.kind==='lake'?'Lake ':'Pond ')+String(wb.id+1).padStart(3,'0'):m.ocean[i]?'The global ocean':head?'A river begins here':kind==='drainage cell'?'An inland catchment':kind==='major river'?'The main river':kind==='river'?'A connected river':'A tributary stream';
+  const name=volcano?volcano.name:glacierId>=0?'Glacier region '+String(glacierId+1).padStart(2,'0'):wb&&!exposed?(wb.status==='playa'?'Dry basin ':wb.kind==='lake'?'Lake ':'Pond ')+String(wb.id+1).padStart(3,'0'):m.ocean[i]?'The global ocean':kind==='exposed basin margin'?'Exposed margin of pool '+String(wb.id+1).padStart(3,'0'):head?'A river begins here':kind==='drainage cell'?'An inland catchment':kind==='major river'?'The main river':kind==='river'?'A connected river':'A tributary stream';
   let length=0;for(let k=1;k<state.trace.length;k++)length+=distanceKm(m.grid,state.trace[k-1],state.trace[k]);
-  const area=wb?m.catchment[wb.outletCell]:m.catchment[i],flow=wb?wb.outflowM3s:m.discharge[i];
+  const area=wb&&!exposed?m.catchment[wb.outletCell]:m.catchment[i],flow=wb&&!exposed?wb.outflowM3s:m.discharge[i];
   const terminal=m.activeTerminal[i],destinationBody=m.waterbody[terminal]>=0?m.waterbodies[m.waterbody[terminal]]:null;
   const destination=destinationBody?.closed?(destinationBody.status==='playa'?'Dry closed basin ':'Closed basin ')+String(destinationBody.id+1).padStart(3,'0'):'Global ocean';
   const field=(label,value)=>`<div><span>${label}</span><strong>${value}</strong></div>`;
   const data=m.ocean[i]?field('Connected ocean',number(m.stats.oceanAreaKm2,0)+' km²')+field('Sea level','0 m'):
     field('Contributing area',number(area,2)+' km²')+field('Mean annual flow',number(flow,3)+' m³/s')+
-    (wb?field('Current water area',number(wb.wetAreaKm2,3)+' km²')+field('Water level',number(wb.waterLevelM,1)+' m')+field('Lake behavior',wb.status==='playa'?'Playa / dry basin':wb.closed?'Closed · no outflow':'Overflowing')+field('Lake evaporation',number(wb.evaporationM3s,3)+' m³/s'):
+    (wb?field('Current water area',number(wb.wetAreaKm2,3)+' km²')+field('Water level',number(wb.waterLevelM,1)+' m')+field('Lake behavior',wb.status==='playa'?'Playa / dry basin':wb.closed?'Closed · no outflow':'Overflowing')+field('Lake evaporation',number(wb.evaporationM3s,3)+' m³/s')+field('Pools in this basin',parts.length)+field('Potential spill level',number(wb.spillM,1)+' m')+(parts.length>1?field('Water levels',levelParts.slice(0,5).map(id=>number(m.waterbodies[id].waterLevelM,1)+' m').join(' · ')+(levelParts.length>5?' · …':'')):''):
     field('Drainage elevation',number(m.level[i],1)+' m')+field('Route to destination',number(length,1)+' km'));
   const craterBasin=volcano?.craterWaterbody>=0?m.waterbodies[volcano.craterWaterbody]:null;
   const geologyData=volcano?field('Volcanic landform',volcano.typeName)+field('Ground elevation',number(m.height[i],1)+' m')+
@@ -366,7 +372,8 @@ function selectCell(i,{focus=false}={}){
     (glacierId>=0?field('Glacier melt supply',number(ice.iceMeltMm[i],0)+' mm water/yr')+field('Ice region area',number(ice.glaciers[glacierId].areaKm2,2)+' km²'):'');
   const climateData=field('Mean temperature',number(m.climate.temperature[i],1)+' °C')+field('Precipitation',number(m.rainfall[i],0)+' mm/yr')+
     field('Evaporative demand',number(m.climate.potentialEvaporation[i],0)+' mm/yr')+field('Climate estimate',ZONES[m.climate.zone[i]]);
-  $('inspector').className='';$('inspector').innerHTML=`<div class="selection-kind">${kind}</div><div class="selection-name">${name}</div><div class="selection-coord">${coordText(lon,lat)}</div><div class="selection-data">${geologyData}${data}${climateData}${frozenData}</div><p class="selection-destination">${m.ocean[i]?'Connected planetary ocean.':`Meltwater / flow destination: <b>${destination}</b><br>${wb?'Water area follows the annual lake balance.':flowRegime(flow,area)+' flow estimate · '+lakeCount(state.trace,m)+' inland basins on this route.'}`}</p>`;
+  $('inspector').className='';$('inspector').innerHTML=`<div class="selection-kind">${kind}</div><div class="selection-name">${name}</div><div class="selection-coord">${coordText(lon,lat)}</div><div class="selection-data">${geologyData}${data}${climateData}${frozenData}</div><p class="selection-destination">${m.ocean[i]?'Connected planetary ocean.':`Meltwater / flow destination: <b>${destination}</b><br>${wb?'Water area follows this pool’s annual balance.':flowRegime(flow,area)+' flow estimate · '+lakeCount(state.trace,m)+' inland basins on this route.'}`}</p>${parts.length>1?'<button id=next-pool class=secondary type=button>Inspect next pool</button>':''}`;
+  if(parts.length>1)$('next-pool').addEventListener('click',()=>{const cycle=wetParts.length>1?wetParts:[...parts],index=cycle.indexOf(wb.id),next=m.waterbodies[cycle[(index+1)%cycle.length]];selectCell(next.outletCell,{focus:true});});
 
   if(focus){
     if(state.projection==='globe'){state.lon=lon;state.lat=lat;state.zoom=1.7;}
@@ -454,7 +461,7 @@ function displayStats(){
   $('top-status').textContent='Complete planet · Climate and water balanced';
   $('verification-title').textContent='Every flow has a valid destination';$('verification-detail').textContent=`${fmt.format(s.cells)} cells · 0 cycles · Annual water budget balanced`;
   $('verification').querySelector('.verification-symbol').textContent='✓';$('verification').classList.remove('failed');
-  $('climate-summary').textContent=`${number(s.desertAreaKm2/s.landAreaKm2*100,0)}% desert land · ${s.closedLakes} closed waterbodies · ${s.playas} dry basins`;
+  $('climate-summary').textContent=`${number(s.desertAreaKm2/s.landAreaKm2*100,0)}% desert land · ${s.closedLakes} closed waterbodies · ${s.playas} dry pools · ${s.splitBasins} split lake basins`;
   $('snow-summary').textContent=`${fmt.format(m.cryosphere.stats.glaciers)} glacier / ice regions · ${number(m.cryosphere.stats.snowAreaKm2,0)} km² with seasonal or persistent snow`;
   $('geology-summary').textContent=`${m.geology.stats.sites} volcanic centres · ${m.geology.stats.cooledFlows} cooled lava deposits · ${m.geology.stats.craterBasins} summit / crater basins`;
   $('coverage').textContent=`${fmt.format(s.cells)} flow cells · ${Math.round(s.equatorSpacingM)} m equatorial spacing`;
@@ -467,6 +474,13 @@ function displayStats(){
       let head=riverCell;while(m.trunk[head]>=0&&m.channel[m.trunk[head]])head=m.trunk[head];
       selectCell(head,{focus:true});
     });$('systems-list').append(button);
+  }
+  const split=m.basins.filter(b=>[...b.poolIds].filter(id=>m.waterbodies[id].wetAreaKm2>.015).length>1).sort((a,b)=>b.areaKm2-a.areaKm2)[0];
+  if(split){
+    const button=document.createElement('button');button.type='button';
+    const wet=[...split.poolIds].map(id=>m.waterbodies[id]).filter(p=>p.wetAreaKm2>.015).sort((a,b)=>b.wetAreaKm2-a.wetAreaKm2);
+    button.innerHTML=`<span class="system-number">◇</span><span class="system-name">Split lake basin ${String(split.id+1).padStart(3,'0')}<small>${wet.length} wet pools · inspect separate water levels</small></span><span class="system-area">${number(wet.reduce((s,p)=>s+p.wetAreaKm2,0),2)} <small>km²</small></span>`;
+    button.addEventListener('click',()=>selectCell(wet[0].outletCell,{focus:true}));$('systems-list').append(button);
   }
   const examples=m.waterbodies.filter(w=>w.closed&&w.status!=='playa').sort((a,b)=>b.wetAreaKm2-a.wetAreaKm2).slice(0,2);
   const playa=m.waterbodies.find(w=>w.status==='playa');if(playa)examples.push(playa);

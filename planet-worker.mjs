@@ -1,4 +1,4 @@
-import {solvePlanet,transferBuffers} from './planet.mjs?v=0.7.2';
+import {solvePlanet,transferBuffers} from './planet.mjs?v=0.7.3';
 self.onmessage=({data})=>{
   try{
     const started=performance.now();

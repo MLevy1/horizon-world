@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.2.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.3.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -116,7 +116,7 @@ support, rather than replace, complete-planet validation.
 | --- | --- | --- |
 | 1a. Basin structure — completed in 0.7.1 | Inventory local depressions and the ridges/spill connections inside every potential lake basin. Preserve the current viewer while adding this foundation. | Deterministic inventory for the full planet; every connection uses adjacent mesh cells. |
 | 1b. Independent pools — completed in 0.7.2 | Solve water levels and exchanges between depressions, allowing a contracted lake to separate into pools at different levels. | Conservation and spill-direction checks, including independent closed pools and merging when water reaches a connecting ridge. |
-| 1c. Global lake integration | Connect those pools to active global drainage, channels and the atlas inspector. | Full-planet water budget; every active path ends at an ocean or a valid closed pool; no drainage cycles. Publish the lake checkpoint. |
+| 1c. Global lake integration — completed in 0.7.3 | Connect those pools to active global drainage, channels and the atlas inspector. | Full-planet water budget; every active path ends at an ocean or a valid closed pool; no drainage cycles. Publish the lake checkpoint. |
 | 2a. River profiles | Establish shared river water heights, bed depths and widths along the entire active network. | Water never flows uphill; junctions share heights; beds remain below water. |
 | 2b. Profile inspection | Add a river cross-section/profile view using those shared definitions. | Inspector displays the same geometry data that terrain generation will consume. Publish the river checkpoint. |
 | 3a. Terrain sampling | Add one spherical terrain-and-water sampler used across the whole world. | Consistent values across longitude wrap and at both poles; river/lake contacts agree. |
@@ -137,7 +137,7 @@ determinism, a second complete planet, flat floors/shelves, seam wrapping and
 polar connections. Existing hydrology, climate, snow and geology checks pass.
 The static build succeeds and the browser worker finishes the full planet.
 
-Current checkpoint: **0.7.2**, task 1b. `pools.mjs` solves separate annual
+Task 1b, saved in **0.7.2**. `pools.mjs` solves separate annual
 pool levels, directed spill exchanges and connected-pool merging throughout
 the complete basin inventory. `model.poolBalances` contains the results and a
 separate conserved global liquid-runoff budget through potential outer spills.
@@ -157,8 +157,30 @@ evaporation and wet areas and verify the global liquid budget. Existing tests
 also exercise another full planet and same-seed determinism. The static build
 succeeds and the browser worker completes the entire default planet.
 
-**Next task: 1c, active global lake integration and atlas inspection.** Install
-these pool levels and spill directions in the actual cell graph, regenerate
-channels over exposed basin margins, and update waterbody inspection. Check
-full-planet destinations and budgets before publishing the visible lake change.
-Do not combine this with river profiles or terrain geometry.
+Current checkpoint: **0.7.3**, task 1c. Solved pool levels and spill directions
+now drive `receiver`, `level`, `waterbody`, channel extraction, catchments and
+the atlas. `lake-routing.mjs` routes each pool catchment toward its actual wet
+footprint and outlet. Closed pools own real sinks; the compact active network
+ends at an ocean or a closed pool. Exposed basin margins can carry streams.
+The original potential graph is preserved separately. Dormant spills are
+optional adjacent-edge overlays, never active flow links.
+
+The default planet has 679 original basins and 1,052 resolved pools, with 123
+basins split into multiple pools. Catchment area delivered to the ocean plus
+area terminating at closed pools equals all land area. Active water fluxes agree
+with the independent pool budgets. Drainage/water levels use double precision
+so small stage differences at high elevations do not create rounding slopes.
+
+The atlas offers a split-basin shortcut and an Inspect next pool control, with
+pool counts, separate levels, spill heights and current destinations. Pond/lake
+counts use actual wet area; dry/playa pools are counted separately.
+
+Verification: all **36 tests pass**, including independently checked connected
+wet footprints, routing over dry margins, closed-pool sinks, channel coverage,
+potential-spill separation, complete-planet conservation and another global
+seed. The static build succeeds. Map inspection verifies distinct pool levels
+and the pool navigation control.
+
+**Next task: 2a, river profiles only.** Establish water heights, bed depths and
+widths along the active global network. Do not combine with the profile viewer,
+physical shorelines, terrain sampling or 3D landscape.
