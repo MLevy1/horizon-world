@@ -4,13 +4,14 @@ import {makeClimate,flowRegime} from './climate.mjs?v=0.7.0';
 import {buildBasinInventory} from './basins.mjs?v=0.7.1';
 import {solvePoolBalances} from './pools.mjs?v=0.7.2';
 import {installPoolRouting} from './lake-routing.mjs?v=0.7.3';
+import {buildRiverProfiles} from './river-profiles.mjs?v=0.7.4';
 
 /** Horizon 0.7: one closed, deterministic planet. Distances km, elevations m.
  * No rendering, terrain tiles, scene, camera or vegetation dependencies.
  * Depression filling follows Priority-Flood (Barnes, Lehman & Mulla, 2014).
  * The grid is a staggered triangular mesh, closed by two unique polar nodes.
  */
-export const VERSION = '0.7.3';
+export const VERSION = '0.7.4';
 export const DEFAULT_WORLD = Object.freeze({width:1536, height:768, radiusKm:64});
 const TAU = Math.PI * 2;
 const YEAR_SECONDS = 365.25 * 86400;
@@ -307,6 +308,8 @@ export function solvePlanet({seed='HORIZON-01',world=DEFAULT_WORLD,progress=()=>
   linkVolcanoWater(model);
   const network=buildNetwork(model);
   Object.assign(model,network);
+  progress('Defining shared river surfaces, depths and widths',.90);
+  model.riverProfiles=buildRiverProfiles(model,order,neighborDistance);
   const mouths=model.nodes.filter(n=>n.kind==='mouth');
   let deliveredArea=0,deliveredFlow=0,seamCrossings=0,poleConnections=0;
   const closedArea=waterbodies.filter(w=>w.closed).reduce((sum,w)=>sum+catchment[w.outletCell],0);
@@ -380,6 +383,7 @@ export function validatePlanet(m) {
   const errors=[],near=new Int32Array(g.width),degree=new Uint16Array(N),queue=new Int32Array(N);
   if(!m.basinStructure.validation.ok)errors.push(...m.basinStructure.validation.errors);
   if(!m.poolBalances.validation.ok)errors.push(...m.poolBalances.validation.errors);
+  if(!m.riverProfiles.validation.ok)errors.push(...m.riverProfiles.validation.errors);
   let uphill=0,invalid=0,unresolved=0,badNeighbors=0,invalidTerminal=0,exitCount=new Uint32Array(waterbodies.length);
   for(let i=0;i<N;i++){
     const p=r[i];

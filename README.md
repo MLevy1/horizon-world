@@ -1,6 +1,6 @@
-# Horizon 0.7.3 — Global hydrology atlas
+# Horizon 0.7.4 — Global hydrology atlas
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.3).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.4).
 
 A fresh hydrology-only foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
@@ -68,6 +68,8 @@ Serve the repository root or `dist/` over HTTP. Module workers do not run from a
   authoritative for every basin in the displayed active network.
 - `lake-routing.mjs`: connected wet footprints, exposed-margin drainage, real
   closed-pool sinks and optional dormant spill edges.
+- `river-profiles.mjs`: shared water heights, bed elevations, channel dimensions
+  and longitudinal edge sampling across the complete active network.
 - `geology.mjs`: spherical volcanic landforms, cooled lava deposits and water links.
 - `climate.mjs`: global climate fields, annual runoff partition and lake balances.
 - `cryosphere.mjs`: monthly snow balance, retained ice, glacier routing and meltwater.
@@ -182,3 +184,31 @@ will establish channel cross-sections, water profiles and physical shorelines.
 Background:
 [USGS volcanic forms](https://pubs.usgs.gov/gip/volc/types.html) and
 [NPS lava deposits and drainage](https://home.nps.gov/zion/learn/nature/volcanoes-of-zion-and-southwest-utah.htm).
+
+## River profile checkpoint — 0.7.4
+
+`model.riverProfiles` defines one canonical surface, bed, width and design depth
+per channel vertex, plus adjacent directed edges measured in metres. Every
+incoming and outgoing segment reads the same vertex values at a confluence.
+Lake surfaces and sea level anchor the profiles. Receiving-bank spill crests
+meet their source lake level; downstream constraints propagate upstream without
+introducing uphill water or artificial epsilon gradients.
+
+For mean annual discharge Q in m³/s, the procedural width is
+`min(90, 2 + 7*sqrt(Q))` metres and design depth is
+`min(5, 0.25 + 0.35*sqrt(Q))` metres. Design freeboard is
+`0.2 + 0.25*depth` metres. These are explicit world-generation parameters, not
+calibrated hydraulic predictions. Planned channel beds sit at least the design
+depth below water. Lake/ocean contacts preserve deeper existing ground where
+present, so actual water depth there can exceed the design channel depth.
+
+A dry mapped channel retains design dimensions but has a false `wet` flag;
+each edge also has its own `wetEdge` flag. An edge entering the ocean does not
+become wet merely because the receiving ocean vertex is wet. Dormant potential
+spills and closed-pool outflows are excluded from these active profiles.
+`sampleRiverEdge` interpolates the shared endpoint data along a segment.
+
+These profiles are derived data: they do not alter drainage, climate budgets or
+the elevation scaffold. The existing atlas still uses schematic line widths.
+The next checkpoint adds profile inspection, followed by the shared terrain
+sampler and physical shoreline/mesh generation in separate tasks.

@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.3.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.4.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -117,7 +117,7 @@ support, rather than replace, complete-planet validation.
 | 1a. Basin structure — completed in 0.7.1 | Inventory local depressions and the ridges/spill connections inside every potential lake basin. Preserve the current viewer while adding this foundation. | Deterministic inventory for the full planet; every connection uses adjacent mesh cells. |
 | 1b. Independent pools — completed in 0.7.2 | Solve water levels and exchanges between depressions, allowing a contracted lake to separate into pools at different levels. | Conservation and spill-direction checks, including independent closed pools and merging when water reaches a connecting ridge. |
 | 1c. Global lake integration — completed in 0.7.3 | Connect those pools to active global drainage, channels and the atlas inspector. | Full-planet water budget; every active path ends at an ocean or a valid closed pool; no drainage cycles. Publish the lake checkpoint. |
-| 2a. River profiles | Establish shared river water heights, bed depths and widths along the entire active network. | Water never flows uphill; junctions share heights; beds remain below water. |
+| 2a. River profiles — completed in 0.7.4 | Establish shared river water heights, bed depths and widths along the entire active network. | Water never flows uphill; junctions share heights; beds remain below water. |
 | 2b. Profile inspection | Add a river cross-section/profile view using those shared definitions. | Inspector displays the same geometry data that terrain generation will consume. Publish the river checkpoint. |
 | 3a. Terrain sampling | Add one spherical terrain-and-water sampler used across the whole world. | Consistent values across longitude wrap and at both poles; river/lake contacts agree. |
 | 3b. Physical shorelines | Derive lake/ocean shores and river contacts from that shared surface. | Shore heights agree with water levels; no separate overlapping water patches at mouths. Publish the shoreline checkpoint. |
@@ -157,7 +157,7 @@ evaporation and wet areas and verify the global liquid budget. Existing tests
 also exercise another full planet and same-seed determinism. The static build
 succeeds and the browser worker completes the entire default planet.
 
-Current checkpoint: **0.7.3**, task 1c. Solved pool levels and spill directions
+Task 1c, saved in **0.7.3**. Solved pool levels and spill directions
 now drive `receiver`, `level`, `waterbody`, channel extraction, catchments and
 the atlas. `lake-routing.mjs` routes each pool catchment toward its actual wet
 footprint and outlet. Closed pools own real sinks; the compact active network
@@ -181,6 +181,25 @@ potential-spill separation, complete-planet conservation and another global
 seed. The static build succeeds. Map inspection verifies distinct pool levels
 and the pool navigation control.
 
-**Next task: 2a, river profiles only.** Establish water heights, bed depths and
-widths along the active global network. Do not combine with the profile viewer,
-physical shorelines, terrain sampling or 3D landscape.
+Current checkpoint: **0.7.4**, task 2a. `river-profiles.mjs` defines shared
+water heights, bed elevations, widths, design depths and directed longitudinal
+segments for the complete active network. The default has 84,959 channel cells
+and 85,338 adjacent profile edges, including active lake outlets. Lake/ocean
+levels and receiving-bank spill crests anchor the same shared vertex data used
+at junctions. Dry channels retain explicit dry flags.
+
+Dimensions are documented procedural parameters based on mean annual flow.
+They are not a calibrated hydraulic model. Channel beds are design cuts; the
+underlying elevation scaffold and hydrology budgets are unchanged. Local bank
+shaping and river/lake shoreline intersections belong to later geometry tasks.
+The atlas still uses schematic line widths; no profile viewer is added here.
+
+Verification: all **44 tests pass**, covering global channel coverage,
+non-rising water profiles, submerged beds, exact confluence endpoints, lake
+backwater, receiving-bank spill crests, dimension bounds, dry edges, lake-port flow accounting and wet spill crests, another
+complete seed and deterministic generation. Existing global budgets remain
+conserved.
+
+**Next task: 2b, profile inspection only.** Add inspectable river sections and
+longitudinal profiles using this saved data. Do not combine with the spherical
+terrain sampler, physical shorelines or 3D landscape.

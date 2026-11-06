@@ -5,6 +5,7 @@ import {volcanicProfile,applyVolcanicSites} from '../geology.mjs';
 import {annualSnowBudget,seasonalCycle} from '../cryosphere.mjs';
 import {annualPartition,lakeBalance,makeClimate} from '../climate.mjs';
 import {poolWetFraction} from '../pools.mjs';
+import {sampleRiverEdge,FLOW_EPSILON_M3S} from '../river-profiles.mjs';
 import {solvePlanet,neighbors,lonLat,cellAt,traceDownstream,catchmentMask,DEFAULT_WORLD,traceActive,tracePotential,createGrid} from '../planet.mjs';
 
 const planet=solvePlanet();
@@ -14,6 +15,7 @@ const digest=m=>{
   for(const key of ['cellDepression','downhill'])hash.update(new Uint8Array(m.basinStructure[key].buffer));
   hash.update(JSON.stringify(m.basinStructure.connections));
   hash.update(JSON.stringify(m.poolBalances));
+  for(const key of ['waterM','bedM','widthM','designDepthM','freeboardM','kind','corridor','wet','from','to','lengthM','wetEdge'])hash.update(new Uint8Array(m.riverProfiles[key].buffer));
   return hash.digest('hex');
 };
 
@@ -146,6 +148,42 @@ test('dormant spills remain adjacent optional links and never appear as active c
     assert.ok(near.subarray(0,n).includes(edge.path[1]));assert.ok(m.waterbodies[edge.waterbody].closed);
   }
   for(const node of m.nodes)if(node.waterbody>=0&&m.waterbodies[node.waterbody].closed)assert.equal(node.outgoing,-1);
+});
+
+test('shared river profiles cover the complete global channel network with downhill surfaces and submerged beds',()=>{
+  const m=planet,p=m.riverProfiles;
+  assert.equal(p.validation.ok,true,JSON.stringify(p.validation));assert.equal(p.validation.uphillEdges,0);
+  assert.equal(p.from.length,m.channel.reduce((s,v)=>s+Number(v>0),0)+m.waterbodies.filter(w=>!w.closed).length);
+  assert.ok(p.stats.wetEdges>0&&p.stats.dryCells>0);
+  for(let e=0;e<p.from.length;e++){
+    const a=p.from[e],b=p.to[e];assert.equal(m.receiver[a],b);assert.equal(p.edgeAtCell[a],e);
+    assert.ok(p.waterM[a]>=p.waterM[b]);assert.equal(p.wetEdge[e],Number(m.discharge[a]>FLOW_EPSILON_M3S));
+    for(const t of [.25,.75]){
+      const s=sampleRiverEdge(p,e,t);assert.ok(s.bedM<=s.waterM-s.designDepthM+1e-8);
+      assert.ok(s.widthM>=2&&s.widthM<=90&&s.designDepthM>=.25&&s.designDepthM<=5);
+    }
+  }
+  for(const w of m.waterbodies){
+    assert.equal(p.waterM[w.outletCell],w.waterLevelM);
+    if(w.closed)assert.equal(p.edgeAtCell[w.outletCell],-1);
+    else{
+      const crest=m.height[w.outletCell]>=m.height[w.outletReceiver]?w.outletCell:w.outletReceiver;
+      assert.equal(p.waterM[crest],w.waterLevelM);
+    }
+  }
+});
+
+test('all global confluences use identical endpoint profiles across incoming and outgoing reaches',()=>{
+  const m=planet,p=m.riverProfiles;let checked=0;
+  for(const n of m.nodes)if(n.kind==='confluence'){
+    const out=sampleRiverEdge(p,p.edgeAtCell[n.cell],0);
+    for(const id of n.incoming){
+      const path=m.reaches[id].path,end=sampleRiverEdge(p,p.edgeAtCell[path.at(-2)],1);
+      for(const field of ['waterM','bedM','widthM','designDepthM'])assert.equal(end[field],out[field]);
+      checked++;
+    }
+  }
+  assert.ok(checked>100);
 });
 
 test('mesh edges are reciprocal across longitude and both unique poles; coordinate lookup round-trips',()=>{
