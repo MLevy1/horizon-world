@@ -220,13 +220,13 @@ test('the global 3D channel index finds every profile midpoint and exact canonic
   const p=planet.riverProfiles;assert.equal(surface.stats.globalEdges,p.from.length);
   for(let e=0;e<p.from.length;e++){
     const a=surface.mesh.directionAt(p.from[e]),b=surface.mesh.directionAt(p.to[e]);
-    const river=surface.riverAtDirection(a.map((v,k)=>v+b[k]));
+    const river=surface.riverAtDirection(surface.course.sample(e,.5).direction);
     assert.ok(river&&river.distanceM<1e-5,`missing edge ${e}`);assert.equal(river.edge,e);
     assert.ok(Math.abs(river.waterM-(p.waterM[p.from[e]]+p.waterM[p.to[e]])/2)<1e-5);
     assert.ok(Math.abs(river.bedM-(p.bedM[p.from[e]]+p.bedM[p.to[e]])/2)<1e-5);
   }
   for(let i=0;i<planet.grid.count;i++)if(p.corridor[i]){
-    const river=surface.riverAtDirection(surface.mesh.directionAt(i));assert.ok(river);
+    const river=surface.riverAtDirection(surface.course.nodeDirection(i));assert.ok(river);
     assert.ok(Math.abs(river.waterM-p.waterM[i])<1e-5);assert.ok(Math.abs(river.bedM-p.bedM[i])<1e-5);
   }
 });
@@ -263,12 +263,12 @@ test('contact fitting covers every global profile with anchored endpoints, downh
 test('composed surfaces preserve every wet global channel anchor and remain finite over all profile midpoints',()=>{
   const m=planet,p=m.riverProfiles;
   for(let i=0;i<m.grid.count;i++)if(p.corridor[i]){
-    const q=surface.sample(...lonLat(m.grid,i));assert.ok(Number.isFinite(q.fitted.groundM));
+    const d=surface.course.nodeDirection(i),q=surface.sample(Math.atan2(d[2],d[0])*180/Math.PI,Math.asin(d[1])*180/Math.PI);assert.ok(Number.isFinite(q.fitted.groundM));
     assert.ok(Math.abs(q.fitted.groundM-p.bedM[i])<1e-4,`bed anchor ${i}`);
     if(p.wet[i])assert.ok(q.fitted.waterM!==null&&Math.abs(q.fitted.waterM-p.waterM[i])<1e-4,`water anchor ${i}`);
   }
   for(let e=0;e<p.from.length;e++){
-    const a=surface.mesh.directionAt(p.from[e]),b=surface.mesh.directionAt(p.to[e]),point=surface.mesh.sampleDirection(a.map((v,k)=>v+b[k]));
+    const a=surface.mesh.directionAt(p.from[e]),b=surface.mesh.directionAt(p.to[e]),point=surface.mesh.sampleDirection(surface.course.sample(e,.5).direction);
     const q=surface.sample(point.lon,point.lat).fitted;
     assert.ok(Number.isFinite(q.groundM));if(q.waterM!==null){assert.ok(q.waterM>q.groundM);assert.ok(q.depthM>0);}
     if(p.wetEdge[e]){assert.ok(q.waterM!==null);assert.ok(q.waterM<=p.waterM[p.from[e]]+1e-5&&q.waterM>=p.waterM[p.to[e]]-1e-5);}
@@ -711,4 +711,15 @@ test('camera-selected mixed detail chunks use real fitted global water and reuse
   assert.ok(a.stats.waterTriangles>0);assert.equal(a.stats.ambiguousWaterTriangles,0);assert.ok(a.stats.minLevel<a.stats.maxLevel);assert.ok(a.stats.triangles<300000);
   const b=stream.view(-78.3397,-41.71876,{level:12,aspect:1.9,tilt:45});assert.ok(b.stream.reused>0);assert.ok(b.stream.cacheBytes<=b.stream.cacheLimitBytes);assert.ok(b.cache.entries<=b.cache.limit);
   for(const mesh of [a,b]){for(const v of mesh.ground.positions)assert.ok(Number.isFinite(v));for(const v of mesh.water.elevationsM)assert.ok(Number.isFinite(v));}
+});
+
+
+test('every global curved course is indexed at quarter stations and preserves its canonical downstream graph',()=>{
+  const p=planet.riverProfiles,c=surface.course,before=digest(planet);assert.ok(c.stats.movedNodes>1000&&c.stats.curvedEdges>1000&&c.stats.protectedEdges>0);
+  for(let e=0;e<p.from.length;e++){
+    assert.deepEqual(c.sample(e,0).direction,c.nodeDirection(p.from[e]));assert.deepEqual(c.sample(e,1).direction,c.nodeDirection(p.to[e]));
+    for(const t of [.25,.75]){const frame=c.sample(e,t),r=surface.riverAtDirection(frame.direction);assert.ok(r&&r.distanceM<1e-5,`missing curve station ${e}/${t}`);assert.equal(r.edge,e);assert.ok(frame.leftHalfM>0&&frame.rightHalfM>0);}
+    const next=p.edgeAtCell[p.to[e]];if(next>=0){const a=c.sample(e,1),b=c.sample(next,0);assert.deepEqual(a.direction,b.direction);for(const key of ['widthM','leftHalfM','rightHalfM','leftBankM','rightBankM'])assert.ok(Math.abs(a[key]-b[key])<1e-8,`bank join ${e}/${key}`);}
+  }
+  assert.equal(digest(planet),before);
 });

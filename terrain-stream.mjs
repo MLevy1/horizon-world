@@ -1,5 +1,5 @@
-import {createTerrainChunkBuilder,tileKey} from './terrain-chunks.mjs?v=0.7.13';
-import {selectTerrainTiles} from './terrain-lod.mjs?v=0.7.13';
+import {createTerrainChunkBuilder,tileKey} from './terrain-chunks.mjs?v=0.7.14';
+import {selectTerrainTiles} from './terrain-lod.mjs?v=0.7.14';
 /** Bounded worker-owned geometry cache. Combined output has separate buffers,
  * so transferring a view never detaches the cached chunks. */
 export function createTerrainStream(surface,{cacheBytes=16*1048576,resolution=32}={}){

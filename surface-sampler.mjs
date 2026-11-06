@@ -1,12 +1,12 @@
-import {createWaterScaffold} from './water-scaffold.mjs?v=0.7.13';
-import {neighbors,cellAt} from './planet.mjs?v=0.7.13';
+import {createRiverCourse} from './river-course.mjs?v=0.7.14';
+import {createWaterScaffold} from './water-scaffold.mjs?v=0.7.14';
+import {neighbors,cellAt} from './planet.mjs?v=0.7.14';
 import {sampleRiverEdge} from './river-profiles.mjs?v=0.7.4';
-import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.7.13';
+import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.7.14';
 
 const RAD=Math.PI/180,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
-const subtract=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
 const normalize=a=>{const d=Math.hypot(...a);if(!(d>0&&Number.isFinite(d)))throw Error('Invalid surface direction');return a.map(v=>v/d);};
 
 /** One triangulated spherical scaffold, with compact row/longitude caches.
@@ -62,12 +62,14 @@ export function createSphereSampler(grid,height){
  */
 export function createSurfaceSampler(m){
   const {grid:g,riverProfiles:p}=m,mesh=createSphereSampler(g,m.height),E=p.from.length,R=g.radiusKm*1000;
-  const contacts=createContactFitter(m),waterScaffold=createWaterScaffold(m,mesh);
-  const B=clamp(Math.ceil(g.width/6),16,256),step=2/B,buckets=new Map(),xyz=new Float64Array(E*6);
+  const contacts=createContactFitter(m),waterScaffold=createWaterScaffold(m,mesh),near=new Int32Array(g.width),protection=new Int8Array(g.count).fill(-1);
+  const protectedNode=i=>{if(protection[i]>=0)return !!protection[i];const n=neighbors(g,i,near);protection[i]=Number(waterScaffold.owner[i]!==-2||[...near.subarray(0,n)].some(j=>waterScaffold.owner[j]!==-2));return !!protection[i];};
+  const course=createRiverCourse(m,mesh,{protectedNode});
+  const B=clamp(Math.ceil(g.width/6),16,256),step=2/B,buckets=new Map(),bounds=new Float64Array(E*4);
   const bin=v=>clamp(Math.floor((v+1)/step),0,B-1),key=(x,y,z)=>x+B*(y+B*z);
   for(let e=0;e<E;e++){
-    const a=mesh.directionAt(p.from[e]),b=mesh.directionAt(p.to[e]);xyz.set(a,e*6);xyz.set(b,e*6+3);
-    const width=Math.max(p.widthM[p.from[e]],p.widthM[p.to[e]]),support=width/2+Math.max(1,width*.35);
+    const a=mesh.directionAt(p.from[e]),b=mesh.directionAt(p.to[e]);const center=normalize(a.map((v,k)=>v+b[k]));bounds.set(center,e*4);bounds[e*4+3]=p.lengthM[e]/2+course.pads[e]+Math.max(p.widthM[p.from[e]],p.widthM[p.to[e]])*1.1+1e-6;
+    const width=Math.max(p.widthM[p.from[e]],p.widthM[p.to[e]]),support=width*1.5+Math.max(1,width*.35)+course.pads[e];
     const sagitta=1-Math.sqrt(Math.max(0,(1+dot(a,b))/2)),pad=support/R+sagitta+1e-12;
     const lo=a.map((v,k)=>bin(Math.min(v,b[k])-pad)),hi=a.map((v,k)=>bin(Math.max(v,b[k])+pad));
     for(let x=lo[0];x<=hi[0];x++)for(let y=lo[1];y<=hi[1];y++)for(let z=lo[2];z<=hi[2];z++){
@@ -77,18 +79,13 @@ export function createSurfaceSampler(m){
   function riverCandidates(direction,candidates=buckets.get(key(...direction.map(bin)))||[],includeOutside=false){
     const found=[];
     for(const edge of candidates){
-      const a=[xyz[edge*6],xyz[edge*6+1],xyz[edge*6+2]],b=[xyz[edge*6+3],xyz[edge*6+4],xyz[edge*6+5]],normal=cross(a,b);
-      const sa=dot(cross(a,subtract(direction,a)),normal),sb=dot(cross(subtract(direction,b),b),normal);
-      let t=sa>=0&&sb>=0&&sa+sb>0?clamp(sa/(sa+sb),0,1):dot(direction,a)>=dot(direction,b)?0:1;
-      if(t<1e-9)t=0;else if(t>1-1e-9)t=1;
-      const closest=normalize(a.map((v,k)=>v+(b[k]-v)*t));
-      const distanceM=R*Math.atan2(Math.hypot(...cross(direction,closest)),clamp(dot(direction,closest),-1,1));
-      const s=sampleRiverEdge(p,edge,t),support=s.widthM/2+Math.max(1,s.widthM*.35);
-      if(!includeOutside&&distanceM>support+1e-6)continue;
-      const insideChannel=distanceM<=s.widthM/2;
+      const frame=course.project(edge,direction,includeOutside);if(!frame)continue;
+      const {t,distanceM}=frame,s=sampleRiverEdge(p,edge,t),left=frame.signedDistanceM>=0,half=left?frame.leftHalfM:frame.rightHalfM,bank=left?frame.leftBankM:frame.rightBankM;
+      if(!includeOutside&&distanceM>half+bank+1e-6)continue;
+      const insideChannel=distanceM<=half;
       const freeboardM=p.freeboardM[p.from[edge]]+(p.freeboardM[p.to[edge]]-p.freeboardM[p.from[edge]])*t;
-      found.push({edge,t,distanceM,waterM:s.waterM,bedM:s.bedM,widthM:s.widthM,designDepthM:s.designDepthM,freeboardM,
-        wet:s.wet,insideChannel,designBedM:insideChannel?s.waterM-(s.waterM-s.bedM)*(1-(distanceM/(s.widthM/2))**2):null});
+      found.push({...frame,edge,t,distanceM,waterM:s.waterM,bedM:s.bedM,widthM:frame.widthM,designDepthM:s.designDepthM,freeboardM,
+        wet:s.wet,insideChannel,designBedM:insideChannel?s.waterM-(s.waterM-s.bedM)*(1-(distanceM/half)**(left?frame.leftExponent:frame.rightExponent)):null});
     }
     return found;
   }
@@ -108,10 +105,14 @@ export function createSurfaceSampler(m){
     const edges=[...ids];
     return {edges,clearance(direction){
       let margin=Infinity;
-      for(const r of riverCandidates(direction,edges,true))margin=Math.min(margin,(r.distanceM-r.widthM/2)/(1+2*Math.abs(p.widthM[p.from[r.edge]]-p.widthM[p.to[r.edge]])/Math.max(1e-9,p.lengthM[r.edge])));
+      for(const edge of edges){
+        const center=bounds.subarray(edge*4,edge*4+3),bound=R*Math.atan2(Math.hypot(...cross(direction,center)),clamp(dot(direction,center),-1,1))-bounds[edge*4+3];
+        if(bound>0){margin=Math.min(margin,bound);continue;}
+        const r=riverCandidates(direction,[edge],true)[0];if(r)margin=Math.min(margin,(r.distanceM-(r.signedDistanceM>=0?r.leftHalfM:r.rightHalfM))/(course.protectedEdges[edge]?1+2*Math.abs(p.widthM[p.from[edge]]-p.widthM[p.to[edge]])/Math.max(1e-9,p.lengthM[edge]):4+8*Math.max(p.widthM[p.from[edge]],p.widthM[p.to[edge]])/Math.max(1e-9,p.lengthM[edge])));
+      }
       return margin;
     }};
   }
-  return {sample,mesh,grid:g,contacts,shoreArc,waterScaffold,channelsAtDirection(direction){return riverCandidates(normalize(direction));},riverAtDirection(direction){return nearest(riverCandidates(normalize(direction)));},
+  return {sample,mesh,grid:g,contacts,course,shoreArc,waterScaffold,channelsAtDirection(direction){return riverCandidates(normalize(direction));},riverAtDirection(direction){return nearest(riverCandidates(normalize(direction)));},
     stats:{globalEdges:E,buckets:buckets.size,indexResolution:B,scaffoldCells:g.count,...contacts.stats,...waterScaffold.stats}};
 }

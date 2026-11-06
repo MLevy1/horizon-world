@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.13.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.14.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -407,3 +407,30 @@ profiles, junction anchors and standing-water contacts. Then refine irregular
 shorelines, valley/ridge structure and erosion/sediment forms. Keep these shared
 between geometry, water clipping and inspection; avoid a detached showcase or
 random noise intended only to disguise the underlying grid.
+
+
+## D1 — shared river courses and banks, 0.7.14
+
+Completed: a single complete course graph consumed by the atlas, fitted queries,
+constraint stations/sections and chunk meshes. Degree-2 inland nodes can move
+by at most 12% of local spacing/incident edge length; bounded spherical Hermite
+curves derive tangents from the actual incoming/outgoing network. Sources,
+confluences, ports, polar links and standing-water neighborhoods stay pinned.
+Existing routing/budget and longitudinal profiles are preserved. This first pass
+adds modest curves, not a full meander or erosion process.
+
+Inside/outside waterline widths, slopes, bank spreads and freeboard now vary
+with bend direction and bounded coherent seeded variation. Side properties join
+at shared nodes and fade at protected contacts/junctions. A width-based physical
+normal filter reduces narrow-bank sampling glare consistently across LODs.
+The **Find a river bend** control focuses an existing globally solved wet bend.
+
+Verification: **120 tests pass**, including both global quarter stations on every
+profile, canonical shared endpoints, bank joins, projection, pinned contacts and
+seed determinism. Existing hydrology, shore/portal, chunk/LOD and mesh topology
+checks pass. All saved fitted points use actual curved locations. Original face
+references and longitudinal lengths remain routing-design provenance.
+
+Next small checkpoint: broaden the channel-shaped ground into coherent valley
+floors and shoulders, preserving water profiles, shared nodes and shore contacts.
+Independent ridge/erosion/sediment structure and irregular standing shores follow.

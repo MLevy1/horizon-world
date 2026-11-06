@@ -1,5 +1,4 @@
-import {sphereFaces} from './shorelines.mjs?v=0.7.13';
-import {sampleRiverEdge} from './river-profiles.mjs?v=0.7.4';
+import {sphereFaces} from './shorelines.mjs?v=0.7.14';
 const normalize=a=>{const n=Math.hypot(...a);if(!(n>0&&Number.isFinite(n)))throw Error('Invalid channel frame');return a.map(v=>v/n);};
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const pair=(a,b,N)=>Math.min(a,b)*N+Math.max(a,b);
@@ -44,15 +43,15 @@ export function buildChannelConstraints(m,surface,shores,{progress=()=>{}}={}){
     const q=surface.sample(Math.atan2(direction[2],direction[0])*DEG,Math.asin(Math.max(-1,Math.min(1,direction[1])))*DEG),id=groundM.length;
     directions.push(...direction);groundM.push(q.fitted.groundM);waterM.push(q.fitted.waterM===null?NaN:q.fitted.waterM);pointFaces.push(sphereFaceIndex(g,q.triangle.cells));return id;
   }
-  const anchorPoint=new Uint32Array(K);for(let k=0;k<K;k++)anchorPoint[k]=point(surface.mesh.directionAt(anchorCells[k]));
+  const anchorPoint=new Uint32Array(K);for(let k=0;k<K;k++)anchorPoint[k]=point(surface.course.nodeDirection(anchorCells[k]));
   let junctions=0;for(let k=0;k<K;k++)if(incomingOffsets[k+1]-incomingOffsets[k]>1)junctions++;
   for(let e=0;e<E;e++){
     stationOffsets[e]=ts.length;
-    const a=surface.mesh.directionAt(p.from[e]),b=surface.mesh.directionAt(p.to[e]),values=[0,.5,1,surface.contacts.start[e],surface.contacts.end[e]].sort((a,b)=>a-b);
+    const values=[0,.5,1,surface.contacts.start[e],surface.contacts.end[e]].sort((a,b)=>a-b);
     for(let k=0;k<values.length;k++){
       const t=values[k];if(k&&Math.abs(t-values[k-1])<1e-12)continue;
-      const id=t===0?anchorPoint[fromAnchor[e]]:t===1?anchorPoint[toAnchor[e]]:point(mix(a,b,t));
-      ts.push(t);centres.push(id);widths.push(sampleRiverEdge(p,e,t).widthM);stationEdges.push(e);
+      const id=t===0?anchorPoint[fromAnchor[e]]:t===1?anchorPoint[toAnchor[e]]:point(surface.course.sample(e,t).direction);
+      ts.push(t);centres.push(id);widths.push(surface.course.sample(e,t).widthM);stationEdges.push(e);
     }
     if(e%2048===0)progress(e/Math.max(1,E));
   }
@@ -91,7 +90,7 @@ export function nearestConstraintStation(c,edge,t){
  */
 export function sampleConstraintSection(c,surface,station){
   if(!Number.isInteger(station)||station<0||station>=c.stations.t.length)throw Error('Invalid mesh constraint section');
-  const edge=c.stations.edge[station],center=c.stations.center[station],d=[...c.points.directions.subarray(center*3,center*3+3)],normal=c.edges.normals.subarray(edge*3,edge*3+3),half=c.stations.widthM[station]/2,bank=Math.max(1,c.stations.widthM[station]*.35),support=half+bank;
+  const edge=c.stations.edge[station],center=c.stations.center[station],d=[...c.points.directions.subarray(center*3,center*3+3)],normal=surface.course.sample(edge,c.stations.t[station]).normal,half=c.stations.widthM[station]/2,bank=Math.max(1,c.stations.widthM[station]*.35),support=half+bank;
   const offsets=[-support,-half-bank/2,-half,-half/2,0,half/2,half,half+bank/2,support];
   const samples=offsets.map(offsetM=>{
     const angle=offsetM/c.radiusM,direction=offsetM===0?d:d.map((v,k)=>v*Math.cos(angle)+normal[k]*Math.sin(angle));

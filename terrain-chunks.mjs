@@ -1,4 +1,4 @@
-import {clipChunkWater} from './chunk-water.mjs?v=0.7.13';
+import {clipChunkWater} from './chunk-water.mjs?v=0.7.14';
 /** Globally addressed cube-sphere ground chunks. Hydrology is queried from the
  * existing global surface; chunks neither solve nor invent independent water.
  * Integer direction keys are identical across face seams and dyadic LODs.
@@ -60,7 +60,8 @@ export function createTerrainChunkBuilder(surface,{sampleCacheLimit=65536}={}){
     if(value){hits++;cache.delete(vertex.key);cache.set(vertex.key,value);return value;}
     const d=vertex.direction,q=surface.sample(Math.atan2(d[2],d[0])*DEG,Math.asin(Math.max(-1,Math.min(1,d[1])))*DEG),h=q.fitted.groundM;
     if(!Number.isFinite(h)||radiusM+h<=0)throw Error('Invalid global fitted height');
-    const horizontal=Math.hypot(d[0],d[2]),east=horizontal?[-d[2]/horizontal,0,d[0]/horizontal]:[0,0,1],north=horizontal?[-d[1]*d[0]/horizontal,horizontal,-d[1]*d[2]/horizontal]:[-d[1],0,0],step=.25,angle=step/radiusM;
+    // Filter narrow bank slopes over a physical span, independent of tile LOD.
+    const horizontal=Math.hypot(d[0],d[2]),east=horizontal?[-d[2]/horizontal,0,d[0]/horizontal]:[0,0,1],north=horizontal?[-d[1]*d[0]/horizontal,horizontal,-d[1]*d[2]/horizontal]:[-d[1],0,0],step=Math.max(.25,Math.min(3,(q.river?.widthM||1.25)*.2)),angle=step/radiusM;
     const query=v=>surface.sample(Math.atan2(v[2],v[0])*DEG,Math.asin(Math.max(-1,Math.min(1,v[1])))*DEG).fitted;
     const around=[east,north].map(axis=>[-1,1].map(sign=>query(d.map((v,k)=>v*Math.cos(angle)+axis[k]*Math.sin(angle)*sign))));
     const normalFrom=(gradient,height)=>normalize(d.map((v,k)=>v-(east[k]*gradient[0]+north[k]*gradient[1])*radiusM/(radiusM+height)));

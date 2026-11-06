@@ -1,6 +1,6 @@
-# Horizon 0.7.13 — Global hydrology and chunked terrain
+# Horizon 0.7.14 — Global hydrology and chunked terrain
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.13).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.14).
 
 A hydrology-first foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
@@ -545,3 +545,39 @@ cache eviction, safe buffer transfer, request coalescing/reset, screen-scaled
 movement and real global water geometry. Natural river/shore/valley shaping
 remains the next geometry task; smoother lighting and streaming alone do not
 make the final geography realistic.
+
+
+## First river-shape pass — 0.7.14
+
+River geometry now uses one deterministic course graph in the shared surface.
+Degree-2 inland nodes move slightly toward the neighboring flow path, and bounded
+spherical Hermite curves follow upstream/downstream tangents. Sources, junctions,
+ports, polar links and water-contact neighborhoods stay pinned. The routing graph,
+annual budgets and canonical downhill water/bed profiles remain authoritative.
+This introduces modest curves; it is not a complete meander/erosion simulation.
+
+The two sides now have different waterline widths, bed slopes, bank spreads and
+freeboard. Bend direction drives the inside/outside distinction; modest seeded
+variation is continuous along the network. It fades to the unchanged design at
+junctions, headwaters and protected contacts. Width changes are bounded to ±12%
+of nominal design width; asymmetry is limited to 55%. The side widths sum to the
+reported fitted width. Dry designs stay dry and standing-water planes stay fixed.
+Normals average the narrow bank slope over a bounded physical span determined by
+channel width, identically across chunks and LODs, to reduce coarse sampling glare.
+
+The atlas map/globe, highlighted routes, saved constraint centres/sections and
+streamed ground/water now consume the same course geometry. Source mesh-face
+references still describe the original routing edge; saved point-face references
+use each actual curved location. Longitudinal distances remain the solved graph's
+design lengths. Detailed terrain still follows the shared fitted query.
+
+To inspect a visible bend: Map layers → Inspect terrain chunks → **Find a river
+bend**. This selects an existing wet bend from the complete planet. It creates
+no separate scene or regional generator. Broader valleys, independent erosion
+forms, shoreline refinement, sediment surfaces and vegetation remain later work.
+
+Verification: **120 tests pass**. Added checks cover bounded node smoothing,
+pinned endpoints, tangent continuity, curved projection/signed sections,
+protected chord parameters, asymmetric bank joins, deterministic shaping and
+all global quarter stations. Existing anchor, downhill, portal/shore, global
+water-budget, chunk/LOD and cache checks pass. Build and whitespace checks pass.

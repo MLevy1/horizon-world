@@ -1,11 +1,11 @@
-import {panTerrainView} from './terrain-lod.mjs?v=0.7.13';
-import {createTerrainViewQueue} from './terrain-stream.mjs?v=0.7.13';
-import {sampleConstraintSection} from './channel-constraints.mjs?v=0.7.13';
-import {constraintSectionSvg} from './constraint-view.mjs?v=0.7.13';
-import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.13';
-import {ZONES,flowRegime} from './climate.mjs?v=0.7.13';
-import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.7.13';
-import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.13';
+import {panTerrainView} from './terrain-lod.mjs?v=0.7.14';
+import {createTerrainViewQueue} from './terrain-stream.mjs?v=0.7.14';
+import {sampleConstraintSection} from './channel-constraints.mjs?v=0.7.14';
+import {constraintSectionSvg} from './constraint-view.mjs?v=0.7.14';
+import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.14';
+import {ZONES,flowRegime} from './climate.mjs?v=0.7.14';
+import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.7.14';
+import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.14';
 
 const $=id=>document.getElementById(id);
 const canvas=$('map'),ctx=canvas.getContext('2d'),stage=$('map-stage');
@@ -132,12 +132,14 @@ function xy(cell,previous=null){
   if(previous){while(x-previous.x>g.width/2)x-=g.width;while(x-previous.x< -g.width/2)x+=g.width;}
   return {x,y:y+.5};
 }
+function coursePath(cells){
+  const g=state.model.grid,p=state.model.riverProfiles,course=state.surfaceSampler.course,out=[];let previous=null;
+  function add(d){let x=Math.abs(d[1])>1-1e-15?(previous??g.width/2):(Math.atan2(d[2],d[0])*180/Math.PI+180)/360*g.width;const y=(90-Math.asin(Math.max(-1,Math.min(1,d[1])))*180/Math.PI)/180*g.height;if(previous!==null){while(x-previous>g.width/2)x-=g.width;while(x-previous< -g.width/2)x+=g.width;}out.push(x,y);previous=x;}
+  for(let k=0;k<cells.length;k++){const e=p.edgeAtCell[cells[k]];if(k+1<cells.length&&e>=0&&p.to[e]===cells[k+1])for(const t of [0,.125,.25,.375,.5,.625,.75,.875])add(course.sample(e,t).direction);else add(course.nodeDirection(cells[k]));}
+  return Float32Array.from(out);
+}
 function preparePaths(){
-  state.paths=[...state.model.reaches,...state.model.potentialSpills].map(reach=>{
-    const points=new Float32Array(reach.path.length*2);let prev=null;
-    for(let k=0;k<reach.path.length;k++){const p=xy(reach.path[k],prev);points[k*2]=p.x;points[k*2+1]=p.y;prev=p;}
-    return {reach,points};
-  });
+  state.paths=[...state.model.reaches,...state.model.potentialSpills].map(reach=>({reach,points:coursePath(reach.path)}));
   state.heads=state.model.nodes.filter(n=>n.kind==='headwater');
   state.mouths=state.model.nodes.filter(n=>n.kind==='mouth').sort((a,b)=>b.areaKm2-a.areaKm2);
 }
@@ -216,8 +218,7 @@ function appendMapPath(points,shift){
   for(let i=0;i<points.length;i+=2){minX=Math.min(minX,points[i]);maxX=Math.max(maxX,points[i]);minY=Math.min(minY,points[i+1]);maxY=Math.max(maxY,points[i+1]);}
   if(maxX*s+ox< -5||minX*s+ox>state.width+5||maxY*s+oy< -5||minY*s+oy>state.height+5)return;
   ctx.moveTo(points[0]*s+ox,points[1]*s+oy);
-  for(let i=2;i<points.length-2;i+=2){const nx=(points[i]+points[i+2])/2,ny=(points[i+1]+points[i+3])/2;ctx.quadraticCurveTo(points[i]*s+ox,points[i+1]*s+oy,nx*s+ox,ny*s+oy);}
-  ctx.lineTo(points[points.length-2]*s+ox,points[points.length-1]*s+oy);
+  for(let i=2;i<points.length;i+=2)ctx.lineTo(points[i]*s+ox,points[i+1]*s+oy);
 }
 function drawMapGrid(start,end){
   const g=state.model.grid;ctx.strokeStyle='#bddbd410';ctx.lineWidth=.6;ctx.beginPath();
@@ -253,7 +254,7 @@ function drawGlobe(){
     for(const regime of ['dry','ephemeral','seasonal','perennial']){
       if(regime==='dry'&&!layers.dry)continue;
       styleReach(kind,regime);ctx.beginPath();
-      for(const {reach} of state.paths)if(reach.kind===kind&&effectiveRegime(reach)===regime)appendGlobePath(reach.path,g);
+      for(const {reach,points} of state.paths)if(reach.kind===kind&&effectiveRegime(reach)===regime)appendGlobePath(reach.path,g,points);
       ctx.stroke();
     }
   }
@@ -263,9 +264,9 @@ function drawGlobe(){
   if(layers.arrows)drawFlowArrows();if(layers.lakes&&state.zoom>=2)drawLakeLabels();ctx.restore();
   ctx.strokeStyle='#789b9d66';ctx.lineWidth=1;ctx.beginPath();ctx.arc(g.cx,g.cy,g.r,0,TAU);ctx.stroke();
 }
-function appendGlobePath(path,g){
-  let drawing=false;
-  for(const i of path){const [lon,lat]=lonLat(state.model.grid,i),[x,y,z]=globeProject(lon,lat,g);if(z<0){drawing=false;continue;}if(!drawing){ctx.moveTo(x,y);drawing=true;}else ctx.lineTo(x,y);}
+function appendGlobePath(path,g,points=coursePath(path)){
+  let drawing=false;const grid=state.model.grid;
+  for(let k=0;k<points.length;k+=2){const lon=points[k]/grid.width*360-180,lat=90-points[k+1]/grid.height*180,[x,y,z]=globeProject(lon,lat,g);if(z<0){drawing=false;continue;}if(!drawing){ctx.moveTo(x,y);drawing=true;}else ctx.lineTo(x,y);}
 }
 function drawGlobeGrid(g){
   ctx.strokeStyle='#bddbd417';ctx.lineWidth=.6;ctx.beginPath();
@@ -308,7 +309,7 @@ function drawSelection(){
   if(state.showTrace&&state.trace.length>1){
     ctx.strokeStyle='#f5c580';ctx.lineWidth=2.4;ctx.lineCap='round';ctx.lineJoin='round';ctx.shadowColor='#f5c58055';ctx.shadowBlur=7;ctx.beginPath();
     if(state.projection==='globe')appendGlobePath(state.trace,globeSetup());
-    else {let p=null;const points=new Float32Array(state.trace.length*2);for(let k=0;k<state.trace.length;k++){p=xy(state.trace[k],p);points[k*2]=p.x;points[k*2+1]=p.y;}
+    else {const points=coursePath(state.trace);
       const w=state.model.grid.width,copy=Math.round((state.cx-points[0])/w);for(let c=copy-1;c<=copy+1;c++)appendMapPath(points,c*w);}
     ctx.stroke();ctx.shadowBlur=0;
     const end=projectCell(state.trace[state.trace.length-1]);if(end[2]>0)drawMarker(end[0],end[1],3,'#f5c580');
@@ -574,13 +575,13 @@ async function displayChunkMesh(patch){
   $('mesh-counts').textContent=number(patch.stats.chunks,0)+' chunks · LOD '+patch.stats.minLevel+'–'+patch.stats.maxLevel+' · '+number(patch.stats.triangles,0)+' ground / '+number(patch.stats.waterTriangles,0)+' water triangles · '+number(patch.stats.bytes/1048576,1)+' MiB';
   $('chunk-cache').textContent=number(patch.stream.reused,0)+' reused · '+number(patch.stream.built,0)+' built · cache '+number(patch.stream.cacheBytes/1048576,1)+' / '+number(patch.stream.cacheLimitBytes/1048576,0)+' MiB';
   $('mesh-summary').textContent='Streaming terrain · '+number(patch.stats.chunks,0)+' chunks in the current view';$('mesh-error').textContent=patch.stats.ambiguousWaterTriangles?'Some water boundaries need a finer view.':'';
-  try{const {createMeshPreview}=await import('./mesh-preview.mjs?v=0.7.13');if(chunkMesh!==patch)return;meshPreview=createMeshPreview($('mesh-canvas'),patch);drawMeshPreview();}catch(error){$('mesh-error').textContent=error.message;}
+  try{const {createMeshPreview}=await import('./mesh-preview.mjs?v=0.7.14');if(chunkMesh!==patch)return;meshPreview=createMeshPreview($('mesh-canvas'),patch);drawMeshPreview();}catch(error){$('mesh-error').textContent=error.message;}
 }
 function terrainWorkerFailure(message){$('mesh-error').textContent=message;chunkWorker?.terminate();chunkWorker=null;chunkQueue.reset();}
 function sendTerrainView(view){
   let model;
   if(!chunkWorker){
-    const m=state.model;model={grid:m.grid,height:m.height,riverProfiles:m.riverProfiles,waterbody:m.waterbody,waterbodies:m.waterbodies,ocean:m.ocean};
+    const m=state.model;model={grid:m.grid,height:m.height,riverProfiles:m.riverProfiles,waterbody:m.waterbody,waterbodies:m.waterbodies,ocean:m.ocean,seed:m.seed};
     const worker=new Worker(new URL('./planet-worker.mjs?v='+VERSION,import.meta.url),{type:'module'});chunkWorker=worker;
     worker.onmessage=({data})=>{if(chunkWorker!==worker)return;if(data.type==='terrain-view')chunkQueue.finish(data);else if(data.type==='error')terrainWorkerFailure(data.message);};
     worker.onerror=event=>{if(chunkWorker===worker)terrainWorkerFailure(event.message||'Could not build the terrain view');};
@@ -604,6 +605,7 @@ function focusTerrainSelection(){
 $('mesh-open').addEventListener('click',()=>{$('mesh-dialog').showModal();focusTerrainSelection();});
 $('mesh-close').addEventListener('click',()=>$('mesh-dialog').close());
 $('chunk-focus').addEventListener('click',focusTerrainSelection);
+$('chunk-bend').addEventListener('click',()=>{const course=state.surfaceSampler.course,{exampleEdge,exampleT}=course.stats;if(exampleEdge<0)return;const d=course.sample(exampleEdge,exampleT).direction;requestTerrainChunks(Math.atan2(d[2],d[0])*180/Math.PI,Math.asin(d[1])*180/Math.PI,{level:10});});
 $('chunk-detail').addEventListener('change',()=>requestTerrainChunks(chunkLocation.lon,chunkLocation.lat,{level:Number($('chunk-detail').value)}));
 $('chunk-oblique').addEventListener('change',()=>requestTerrainChunks(chunkLocation.lon,chunkLocation.lat));
 $('chunk-water').addEventListener('change',drawMeshPreview);
@@ -641,7 +643,7 @@ function generate(seed){
     worker.onmessage=({data})=>{
       if(data.type==='progress'){$('loading-stage').textContent=data.stage;$('loading-progress').style.width=data.fraction*100+'%';}
       else if(data.type==='complete'){
-        state.model=data.model;$('mesh-open').disabled=false;$('channel-samples-open').disabled=false;const constraints=state.model.channelConstraints.stats;$('channel-summary').textContent=number(constraints.edges,0)+' channel links · '+number(constraints.stations,0)+' saved sections';const shores=state.model.shorelines.stats;$('shoreline-summary').textContent=number(shores.standingRings,0)+' standing-water rings · '+number(shores.channelPortals,0)+' channel openings';state.surfaceSampler=createSurfaceSampler(state.model);state.worker.terminate();state.worker=null;preparePaths();makeTexture();displayStats();fitWorld();resize();
+        state.model=data.model;$('mesh-open').disabled=false;$('channel-samples-open').disabled=false;const constraints=state.model.channelConstraints.stats;$('channel-summary').textContent=number(constraints.edges,0)+' channel links · '+number(constraints.stations,0)+' saved sections';const shores=state.model.shorelines.stats;$('shoreline-summary').textContent=number(shores.standingRings,0)+' standing-water rings · '+number(shores.channelPortals,0)+' channel openings';state.surfaceSampler=createSurfaceSampler(state.model);$('chunk-bend').disabled=state.surfaceSampler.course.stats.exampleEdge<0;$('mesh-summary').textContent=number(state.surfaceSampler.course.stats.curvedEdges,0)+' curved channel links · '+number(state.surfaceSampler.course.stats.movedNodes,0)+' smoothed inland anchors';state.worker.terminate();state.worker=null;preparePaths();makeTexture();displayStats();fitWorld();resize();
         $('loading').hidden=true;$('generate').disabled=false;
         const url=new URL(location.href);url.searchParams.set('seed',seed);url.searchParams.set('v',VERSION);history.replaceState(null,'',url);
         // Read-only snapshot for reproducible QA and inspection, never a separate simulation.

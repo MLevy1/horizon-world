@@ -42,7 +42,7 @@ export function composeWaterSurface(terrainM,plane,rivers){
   const exact=rivers.filter(r=>r.distanceM<1e-6),active=exact.length?exact:rivers;
   let sum=0,ground=0,head=0,maxFade=0,wetCore=false;
   for(const r of active){
-    const half=r.widthM/2,bank=Math.max(1,r.widthM*.35),u=r.distanceM/half;
+    const left=(r.signedDistanceM??r.distanceM)>=0,half=(left?r.leftHalfM:r.rightHalfM)??r.widthM/2,bank=(left?r.leftBankM:r.rightBankM)??Math.max(1,r.widthM*.35),exponent=(left?r.leftExponent:r.rightExponent)??2,u=r.distanceM/half;
     const fade=1-smooth((r.distanceM-half)/bank);if(!fade)continue;
     const weight=fade/(u*u+1e-8);maxFade=Math.max(maxFade,fade);
     let h=r.waterM;
@@ -51,9 +51,9 @@ export function composeWaterSurface(terrainM,plane,rivers){
       const influence=standing?1:smooth(plane.support*scale/Math.max(1e-9,delta));
       h=mix(h,plane.waterM,influence);
     }
-    const depth=Math.max(r.designDepthM,r.waterM-r.bedM),freeboard=r.freeboardM*(plane?smooth((terrainM-plane.waterM)/Math.max(1,r.freeboardM)):1);
+    const depth=Math.max(r.designDepthM,r.waterM-r.bedM),freeboard=r.freeboardM*((left?r.leftFreeboard:r.rightFreeboard)??1)*(plane?smooth((terrainM-plane.waterM)/Math.max(1,r.freeboardM)):1);
     let g;
-    if(u<=1)g=h-depth*(1-u*u);
+    if(u<=1)g=h-depth*(1-u**exponent);
     else{
       const s=clamp((r.distanceM-half)/bank,0,1),peak=Math.max(terrainM,h+freeboard);
       g=s<.5?mix(h,peak,smooth(s*2)):mix(peak,terrainM,smooth(s*2-1));
