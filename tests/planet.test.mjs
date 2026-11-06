@@ -233,12 +233,68 @@ test('standing water queries preserve actual pool planes and sea level without f
       const body=m.waterbodies[m.waterbody[i]];if(m.height[i]>=body.waterLevelM-1e-7)continue;
       const q=surface.sample(...lonLat(m.grid,i));assert.ok(q.standingWater);assert.equal(q.standingWater.waterM,body.waterLevelM);
       assert.equal(q.standingWater.id,body.id);assert.ok(q.standingWater.depthM>0);
+      assert.equal(q.fitted.waterM,body.waterLevelM);assert.ok(q.fitted.groundM<=m.height[i]+1e-8);
     }else if((m.basinId[i]>=0||m.ocean[i])&&i%97===0){
       const q=surface.sample(...lonLat(m.grid,i));
       if(m.ocean[i]&&m.height[i]<0){assert.equal(q.standingWater.kind,'ocean');assert.equal(q.standingWater.waterM,0);}
       else assert.equal(q.standingWater,null);
     }
   }
+});
+
+test('contact fitting covers every global profile with anchored endpoints, downhill water and submerged beds',()=>{
+  const m=planet,p=m.riverProfiles;assert.ok(surface.contacts.stats.waterContacts>0&&surface.contacts.stats.shoreIntersections>0);
+  for(let edge=0;edge<p.from.length;edge++){
+    let last=Infinity;
+    for(const t of [0,.25,.5,.75,1]){
+      const r=surface.contacts.fit({...sampleRiverEdge(p,edge,t),edge,t});
+      assert.ok(r.waterM<=last+1e-8);assert.ok(r.bedM<=r.waterM-r.designDepthM+1e-8);last=r.waterM;
+      if(t===0){assert.equal(r.waterM,p.waterM[p.from[edge]]);assert.equal(r.bedM,p.bedM[p.from[edge]]);}
+      if(t===1){assert.equal(r.waterM,p.waterM[p.to[edge]]);assert.equal(r.bedM,p.bedM[p.to[edge]]);}
+    }
+  }
+});
+
+test('composed surfaces preserve every wet global channel anchor and remain finite over all profile midpoints',()=>{
+  const m=planet,p=m.riverProfiles;
+  for(let i=0;i<m.grid.count;i++)if(p.corridor[i]){
+    const q=surface.sample(...lonLat(m.grid,i));assert.ok(Number.isFinite(q.fitted.groundM));
+    assert.ok(Math.abs(q.fitted.groundM-p.bedM[i])<1e-4,`bed anchor ${i}`);
+    if(p.wet[i])assert.ok(q.fitted.waterM!==null&&Math.abs(q.fitted.waterM-p.waterM[i])<1e-4,`water anchor ${i}`);
+  }
+  for(let e=0;e<p.from.length;e++){
+    const a=surface.mesh.directionAt(p.from[e]),b=surface.mesh.directionAt(p.to[e]),point=surface.mesh.sampleDirection(a.map((v,k)=>v+b[k]));
+    const q=surface.sample(point.lon,point.lat).fitted;
+    assert.ok(Number.isFinite(q.groundM));if(q.waterM!==null){assert.ok(q.waterM>q.groundM);assert.ok(q.depthM>0);}
+    if(p.wetEdge[e]){assert.ok(q.waterM!==null);assert.ok(q.waterM<=p.waterM[p.from[e]]+1e-5&&q.waterM>=p.waterM[p.to[e]]-1e-5);}
+  }
+});
+
+test('every global shore intersection remains continuous through its center and lateral channel banks',()=>{
+  const p=planet.riverProfiles,R=planet.grid.radiusKm*1000;
+  const unit=a=>{const n=Math.hypot(...a);return a.map(v=>v/n);};
+  let checked=0;
+  for(let e=0;e<p.from.length;e++){
+    const t=surface.contacts.end[e];if(t>=1||t<=0)continue;
+    const a=surface.mesh.directionAt(p.from[e]),b=surface.mesh.directionAt(p.to[e]);
+    const normal=unit([a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]);
+    const width=p.widthM[p.from[e]]+(p.widthM[p.to[e]]-p.widthM[p.from[e]])*t;
+    const eps=Math.min(t/2,(1-t)/2,.001/p.lengthM[e]);
+    const at=(u,offset)=>{
+      const center=unit(a.map((v,k)=>v+(b[k]-v)*u)),angle=offset/R;
+      const point=surface.mesh.sampleDirection(center.map((v,k)=>v*Math.cos(angle)+normal[k]*Math.sin(angle)));
+      return surface.sample(point.lon,point.lat);
+    };
+    for(const offset of [0,-width*.4,width*.4,-width*.65,width*.65]){
+      const left=at(t-eps,offset),right=at(t+eps,offset);
+      const tolerance=Math.max(.05,Math.abs(left.terrainM-right.terrainM)*10);
+      assert.ok(Math.abs(left.fitted.groundM-right.fitted.groundM)<tolerance,`shore ground ${e}`);
+      if(left.fitted.waterM!==null&&right.fitted.waterM!==null)assert.ok(Math.abs(left.fitted.waterM-right.fitted.waterM)<tolerance,`shore water ${e}`);
+      for(const q of [left,right])if(q.standingWater){assert.equal(q.fitted.waterM,q.standingWater.waterM);assert.ok(q.fitted.groundM<=q.terrainM+1e-8);}
+      checked++;
+    }
+  }
+  assert.ok(checked>100);
 });
 
 test('mesh edges are reciprocal across longitude and both unique poles; coordinate lookup round-trips',()=>{

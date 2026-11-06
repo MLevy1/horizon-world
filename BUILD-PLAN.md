@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.6.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.7.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -216,7 +216,7 @@ interpolation, dry styling, section dimensions and deeper waterbody contacts.
 Existing global topology and budgets remain unchanged. The static build and
 browser inspection verify opening the dialog and updating stations.
 
-Current checkpoint: **0.7.6**, task 3a. `surface-sampler.mjs` exposes one
+Task 3a, saved in **0.7.6**. `surface-sampler.mjs` exposes one
 read-only global query for scaffold elevation, standing-water planes and nearby
 channel profile/design data. It uses the real spherical triangular mesh and
 projective interpolation, with unique polar caps and longitude wrapping.
@@ -237,7 +237,25 @@ both poles and invalid queries. Existing hydrology/budgets are unchanged.
 The static build succeeds; browser probes verify both a channel node and an
 arbitrary off-node ocean coordinate.
 
-**Next task: 3b1, water-contact fitting only.** Compose the shared scaffold,
-river bed/bank definitions and fixed lake/ocean planes into consistent sampled
-surfaces. Check all global contacts. Keep shoreline boundary extraction (3b2)
-and bare-global-mesh generation (4a) as separate turns to avoid oversized work.
+Current checkpoint: **0.7.7**, task 3b1. `water-contact.mjs` fits profiles to
+actual scaffold shore crossings and combines channel cores/banks with fixed
+water planes. Surface queries now include a `fitted` ground/water/depth result.
+Overlapping channel patches blend through shared anchors. Standing water stays
+flat and submerged ground is never filled by a channel bank. Dry designs stay
+dry unless standing water occupies an opened shoreline throat.
+
+The Surface sample block is moved near the top of the inspector. It reports
+scaffold elevation, fitted ground, standing/fitted water levels and fitted water
+depth. The separate river design viewer retains the original design profiles.
+The fit does not rewrite receivers, annual budgets or reservoir inventories.
+
+Verification: all **67 tests pass**. Complete-planet checks cover every profile's
+anchors and downhill contact fitting, all channel midpoints, all wet pool nodes,
+and both sides of every represented shore intersection through its center and
+lateral banks. Focused checks cover overlap order, dry designs, shoreline
+continuity and protection from submerged bank fills. Existing topology, climate,
+snow, geology and water-budget checks pass. The static build succeeds.
+
+**Next task: 3b2, shoreline extraction only.** Extract boundaries from the shared
+fitted queries, retaining the same water levels and continuity across the sphere.
+Keep bare-global-mesh generation (4a) as a separate turn.

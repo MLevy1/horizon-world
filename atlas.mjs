@@ -1,7 +1,7 @@
-import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.6';
-import {ZONES,flowRegime} from './climate.mjs?v=0.7.6';
-import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.7.6';
-import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.6';
+import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.7';
+import {ZONES,flowRegime} from './climate.mjs?v=0.7.7';
+import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.7.7';
+import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.7';
 
 const $=id=>document.getElementById(id);
 const canvas=$('map'),ctx=canvas.getContext('2d'),stage=$('map-stage');
@@ -361,7 +361,7 @@ function selectCell(i,{focus=false,probe=null}={}){
   const destination=destinationBody?.closed?(destinationBody.status==='playa'?'Dry closed basin ':'Closed basin ')+String(destinationBody.id+1).padStart(3,'0'):'Global ocean';
   const field=(label,value)=>`<div><span>${label}</span><strong>${value}</strong></div>`;
   const surface=state.surfaceSampler.sample(probe?.lon??lon,probe?.lat??lat);
-  const surfaceData=`<div class="surface-sample"><h3>Surface sample</h3><p>${number(surface.lat,4)}° latitude · ${number(surface.lon,4)}° longitude</p><div class="selection-data">${field('Scaffold elevation',number(surface.terrainM,2)+' m')}${field('Standing water level',surface.standingWater?number(surface.standingWater.waterM,2)+' m':'None')}${field('Nearby channel',surface.river?number(surface.river.distanceM,2)+' m from center':'Outside channel corridor')}</div></div>`;
+  const surfaceData=`<div class="surface-sample"><h3>Surface sample</h3><p>${number(surface.lat,4)}° latitude · ${number(surface.lon,4)}° longitude</p><div class="selection-data">${field('Scaffold elevation',number(surface.terrainM,2)+' m')}${field('Fitted ground',number(surface.fitted.groundM,2)+' m')}${field('Standing water level',surface.standingWater?number(surface.standingWater.waterM,2)+' m':'None')}${field('Fitted water level',surface.fitted.waterM===null?'Dry':number(surface.fitted.waterM,2)+' m')}${field('Fitted water depth',number(surface.fitted.depthM,2)+' m')}${field('Nearby channel',surface.river?number(surface.river.distanceM,2)+' m from center':'Outside channel corridor')}</div></div>`;
   const data=m.ocean[i]?field('Connected ocean',number(m.stats.oceanAreaKm2,0)+' km²')+field('Sea level','0 m'):
     field('Contributing area',number(area,2)+' km²')+field('Mean annual flow',number(flow,3)+' m³/s')+
     (wb?field('Current water area',number(wb.wetAreaKm2,3)+' km²')+field('Water level',number(wb.waterLevelM,1)+' m')+field('Lake behavior',wb.status==='playa'?'Playa / dry basin':wb.closed?'Closed · no outflow':'Overflowing')+field('Lake evaporation',number(wb.evaporationM3s,3)+' m³/s')+field('Pools in this basin',parts.length)+field('Potential spill level',number(wb.spillM,1)+' m')+(parts.length>1?field('Water levels',levelParts.slice(0,5).map(id=>number(m.waterbodies[id].waterLevelM,1)+' m').join(' · ')+(levelParts.length>5?' · …':'')):''):
@@ -378,7 +378,7 @@ function selectCell(i,{focus=false,probe=null}={}){
     field('Evaporative demand',number(m.climate.potentialEvaporation[i],0)+' mm/yr')+field('Climate estimate',ZONES[m.climate.zone[i]]);
   const hasProfile=m.riverProfiles.edgeAtCell[i]>=0;
   const profileEntry=hasProfile?`<div class="profile-entry"><button id="inspect-river-profile">Inspect river profile</button><span>${number(m.riverProfiles.widthM[i],2)} m wide · ${number(m.riverProfiles.designDepthM[i],2)} m design depth</span></div>`:'';
-  $('inspector').className='';$('inspector').innerHTML=`<div class="selection-kind">${kind}</div><div class="selection-name">${name}</div><div class="selection-coord">${coordText(lon,lat)}</div>${profileEntry}<div class="selection-data">${geologyData}${data}${climateData}${frozenData}</div>${surfaceData}<p class="selection-destination">${m.ocean[i]?'Connected planetary ocean.':`Meltwater / flow destination: <b>${destination}</b><br>${wb?'Water area follows this pool’s annual balance.':flowRegime(flow,area)+' flow estimate · '+lakeCount(state.trace,m)+' inland basins on this route.'}`}</p>${parts.length>1?'<button id=next-pool class=secondary type=button>Inspect next pool</button>':''}`;
+  $('inspector').className='';$('inspector').innerHTML=`<div class="selection-kind">${kind}</div><div class="selection-name">${name}</div><div class="selection-coord">${coordText(lon,lat)}</div>${profileEntry}${surfaceData}<div class="selection-data">${geologyData}${data}${climateData}${frozenData}</div><p class="selection-destination">${m.ocean[i]?'Connected planetary ocean.':`Meltwater / flow destination: <b>${destination}</b><br>${wb?'Water area follows this pool’s annual balance.':flowRegime(flow,area)+' flow estimate · '+lakeCount(state.trace,m)+' inland basins on this route.'}`}</p>${parts.length>1?'<button id=next-pool class=secondary type=button>Inspect next pool</button>':''}`;
   if(hasProfile)$('inspect-river-profile').addEventListener('click',()=>openRiverProfile(i));
   if(parts.length>1)$('next-pool').addEventListener('click',()=>{const cycle=wetParts.length>1?wetParts:[...parts],index=cycle.indexOf(wb.id),next=m.waterbodies[cycle[(index+1)%cycle.length]];selectCell(next.outletCell,{focus:true});});
 
