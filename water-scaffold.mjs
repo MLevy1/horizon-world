@@ -1,4 +1,4 @@
-import {neighbors} from './planet.mjs?v=0.8.5';
+import {neighbors} from './planet.mjs?v=0.8.6';
 const blend=(values,w)=>values.reduce((s,v,k)=>s+v*w[k],0);
 const normalize=a=>{const n=Math.hypot(...a);return a.map(v=>v/n);};
 /** Geometric support for fixed planes. Flood only strictly lower connected

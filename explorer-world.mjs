@@ -1,5 +1,5 @@
-import {coordinateTile,terrainVertex,tileNeighbor,tileKey,neighborhood,EDGES} from './terrain-chunks.mjs?v=0.8.5';
-import {coveringTile} from './terrain-lod.mjs?v=0.8.5';
+import {coordinateTile,terrainVertex,tileNeighbor,tileKey,neighborhood,EDGES} from './terrain-chunks.mjs?v=0.8.6';
+import {coveringTile} from './terrain-lod.mjs?v=0.8.6';
 export const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 export const unit=a=>{const n=Math.hypot(...a);return a.map(v=>v/n);};
 export function direction(lon,lat){const l=lon*Math.PI/180,p=lat*Math.PI/180;return [Math.cos(p)*Math.cos(l),Math.sin(p),Math.cos(p)*Math.sin(l)];}

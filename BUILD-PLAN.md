@@ -577,3 +577,28 @@ times the previous stand density while retaining seeded clearings and habitat
 exclusions. Foliage sprays are wider and near crowns fuller. Detailed branching
 is limited to 40 m; distant trees use fewer leaf sprays to contain geometry cost.
 The global placement identity and collision approach are preserved.
+
+
+## Woodland canopy reconstruction — 0.8.6
+
+The earlier sapling-like geometry and flat geometric leaves did not establish a
+convincing woodland. Mature trees now reach roughly 14–26 m, with thicker leaning
+trunks, wider branching crowns and overlapping foliage clusters. A generated
+alpha-cutout oak/beech branch texture replaces individual green diamond geometry.
+Both renderers sample its real transparent gaps and depth-test the remaining
+leaves. Seeded understory shrubs provide a second vegetation height. The same
+Woodland destination and global habitat rules are retained.
+
+Broad projected canopy occlusion and dapple variation darken the floor and nearby
+rocks. Brown-tinted fallen-leaf texture blends into forest-floor material around
+crowns. This is a canopy-light approximation, not full scene shadow mapping.
+The material, animated wind, needle-specific conifer assets and botanical models
+remain unfinished. At the reviewed HORIZON-01 location, the canopy version keeps
+roughly 240 mature trees locally while using about 32,000 plant triangles before
+the separate understory pass. Assets are loaded once and shared by all plants.
+
+Validation: stable placement/habitat and essential movement tests; alpha UV and
+geometry checks; shader compilation/linking in a standalone GLES context; direct
+rendered inspection with the actual compatibility renderer. Browser automation
+was unavailable during this checkpoint (repeated service timeouts), so live
+browser interaction was not verified.

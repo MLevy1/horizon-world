@@ -1,6 +1,6 @@
-# Horizon 0.8.5 — Walk the world
+# Horizon 0.8.6 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.8.5).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.8.6).
 
 The main page is a first-person terrain explorer with keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -19,7 +19,10 @@ climate-aware materials and collision around larger boulders. Their placement
 persists as terrain streams. Conifers, broadleaf trees and shrubs now grow in uneven climate-dependent
 patches, with branching trunks, open geometric foliage and trunk collision.
 Choose **Travel to → Woodland** to inspect an inland temperate location.
-Grass and low ground cover remain later work.
+The canopy pass now uses mature tree proportions, layered alpha-cutout foliage,
+understory shrubs, broad canopy shade and a leaf-litter floor. These are initial
+approximations; full shadow maps, wind and detailed botanical assets remain later
+work. Grass remains later work.
 
 The current viewer is a reviewable checkpoint. Further visual refinement and
 touch-control checks are tracked in [BUILD-PLAN.md](BUILD-PLAN.md).
