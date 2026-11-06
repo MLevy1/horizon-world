@@ -1,10 +1,11 @@
-# Horizon 0.7.10 — Global hydrology atlas
+# Horizon 0.7.11 — Global hydrology and chunked terrain
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.10).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.11).
 
-A fresh hydrology-only foundation: one complete, closed, seeded planet. The main
+A hydrology-first foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
-connected ocean. No detailed terrain meshes or vegetation are generated.
+connected ocean. The terrain inspector builds nearby bare ground chunks from
+that same global surface; vegetation and decorative terrain detail remain later work.
 The old `hydrology.html` link redirects to the same main page.
 
 The current viewer is a reviewable checkpoint. Further visual refinement and
@@ -79,8 +80,11 @@ Serve the repository root or `dist/` over HTTP. Module workers do not run from a
 - `channel-constraints.mjs`: shared global junction anchors, section definitions,
   adjacent terrain-face references and links to standing-water openings.
 - `constraint-view.mjs`: fitted section sample plots for that mesh input.
-- `mesh-foundation.mjs`: globally indexed ground and clipped standing-water
-  surfaces, sharing exact shore vertices.
+- `terrain-chunks.mjs`: globally addressed cube-sphere ground chunks, shared
+  border samples, 2:1 detail stitching and a bounded surface-sample cache.
+- `mesh-camera.mjs`: locally centered inspection camera and lighting.
+- `mesh-foundation.mjs`: the prior monolithic reference builder, retained for
+  regression checks; the live page no longer constructs it on startup.
 - `mesh-preview.mjs` / `mesh-raster.mjs`: actual mesh rendering through WebGL 2
   or a software compatibility renderer.
 - `surface-sampler.mjs`: shared spherical scaffold interpolation, standing-water
@@ -431,3 +435,61 @@ retains explicit dry gaps and does not cap ocean water at a nominal width.
 The bare-planet preview still shows the 4a1 foundation; the newly saved
 constraints are inspectable inputs to that next mesh pass, not separate water
 ribbons presented as an integrated mesh. Local navigation remains task 4b.
+
+
+## Global water, on-demand terrain — 0.7.11
+
+The active architecture now separates the complete planetary simulation from
+rendering geometry. Hydrology, climate, broad elevations, lake levels and river
+profiles remain global. The map/globe remains the overview. Detailed ground is
+built only for the inspected neighborhood; startup no longer creates/transfers
+the prior ~107 MiB whole-planet 3D mesh.
+
+Open **Map layers → Inspect terrain chunks**. The inspector focuses the current
+selection (a channel midpoint when a river is selected), or a large river when
+nothing is selected. **Wider terrain**, **River banks** and **Fine section**
+change the sample density and footprint around the same location. Cardinal
+movement requests the next neighborhood. Oblique/top-down inspection uses the
+same geometry and camera-relative lighting. The selected ground elevation is
+the camera origin, so high land can be inspected without shifting offscreen.
+
+`createTerrainChunkBuilder(surface)` serves every location on six cube-sphere
+faces. A tile address is `{face, level, x, y}`; its grid resolution is an even
+integer from 4 to 256. `terrainVertex` reduces integer cube directions to a
+canonical key, making shared samples bit-identical across face seams, poles,
+corners and dyadic detail levels. Heights come exclusively from the existing
+fitted global query. Chunks do not regenerate drainage, channels or water levels.
+
+`build(tile, {resolution, coarseEdges})` uses 2×2 triangle fans. A `coarseEdges`
+entry removes unmatched odd boundary vertices when the neighboring tile is one
+level coarser at the same grid resolution. The resulting edge segments match
+the coarse neighbor, including corners where two sides stitch. Callers must
+keep adjacent LODs balanced at 2:1. The current inspector requests a uniform
+level; automatic mixed-LOD selection is a later streaming step.
+
+`patch(lon, lat, {level, resolution, radius})` combines a connected neighborhood,
+welding common vertices by canonical keys. The default view uses 13 tiles,
+106,496 ground triangles and about **3.3 MiB** of geometry. Any world coordinate
+uses the same builder. A persistent worker receives only the global fields
+needed by the sampler, transfers each completed mesh, and keeps an LRU cache
+bounded to 65,536 samples. New requests replace the previous displayed mesh;
+a new world terminates that worker and clears the cached surface data.
+
+This checkpoint is **ground geometry**. Sampled water heights are retained for
+the next pass; the local inspector does not render water faces yet. Uniform
+sampling approximates the fitted surface between grid points; finer views
+resolve narrow channels more closely. Ground rendering uses the actual sampled
+elevations without decorative noise or vertical exaggeration. Global rivers,
+lakes and oceans remain visible in the atlas.
+
+All **96 tests pass**. New checks cover every same-level cube-face neighbor,
+coarse/fine edge matching, all stitched-corner combinations, a closed sphere
+assembled from six coarse tiles, bounded deterministic caching, actual global
+surface samples across all faces, bit-identical borders with caching disabled,
+wet/dry river neighborhoods and both poles. Existing global hydrology and
+shoreline checks remain in place. Camera/renderer checks cover local focus,
+zoom, tilt basis and lighting on the opposite hemisphere.
+
+**Next checkpoint: water surfaces clipped and joined within these chunks.**
+Then add camera-driven chunk selection/eviction and automatic balanced LOD.
+The monolithic detailed-mesh path is retired from the live viewer.

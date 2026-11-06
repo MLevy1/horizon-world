@@ -7,6 +7,7 @@ import {annualPartition,lakeBalance,makeClimate} from '../climate.mjs';
 import {poolWetFraction} from '../pools.mjs';
 import {sampleRiverEdge,FLOW_EPSILON_M3S} from '../river-profiles.mjs';
 import {inspectionRoute,inspectionStation} from '../profile-view.mjs';
+import {createTerrainChunkBuilder,terrainVertex,tileNeighbor,tileKey,terrainEdgeIndices,EDGES} from '../terrain-chunks.mjs';
 import {buildChannelConstraints,sampleConstraintSection,sphereFaceIndex,nearestConstraintStation} from '../channel-constraints.mjs';
 import {buildMeshFoundation} from '../mesh-foundation.mjs';
 import {extractShorelines,packShorelines,sphereFaces} from '../shorelines.mjs';
@@ -656,5 +657,31 @@ test('every standing-water mouth portal retains its paired endpoints and global 
     const source=shores.portals[i];assert.ok(p.offsets[i+1]>p.offsets[i]);const linked=[...p.edges.subarray(p.offsets[i],p.offsets[i+1])];assert.equal(new Set(linked).size,linked.length);for(const e of linked)assert.ok(e<planet.riverProfiles.from.length);
     for(let end=0;end<2;end++){const id=p.endpoints[i*2+end],d=c.points.directions.subarray(id*3,id*3+3),expected=(end?source.points.at(-1):source.points[0]).direction;for(let k=0;k<3;k++)assert.ok(Math.abs(d[k]-expected[k])<1e-12);if(source.closed)assert.ok(c.points.groundM[id]<=source.waterM+.01);else assert.ok(Math.abs(c.points.groundM[id]-source.waterM)<.01);}
     if(source.closed)assert.equal(p.endpoints[i*2],p.endpoints[i*2+1]);
+  }
+});
+
+test('terrain chunk addresses sample the same complete planetary surface across every cube face',()=>{
+  const chunks=createTerrainChunkBuilder(surface,{sampleCacheLimit:1024}),before=digest(planet);
+  for(let face=0;face<6;face++)for(let y=0;y<4;y++)for(let x=0;x<4;x++){
+    const tile={face,level:2,x,y},chunk=chunks.build(tile,{resolution:4});
+    for(let j=0;j<=4;j++)for(let i=0;i<=4;i++){
+      const id=j*5+i,d=terrainVertex(tile,4,i,j).direction,q=surface.sample(Math.atan2(d[2],d[0])*(180/Math.PI),Math.asin(Math.max(-1,Math.min(1,d[1])))*(180/Math.PI));
+      assert.equal(chunk.elevationsM[id],q.fitted.groundM);if(q.fitted.waterM===null)assert.ok(Number.isNaN(chunk.waterM[id]));else assert.equal(chunk.waterM[id],q.fitted.waterM);
+    }
+  }
+  assert.equal(digest(planet),before);assert.ok(chunks.cacheStats().entries<=1024);
+});
+test('actual global surface border positions agree bit for bit across cube seams without relying on cache hits',()=>{
+  const builder=createTerrainChunkBuilder(surface,{sampleCacheLimit:1});
+  for(let face=0;face<6;face++)for(const edge of ['right','top']){
+    const tile={face,level:3,x:edge==='right'?7:3,y:edge==='top'?7:3},other=tileNeighbor(tile,edge),back=EDGES.find(e=>tileKey(tileNeighbor(other,e))===tileKey(tile)),a=builder.build(tile,{resolution:8}),b=builder.build(other,{resolution:8}),values=new Map();
+    for(const id of terrainEdgeIndices(8,edge)){const key=terrainVertex(tile,8,id%9,(id/9)|0).key;values.set(key,{position:[...a.positions.subarray(id*3,id*3+3)],height:a.elevationsM[id],water:a.waterM[id]});}
+    for(const id of terrainEdgeIndices(8,back)){const key=terrainVertex(other,8,id%9,(id/9)|0).key,v=values.get(key);assert.ok(v);assert.deepEqual([...b.positions.subarray(id*3,id*3+3)],v.position);assert.equal(b.elevationsM[id],v.height);assert.equal(b.waterM[id],v.water);}
+  }
+});
+test('on-demand neighborhoods build local fitted geometry for wet rivers, dry channels and both poles',()=>{
+  const builder=createTerrainChunkBuilder(surface),p=planet.riverProfiles,examples=[0,Math.max(0,p.wetEdge.findIndex(v=>v===1)),Math.max(0,p.wetEdge.findIndex(v=>v===0))].map(e=>lonLat(planet.grid,p.from[e]));examples.push([0,90],[0,-90],[-180,0]);
+  for(const [lon,lat] of examples){const patch=builder.patch(lon,lat,{level:12,resolution:16});assert.equal(patch.stage,'terrain-chunks');assert.ok(patch.stats.chunks>=9&&patch.stats.chunks<=13);assert.ok(patch.stats.triangles<10000);assert.ok(patch.stats.sharedVertices>0);assert.equal(patch.standingWater.indices.length,0);
+    for(const v of patch.ground.positions)assert.ok(Number.isFinite(v));for(const id of patch.ground.indices)assert.ok(id<patch.ground.elevationsM.length);
   }
 });

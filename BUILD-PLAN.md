@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.10.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.11.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -108,9 +108,10 @@ commit, with a brief handoff recording what passed and the next task. Stop after
 one row; do not expand the session to include the next row. Publish visible
 changes through the existing GitHub Pages workflow.
 
-All production features still cover the complete planet. Smaller tasks refer to
-the implementation scope, never bounded map regions. Focused automated examples
-support, rather than replace, complete-planet validation.
+The complete water/climate/elevation model remains global. Terrain geometry is
+requested in connected chunks at the resolution needed for the view. Every
+world location uses the same global fields and shared border rules. Automated
+fixtures supplement complete-planet model checks.
 
 | Task | Scope | Completion check |
 | --- | --- | --- |
@@ -123,7 +124,9 @@ support, rather than replace, complete-planet validation.
 | 3b. Physical shorelines — completed in 0.7.8 | Derive lake/ocean shores and river contacts from that shared surface. | Shore heights agree with water levels; no separate overlapping water patches at mouths. Publish the shoreline checkpoint. |
 | 4a1. Mesh foundation — completed in 0.7.9 | Build the entire ground scaffold and fixed lake/ocean sheets with shared shore vertices. | Closed global indexed ground; shared shore positions; preview actual buffers on Pages. |
 | 4a2a. Global channel constraints — completed in 0.7.10 | Define shared junction anchors, core/bank sampling stations, terrain-face references and links to all standing-water openings. | Every global profile covered; sampled constraints agree with the shared fitted surface and can be inspected. |
-| 4a2b. Channel triangulation | Insert those constraints into the global ground and water meshes, including confluences and paired mouth openings. | Connected mesh geometry follows the shared sections without independent water ribbons or overlapping mouth caps. |
+| C1. On-demand ground chunks — completed in 0.7.11 | Replace detailed whole-planet triangulation with globally addressed ground chunks and shared borders. | Identical same-level borders, correct 2:1 stitched edges/corners, local inspection and bounded cache. |
+| C2. Chunk water surfaces | Clip and join river/lake/ocean water within the same chunks. | Shared terrain/water boundary vertices, level standing water, continuous junctions and chunk borders. |
+| C3. Streaming and LOD | Select/evict chunks around the camera and balance neighboring detail levels. | Bounded mesh memory, stable transitions and full global addressability. |
 | 4b. 3D navigation | Add navigation and inspect the bare world at global and local scales. | Usable navigation and visible terrain/water joins on the published Pages viewer. |
 
 Task 1a, saved in **0.7.1**, adds `basins.mjs` and the model's
@@ -300,7 +303,7 @@ shore triangles, and pool-specific caches preserve touching independent pools.
 Software rendering checks cover depth, water visibility and opposite hemispheres.
 Existing global hydrology, climate, snow, geology and shoreline checks pass.
 
-Current checkpoint: **0.7.10**, task **4a2a complete**. River mesh integration
+Previous checkpoint: **0.7.10**, task **4a2a complete**. River mesh integration
 is split into global constraints and their triangulation to keep each checkpoint
 small. `channel-constraints.mjs` covers all 85,338 profile links, 89,897 endpoint
 anchors, 7,818 shared junctions and 261,899 saved sections. Each link references
@@ -326,7 +329,33 @@ All source opening records link to channels and retain their endpoint/loop
 geometry. Existing mesh topology and hydrology checks pass. Browser inspection
 confirms a fitted channel section, fixed ocean contact and retained design plots.
 
-**Next task: 4a2b, channel triangulation into the global ground/water meshes.**
-Consume these constraints and refine as needed for channel cores, banks,
-confluences and open mouths. Continue globally, with no test regions.
-Keep local 3D navigation (4b), vegetation and decorative detail separate.
+Current checkpoint: **0.7.11**, **C1 complete: global simulation with on-demand
+terrain geometry**. Full-resolution whole-planet mesh generation is replaced
+by connected cube-sphere chunks. The published 0.7.9 reference builder remains
+for regression checks, but it no longer runs on page startup. The existing
+map/globe provides the global overview, and all hydrology remains authoritative.
+
+`terrain-chunks.mjs` gives every world position a dyadic tile address. Integer
+direction keys agree across cube seams, polar faces and LODs. Shared samples
+come from the same fitted query; 2×2 triangle fans stitch a fine edge directly
+to a neighbor one level coarser, including multi-edge corners. Automatic LOD
+selection is separate; the inspector currently draws a uniform-level patch.
+
+Map layers → Inspect terrain chunks requests the selected place or river.
+View detail, cardinal movement and oblique/top-down controls inspect actual
+ground geometry. A typical view has 13 connected chunks, 106,496 triangles and
+~3.3 MiB of mesh data. A persistent worker builds these requests with a bounded
+65,536-sample LRU cache. It is reset when the world changes. The previous large
+3D mesh is no longer built/transferred during initial generation.
+
+Verification: **96 tests pass**. All six face seam/corner rules, neighbor
+reciprocity, fine/coarse segment matching, every stitching-edge combination,
+closed-sphere assembly, actual global field samples, disabled-cache border
+identity and bounded cache behavior are checked. Wet/dry rivers and both poles
+produce local patches. Existing hydrology, climate, geology, shared profile and
+shoreline checks pass. Inspection lighting and local camera centering are tested.
+
+**Next task: C2, chunk water surfaces.** Clip water to the fitted ground within
+the same globally addressed chunks, preserving level standing-water surfaces,
+river junctions and border continuity. Then implement C3 camera-driven streaming
+and balanced LOD selection. Keep vegetation and decorative detail separate.

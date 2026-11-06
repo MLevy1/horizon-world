@@ -7,11 +7,11 @@
   <meta name="description" content="Horizon: the complete hydrology of a seeded planet. Explore connected headwaters, streams, rivers, ponds, lakes and ocean outlets.">
   <title>Horizon — Global Hydrology</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23101c22'/%3E%3Cpath d='M11 4q12 6 4 13t3 11M24 7q-3 6-9 10' fill='none' stroke='%2397dedb' stroke-width='3'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./atlas.css?v=0.7.10">
+  <link rel="stylesheet" href="./atlas.css?v=0.7.11">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="./" aria-label="Horizon home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 3q16 6 5 15t4 11M25 7q-4 6-10 11"/></svg><span>HORIZON<small>GLOBAL HYDROLOGY · 0.7.10</small></span></a>
+    <a class="brand" href="./" aria-label="Horizon home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 3q16 6 5 15t4 11M25 7q-4 6-10 11"/></svg><span>HORIZON<small>GLOBAL HYDROLOGY · 0.7.11</small></span></a>
     <div class="top-note"><span class="status-dot"></span><span id="top-status">Generating the whole planet</span></div>
     <button class="quiet about-trigger" id="about-open">About this world <span aria-hidden="true">↗</span></button>
   </header>
@@ -46,8 +46,8 @@
         <p class="climate-summary" id="geology-summary">Defining volcanic geography…</p>
         <button id="channel-samples-open" class="secondary" disabled>Inspect fitted channel</button>
         <p id="channel-summary" class="muted">Linking the global channel constraints…</p>
-        <button id="mesh-open" class="secondary" disabled>View mesh foundation</button>
-        <p id="mesh-summary" class="muted">Building the full-planet mesh foundation…</p>
+        <button id="mesh-open" class="secondary" disabled>Inspect terrain chunks</button>
+        <p id="mesh-summary" class="muted">Terrain is built on demand from the global water system.</p>
         <p id="shoreline-summary" class="muted">Extracting physical shorelines…</p>
         <div class="layer-grid">
           <label><input type="checkbox" id="layer-rivers" checked><span class="layer-swatch river"></span>Rivers</label>
@@ -94,7 +94,7 @@
     <button class="dialog-close quiet" id="about-close" aria-label="Close about dialog">✕</button>
     <span class="eyebrow">HORIZON · A FRESH FOUNDATION</span><h2>A complete world of water.</h2>
     <p>This version starts with hydrology. It generates one closed planet, then resolves its ocean, drainage divides, headwaters, streams, rivers, ponds, lakes and spill outlets as a single connected system.</p>
-    <dl><dt>World</dt><dd>A fictional planet, 128 km in diameter; about 51,472 km² of surface.</dd><dt>Coverage</dt><dd>1,179,650 flow cells. Longitude is connected across the map seam; both poles are part of the same graph.</dd><dt>Map resolution</dt><dd>About 262 m between flow cells at the equator. Zooming changes the view of the existing network.</dd><dt>Water</dt><dd>Annual precipitation is partitioned between evaporation and runoff. Lake basins split into independently balanced pools when exposed ridges separate their water. Streams cross exposed margins into the actual wet pools. Active flow ends at an ocean or closed basin; possible overflow connections remain available in the global graph.</dd><dt>Climate</dt><dd>Temperature follows latitude and elevation. An approximate circulation transports moisture around complete latitude rings, including windward rainfall and leeward drying. These annual fields change runoff and lake water balances; they are procedural estimates, not a weather forecast.</dd><dt>Snow & glaciers</dt><dd>A monthly temperature-index estimate partitions snowfall, snowmelt and sublimation after two snow spin-up years. The following annual surplus forms ice. Ice exports only along adjacent descending bed elevations; melt returns to the same liquid-water network. Annual ice gain, sea calving and seasonal storage changes are accounted for explicitly. This does not simulate glacier speed or ice-surface deformation.</dd><dt>Volcanic geography</dt><dd>Seeded volcanic arcs and hotspot chains place composite cones, shields, calderas and cinder cones across the sphere. Broad landforms and cooled downhill lava deposits modify the elevation scaffold before oceans, drainage, climate and glaciers are solved. Rust/orange areas are solid geological deposits. This model does not simulate plate motion, eruptions or molten lava.</dd><dt>Land</dt><dd>Only broad drainage elevations are calculated to establish flow direction. A separate bare-mesh foundation now shows this scaffold with fixed lake and ocean surfaces. Subcell river meshes, vegetation and buildings are later checkpoints.</dd></dl>
+    <dl><dt>World</dt><dd>A fictional planet, 128 km in diameter; about 51,472 km² of surface.</dd><dt>Coverage</dt><dd>1,179,650 flow cells. Longitude is connected across the map seam; both poles are part of the same graph.</dd><dt>Map resolution</dt><dd>About 262 m between flow cells at the equator. Zooming changes the view of the existing network.</dd><dt>Water</dt><dd>Annual precipitation is partitioned between evaporation and runoff. Lake basins split into independently balanced pools when exposed ridges separate their water. Streams cross exposed margins into the actual wet pools. Active flow ends at an ocean or closed basin; possible overflow connections remain available in the global graph.</dd><dt>Climate</dt><dd>Temperature follows latitude and elevation. An approximate circulation transports moisture around complete latitude rings, including windward rainfall and leeward drying. These annual fields change runoff and lake water balances; they are procedural estimates, not a weather forecast.</dd><dt>Snow & glaciers</dt><dd>A monthly temperature-index estimate partitions snowfall, snowmelt and sublimation after two snow spin-up years. The following annual surplus forms ice. Ice exports only along adjacent descending bed elevations; melt returns to the same liquid-water network. Annual ice gain, sea calving and seasonal storage changes are accounted for explicitly. This does not simulate glacier speed or ice-surface deformation.</dd><dt>Volcanic geography</dt><dd>Seeded volcanic arcs and hotspot chains place composite cones, shields, calderas and cinder cones across the sphere. Broad landforms and cooled downhill lava deposits modify the elevation scaffold before oceans, drainage, climate and glaciers are solved. Rust/orange areas are solid geological deposits. This model does not simulate plate motion, eruptions or molten lava.</dd><dt>Land</dt><dd>Only broad drainage elevations are calculated to establish flow direction. The atlas remains the global overview. Local ground chunks sample the fitted river beds, banks and standing-water boundaries. Water meshes, vegetation and buildings are later checkpoints.</dd></dl>
     <p class="muted">Lake and pond names use current wet area (0.35 km² threshold); dry/playa pools are counted separately. The blue surface follows estimated annual water availability; exposed basin margins are brown. Dashed waterways indicate seasonal or ephemeral flow estimates. Potential spills are dormant overflow links. Snow values are liquid-water equivalent (SWE), not snow depth. Snow cover and frozen-water shading are annual estimates. Glacier thickness, deformation, evolving shorelines, time-varying river flow and groundwater remain future steps.</p>
     <a href="https://github.com/MLevy1/horizon-world" target="_blank" rel="noopener">View the source ↗</a>
   </dialog>
@@ -112,14 +112,15 @@
     </details>
   </dialog>
   <dialog id="mesh-dialog" class="mesh-dialog" aria-labelledby="mesh-title">
-    <button class="dialog-close quiet" id="mesh-close" aria-label="Close mesh foundation">✕</button>
-    <span class="eyebrow">GLOBAL MESH · CHECKPOINT 4A1</span><h2 id="mesh-title">Bare planet foundation</h2>
-    <p>Actual land, lake and ocean geometry. Global channel constraints are now available in Inspect fitted channel. Triangulating them into this foundation is next (4a2b).</p>
-    <p id="mesh-counts" aria-live="polite"></p>
-    <canvas id="mesh-canvas" role="img" aria-label="Bare global land, lake and ocean mesh preview"></canvas>
-    <div class="mesh-controls"><label>Longitude <input id="mesh-longitude" type="range" min="-180" max="180" value="-35"></label><label>Latitude <input id="mesh-latitude" type="range" min="-90" max="90" value="20"></label><label><input id="mesh-water" type="checkbox" checked>Lake and ocean surfaces</label></div>
+    <button class="dialog-close quiet" id="mesh-close" aria-label="Close terrain inspection">✕</button>
+    <span class="eyebrow">GLOBAL WATER · LOCAL GEOMETRY</span><h2 id="mesh-title">Connected terrain chunks</h2>
+    <p>Ground geometry comes from the same global river beds, banks and lake levels. Adjacent chunks share their border vertices. Water surfaces are the next chunk pass.</p>
+    <p id="chunk-location"></p><p id="mesh-counts" aria-live="polite"></p>
+    <canvas id="mesh-canvas" role="img" aria-label="Local ground chunks sampled from the global hydrology"></canvas>
+    <div class="mesh-controls"><label>View <select id="chunk-detail"><option value="10">Wider terrain</option><option value="12" selected>River banks</option><option value="13">Fine section</option></select></label><label><input type="checkbox" id="chunk-oblique" checked>Oblique view</label><button id="chunk-focus" class="secondary">Focus selection</button></div>
+    <div class="chunk-pan" role="group" aria-label="Move terrain inspection"><button id="chunk-west" aria-label="Move west">← West</button><button id="chunk-north" aria-label="Move north">↑ North</button><button id="chunk-south" aria-label="Move south">↓ South</button><button id="chunk-east" aria-label="Move east">East →</button></div>
     <p id="mesh-error" role="status"></p>
   </dialog>
-  <script type="module" src="./atlas.mjs?v=0.7.10"></script>
+  <script type="module" src="./atlas.mjs?v=0.7.11"></script>
 </body>
 </html>
