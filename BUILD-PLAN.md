@@ -542,3 +542,28 @@ for the whole planet. No tree or ground-cover implementation is part of this ste
 
 Validation focuses on placement identity across overlapping views, deep-water
 exclusion, finite geometry, blocking footprints, and browser inspection/walking.
+
+
+## Trees and shrubs — 0.8.4
+
+A global seeded placement layer now adds conifers, broadleaf trees and shrubs.
+Temperature, moisture/aridity, annual snow, elevation, slope and water proximity
+control habitat suitability. Broad coherent patches create gaps and clearings;
+individual addresses use jittered cube-sphere cells, independent of terrain LOD.
+Water, glacier interiors, steep slopes, fresh cooled-lava deposits and large
+rock footprints remain clear. Existing snow-covered starting terrain can remain
+treeless. The Woodland destination selects suitable inland climate in the actual
+global model, rather than loading a separate vegetation showcase.
+
+Plants have lean, tapered trunks, individually varied lateral branches and open
+leaf sprays built from small geometry. There are no solid spherical canopy blobs.
+Nearby plants have fuller branching/foliage; distant plants simplify, and only a
+140 m neighborhood exists in memory. Trunks block walking and use the existing
+clear-arrival search. Shrubs are passable except at their small woody base.
+The layer renders as a single opaque mesh batch before water in both renderers.
+This first pass establishes placement and silhouettes. Detailed botanical assets,
+cast shadows, wind, seasonal changes and grass remain future visual work.
+
+Validation is limited to climate exclusions, stable overlapping-view identities,
+finite geometry/budget checks, essential existing movement checks and browser
+inspection/walking.
