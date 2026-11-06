@@ -1,7 +1,7 @@
-import {createWaterScaffold} from './water-scaffold.mjs?v=0.7.9';
-import {neighbors,cellAt} from './planet.mjs?v=0.7.9';
+import {createWaterScaffold} from './water-scaffold.mjs?v=0.7.10';
+import {neighbors,cellAt} from './planet.mjs?v=0.7.10';
 import {sampleRiverEdge} from './river-profiles.mjs?v=0.7.4';
-import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.7.9';
+import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.7.10';
 
 const RAD=Math.PI/180,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
@@ -112,6 +112,6 @@ export function createSurfaceSampler(m){
       return margin;
     }};
   }
-  return {sample,mesh,contacts,shoreArc,waterScaffold,riverAtDirection(direction){return nearest(riverCandidates(normalize(direction)));},
+  return {sample,mesh,grid:g,contacts,shoreArc,waterScaffold,channelsAtDirection(direction){return riverCandidates(normalize(direction));},riverAtDirection(direction){return nearest(riverCandidates(normalize(direction)));},
     stats:{globalEdges:E,buckets:buckets.size,indexResolution:B,scaffoldCells:g.count,...contacts.stats,...waterScaffold.stats}};
 }

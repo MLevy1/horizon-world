@@ -7,11 +7,11 @@
   <meta name="description" content="Horizon: the complete hydrology of a seeded planet. Explore connected headwaters, streams, rivers, ponds, lakes and ocean outlets.">
   <title>Horizon — Global Hydrology</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23101c22'/%3E%3Cpath d='M11 4q12 6 4 13t3 11M24 7q-3 6-9 10' fill='none' stroke='%2397dedb' stroke-width='3'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./atlas.css?v=0.7.9">
+  <link rel="stylesheet" href="./atlas.css?v=0.7.10">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="./" aria-label="Horizon home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 3q16 6 5 15t4 11M25 7q-4 6-10 11"/></svg><span>HORIZON<small>GLOBAL HYDROLOGY · 0.7.9</small></span></a>
+    <a class="brand" href="./" aria-label="Horizon home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 3q16 6 5 15t4 11M25 7q-4 6-10 11"/></svg><span>HORIZON<small>GLOBAL HYDROLOGY · 0.7.10</small></span></a>
     <div class="top-note"><span class="status-dot"></span><span id="top-status">Generating the whole planet</span></div>
     <button class="quiet about-trigger" id="about-open">About this world <span aria-hidden="true">↗</span></button>
   </header>
@@ -44,6 +44,8 @@
         <p class="climate-summary" id="climate-summary">Calculating climate and water availability…</p>
         <p class="climate-summary" id="snow-summary">Calculating snow and glacier storage…</p>
         <p class="climate-summary" id="geology-summary">Defining volcanic geography…</p>
+        <button id="channel-samples-open" class="secondary" disabled>Inspect fitted channel</button>
+        <p id="channel-summary" class="muted">Linking the global channel constraints…</p>
         <button id="mesh-open" class="secondary" disabled>View mesh foundation</button>
         <p id="mesh-summary" class="muted">Building the full-planet mesh foundation…</p>
         <p id="shoreline-summary" class="muted">Extracting physical shorelines…</p>
@@ -98,23 +100,26 @@
   </dialog>
   <dialog id="river-profile-dialog" class="river-profile-dialog" aria-labelledby="river-profile-title">
     <button class="dialog-close quiet" id="river-profile-close" aria-label="Close river profile">✕</button>
-    <span class="eyebrow">FOLLOW THE CHANNEL</span><h2 id="river-profile-title">River design profile</h2>
+    <span class="eyebrow">FOLLOW THE CHANNEL</span><h2 id="river-profile-title">River profiles &amp; mesh samples</h2>
     <p id="river-profile-route"></p>
-    <div class="river-profile-range"><label for="profile-position">Position along river</label><output id="profile-distance" for="profile-position"></output><input id="profile-position" type="range" min="0" max="1000" value="0" step="1"></div>
+    <div class="river-profile-range"><label for="profile-position">Saved section along river</label><output id="profile-distance" for="profile-position"></output><input id="profile-position" type="range" min="0" max="1000" value="0" step="1"></div>
     <p id="river-profile-state" class="river-profile-state" aria-live="polite"></p>
+    <div class="river-profile-plots fitted-constraint-block"><h3>Fitted mesh section · 4a2a</h3><p id="constraint-state"></p><div id="constraint-metrics" class="river-profile-metrics"></div><div id="constraint-section"></div><p class="river-profile-note">Dots are actual fitted surface samples; lines connect those samples. Nominal width marks do not force a dry bank when a neighboring channel or lake continues across them. The next mesh pass (4a2b) triangulates these constraints into the bare planet.</p></div>
+    <details class="source-design"><summary>Original river design profiles</summary>
     <div id="river-profile-metrics" class="river-profile-metrics"></div>
     <div class="river-profile-plots"><h3>Longitudinal design profile</h3><div id="river-longitudinal"></div><h3>Minimum channel cross-section at selected position</h3><div id="river-cross-section"></div></div>
-    <p class="river-profile-note">Blue: water · Dashed: dry-channel design · Sand: bed · Orange: selected position. Horizontal and vertical scales differ. The section shows minimum channel design; lake/ocean beds can be deeper. Terrain banks and shorelines will be fitted later.</p>
+    <p class="river-profile-note">Blue: water · Dashed: dry-channel design · Sand: bed · Orange: selected position. Horizontal and vertical scales differ. The section shows minimum channel design; lake/ocean beds can be deeper. Fitted surface queries appear above; the bare foundation still awaits channel triangulation.</p>
+    </details>
   </dialog>
   <dialog id="mesh-dialog" class="mesh-dialog" aria-labelledby="mesh-title">
     <button class="dialog-close quiet" id="mesh-close" aria-label="Close mesh foundation">✕</button>
     <span class="eyebrow">GLOBAL MESH · CHECKPOINT 4A1</span><h2 id="mesh-title">Bare planet foundation</h2>
-    <p>Actual land, lake and ocean geometry. River channels, banks and mouth openings are the next mesh checkpoint (4a2).</p>
+    <p>Actual land, lake and ocean geometry. Global channel constraints are now available in Inspect fitted channel. Triangulating them into this foundation is next (4a2b).</p>
     <p id="mesh-counts" aria-live="polite"></p>
     <canvas id="mesh-canvas" role="img" aria-label="Bare global land, lake and ocean mesh preview"></canvas>
     <div class="mesh-controls"><label>Longitude <input id="mesh-longitude" type="range" min="-180" max="180" value="-35"></label><label>Latitude <input id="mesh-latitude" type="range" min="-90" max="90" value="20"></label><label><input id="mesh-water" type="checkbox" checked>Lake and ocean surfaces</label></div>
     <p id="mesh-error" role="status"></p>
   </dialog>
-  <script type="module" src="./atlas.mjs?v=0.7.9"></script>
+  <script type="module" src="./atlas.mjs?v=0.7.10"></script>
 </body>
 </html>

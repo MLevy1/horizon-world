@@ -1,6 +1,6 @@
-# Horizon 0.7.9 — Global hydrology atlas
+# Horizon 0.7.10 — Global hydrology atlas
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.9).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.10).
 
 A fresh hydrology-only foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
@@ -76,6 +76,9 @@ Serve the repository root or `dist/` over HTTP. Module workers do not run from a
   shared separating saddles between incompatible pool levels.
 - `shorelines.mjs`: spherical contour rings, open channel portals and compact
   transferable shore paths for both map projections.
+- `channel-constraints.mjs`: shared global junction anchors, section definitions,
+  adjacent terrain-face references and links to standing-water openings.
+- `constraint-view.mjs`: fitted section sample plots for that mesh input.
 - `mesh-foundation.mjs`: globally indexed ground and clipped standing-water
   surfaces, sharing exact shore vertices.
 - `mesh-preview.mjs` / `mesh-raster.mjs`: actual mesh rendering through WebGL 2
@@ -381,3 +384,50 @@ validate all triangle indices, orientations, finite coordinates and fixed water
 levels. The compatibility renderer is checked for indexed geometry, depth,
 water visibility and hemisphere changes. Existing hydrology and shoreline
 checks continue to pass.
+
+
+## Global channel constraints — 0.7.10
+
+**4a2a is complete.** Open **Map layers → Inspect fitted channel**, or select a
+river and choose **Inspect river profile**. The saved-section slider steps
+through the actual global constraint stations, including shore contacts. Fitted
+ground/water values and a nine-point section appear first; the original design
+plots remain available under **Original river design profiles**. A wet outer
+sample is reported as water continuing beyond the sampled section, rather than
+being forced into an artificial bank.
+
+`buildChannelConstraints(model, surface, shores)` covers all **85,338** global
+profile links and **89,897** unique endpoint anchors, including **7,818** shared
+junctions. Each link references its two real spherical terrain faces. Its
+stations retain both endpoints, the midpoint and any intermediate fitted shore
+contact, producing **261,899** sections. Incoming/outgoing endpoint stations use
+the same anchor point ID; their transverse directions can differ at a junction.
+
+The returned typed arrays are `anchors`, `points`, `edges`, `stations` and
+`portals`. Centre directions, fitted heights and containing-face references are
+saved once. `sampleConstraintSection(constraints, surface, station)` evaluates
+nine perpendicular spherical offsets: centre, inner core, nominal width,
+shoulders and outer support. All use the existing composed surface; overlaps,
+fixed pool/ocean planes and dry designs are retained. These lateral constraints
+are procedural definitions, not a second permanent multi-million-point cache.
+The mesher will consume the same definitions. Station density is the initial
+constraint set; this release does not claim it is a finished error-bounded
+triangulation.
+
+All **6,110** standing-water opening records are linked to their contributing
+profile edges (**6,789** references), with the original shore-path indices
+preserved. Open portals retain paired endpoints; a closed opening loop retains
+a shared loop seed rather than inventing two dry bank endpoints. Original
+shore polylines stay in `model.shorelines`. The mesh inputs add approximately
+20 MB of transferable data without modifying drainage or annual budgets.
+
+All **85 tests pass**. Complete-planet checks cover every profile/face reference,
+station/contact, shared junction anchor, stored fitted point and nine-point
+section, plus every linked opening. Existing manifold-mesh, standing-water,
+hydrology, climate and geology tests still pass. The inspection view also
+retains explicit dry gaps and does not cap ocean water at a nominal width.
+
+**Next: 4a2b, channel triangulation into the global ground and water meshes.**
+The bare-planet preview still shows the 4a1 foundation; the newly saved
+constraints are inspectable inputs to that next mesh pass, not separate water
+ribbons presented as an integrated mesh. Local navigation remains task 4b.

@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.9.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.10.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -122,7 +122,8 @@ support, rather than replace, complete-planet validation.
 | 3a. Terrain sampling — completed in 0.7.6 | Add one spherical terrain-and-water sampler used across the whole world. | Consistent values across longitude wrap and at both poles; river/lake contacts agree. |
 | 3b. Physical shorelines — completed in 0.7.8 | Derive lake/ocean shores and river contacts from that shared surface. | Shore heights agree with water levels; no separate overlapping water patches at mouths. Publish the shoreline checkpoint. |
 | 4a1. Mesh foundation — completed in 0.7.9 | Build the entire ground scaffold and fixed lake/ocean sheets with shared shore vertices. | Closed global indexed ground; shared shore positions; preview actual buffers on Pages. |
-| 4a2. River mesh integration | Fit channel cores, banks and confluences into that entire mesh; open paired lake/ocean mouth portals. | River dimensions and junctions agree with the shared surface queries; connected water without overlapping mouth caps. |
+| 4a2a. Global channel constraints — completed in 0.7.10 | Define shared junction anchors, core/bank sampling stations, terrain-face references and links to all standing-water openings. | Every global profile covered; sampled constraints agree with the shared fitted surface and can be inspected. |
+| 4a2b. Channel triangulation | Insert those constraints into the global ground and water meshes, including confluences and paired mouth openings. | Connected mesh geometry follows the shared sections without independent water ribbons or overlapping mouth caps. |
 | 4b. 3D navigation | Add navigation and inspect the bare world at global and local scales. | Usable navigation and visible terrain/water joins on the published Pages viewer. |
 
 Task 1a, saved in **0.7.1**, adds `basins.mjs` and the model's
@@ -278,7 +279,7 @@ channel opening. Existing water, snow, geology and river-profile checks pass.
 Adaptive unresolved tangencies are at most 2 cm long; these are numeric, not
 physical-accuracy promises.
 
-Current checkpoint: **0.7.9**, task **4a1 complete**. Task 4a is split into
+Previous checkpoint: **0.7.9**, task **4a1 complete**. Task 4a is split into
 foundation and river integration so one turn remains a small global checkpoint.
 `mesh-foundation.mjs` builds the complete indexed ground and lake/ocean sheets.
 It clips both surfaces at identical shore vertices and preserves shared saddle
@@ -299,7 +300,33 @@ shore triangles, and pool-specific caches preserve touching independent pools.
 Software rendering checks cover depth, water visibility and opposite hemispheres.
 Existing global hydrology, climate, snow, geology and shoreline checks pass.
 
-**Next task: 4a2, river mesh integration.** Insert subcell channels and their
-banks/confluences, and replace standing-water mouth caps with the previously
-extracted paired portal constraints. Continue globally, with no test regions.
+Current checkpoint: **0.7.10**, task **4a2a complete**. River mesh integration
+is split into global constraints and their triangulation to keep each checkpoint
+small. `channel-constraints.mjs` covers all 85,338 profile links, 89,897 endpoint
+anchors, 7,818 shared junctions and 261,899 saved sections. Each link references
+two actual spherical faces. Endpoints, midpoints and intermediate shore contacts
+are retained; incident edges share their centre anchor IDs.
+
+All 6,110 standing-water opening records retain their source path references and
+contributing channel links. Open portals have paired endpoints; closed loops use
+a shared seed without pretending the whole submerged loop is a dry shoreline.
+Nine-point cross-sections are procedural definitions sampled through the shared
+fitted surface when consumed. Saved typed data adds about 20 MB. No hydrology or
+budget changes, new regions or detached water-strip geometry are introduced.
+
+Map layers → Inspect fitted channel opens actual fitted samples. The original
+river designs remain expandable. The route slider now steps through saved
+sections, so exact contact stations can be selected. Wet outer samples stay wet.
+The separate bare-planet preview is still the 4a1 foundation.
+
+Verification: **85 tests pass**, including every global profile's two face
+references, full face numbering at seam/poles, all endpoint/contact stations,
+shared junction IDs, all saved fitted values and all nine-point cross-sections.
+All source opening records link to channels and retain their endpoint/loop
+geometry. Existing mesh topology and hydrology checks pass. Browser inspection
+confirms a fitted channel section, fixed ocean contact and retained design plots.
+
+**Next task: 4a2b, channel triangulation into the global ground/water meshes.**
+Consume these constraints and refine as needed for channel cores, banks,
+confluences and open mouths. Continue globally, with no test regions.
 Keep local 3D navigation (4b), vegetation and decorative detail separate.

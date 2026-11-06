@@ -1,4 +1,4 @@
-import {createSoftwareMeshPreview} from './mesh-raster.mjs?v=0.7.9';
+import {createSoftwareMeshPreview} from './mesh-raster.mjs?v=0.7.10';
 /** Lightweight review of the real indexed buffers, not the atlas texture. */
 export function createMeshPreview(canvas,mesh){
   const gl=canvas.getContext('webgl2',{alpha:false,antialias:true});

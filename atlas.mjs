@@ -1,7 +1,9 @@
-import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.9';
-import {ZONES,flowRegime} from './climate.mjs?v=0.7.9';
-import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.7.9';
-import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.9';
+import {sampleConstraintSection} from './channel-constraints.mjs?v=0.7.10';
+import {constraintSectionSvg} from './constraint-view.mjs?v=0.7.10';
+import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.10';
+import {ZONES,flowRegime} from './climate.mjs?v=0.7.10';
+import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.7.10';
+import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.10';
 
 const $=id=>document.getElementById(id);
 const canvas=$('map'),ctx=canvas.getContext('2d'),stage=$('map-stage');
@@ -414,18 +416,25 @@ function openRiverProfile(cell){
   const destination=body?(body.status==='playa'?'dry pool':body.kind)+' '+String(body.id+1).padStart(3,'0'):'the ocean';
   const fall=p.waterM[cell]-p.waterM[end];
   $('river-profile-route').textContent=`Downstream from selection · ${number(profileRoute.totalLengthM/1000,2)} km to ${destination} · ${number(fall,2)} m surface fall`;
-  $('profile-position').value=0;updateRiverProfile();$('river-profile-dialog').showModal();
+  const c=m.channelConstraints;profileRoute.meshStations=Array.from(profileRoute.edges).flatMap(e=>Array.from({length:c.edges.stationOffsets[e+1]-c.edges.stationOffsets[e]},(_,k)=>c.edges.stationOffsets[e]+k));
+  $('profile-position').max=Math.max(0,profileRoute.meshStations.length-1);$('profile-position').value=0;updateRiverProfile();$('river-profile-dialog').showModal();
 }
 function updateRiverProfile(){
   if(!profileRoute||!state.model)return;
-  const p=state.model.riverProfiles,d=Number($('profile-position').value)/1000*profileRoute.totalLengthM;
+  const p=state.model.riverProfiles,c=state.model.channelConstraints,saved=profileRoute.meshStations[Number($('profile-position').value)],edge=c.stations.edge[saved],d=profileRoute.distanceM[profileRoute.edges.indexOf(edge)]+p.lengthM[edge]*c.stations.t[saved];
   const s=inspectionStation(p,profileRoute,d),field=(label,value)=>`<div><span>${label}</span><strong>${value}</strong></div>`;
   $('profile-distance').textContent=`${number(s.distanceM/1000,2)} / ${number(profileRoute.totalLengthM/1000,2)} km`;
   $('river-profile-state').textContent=s.wet?'Annual-flow estimate':'Dry channel design · no modeled annual surface flow';
   $('river-profile-metrics').innerHTML=field('Channel width',number(s.widthM,2)+' m')+field('Mapped center depth',number(s.waterM-s.bedM,2)+' m')+field('Design minimum depth',number(s.designDepthM,2)+' m')+field('Water / design elevation',number(s.waterM,2)+' m')+field('Center bed elevation',number(s.bedM,2)+' m')+field('Distance downstream',number(s.distanceM/1000,2)+' km');
+  const section=sampleConstraintSection(c,state.surfaceSampler,saved),center=section.samples[4];
+  const at=c.stations.t[saved]===0?c.anchors.from[section.edge]:c.stations.t[saved]===1?c.anchors.to[section.edge]:-1,incoming=at<0?0:c.anchors.incomingOffsets[at+1]-c.anchors.incomingOffsets[at];
+  $('constraint-state').textContent='Section '+(Number($('profile-position').value)+1)+' of '+profileRoute.meshStations.length+' · '+number(section.t*100,2)+'% along this link'+(incoming>1?' · Shared junction with '+incoming+' incoming links':'');
+  $('constraint-metrics').innerHTML=field('Fitted center ground',number(center.groundM,2)+' m')+field('Fitted center water',center.waterM===null?'Dry':number(center.waterM,2)+' m')+field('Fitted center depth',center.waterM===null?'0 m':number(center.waterM-center.groundM,2)+' m')+field('Nominal width',number(section.widthM,2)+' m')+field('Outer sampled water',[section.samples[0],section.samples.at(-1)].some(p=>p.waterM!==null)?'Continues beyond sample':'Dry at both ends')+field('Global mesh inputs',number(c.stats.edges,0)+' links');
+  $('constraint-section').innerHTML=constraintSectionSvg(section);
   $('river-longitudinal').innerHTML=longitudinalSvg(p,profileRoute,s);$('river-cross-section').innerHTML=sectionSvg(s);
 }
 $('profile-position').addEventListener('input',updateRiverProfile);
+$('channel-samples-open').addEventListener('click',()=>{const m=state.model,p=m.riverProfiles;let cell=state.selected;if(cell<0||p.edgeAtCell[cell]<0){let best=-1;for(const i of p.from)if(m.discharge[i]>best){best=m.discharge[i];cell=i;}}if(cell>=0&&p.edgeAtCell[cell]>=0){selectCell(cell,{focus:true});openRiverProfile(cell);}});
 $('river-profile-close').addEventListener('click',()=>$('river-profile-dialog').close());
 $('river-profile-dialog').addEventListener('click',e=>{if(e.target===e.currentTarget){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});
 function clearSelection(){
@@ -555,13 +564,13 @@ function drawMeshPreview(){if(meshPreview)try{meshPreview.draw(Number($('mesh-lo
 $('mesh-open').addEventListener('click',async()=>{
   $('mesh-dialog').showModal();$('mesh-error').textContent='';
   const m=state.model.meshFoundation.stats;$('mesh-counts').textContent=number(m.groundTriangles,0)+' ground triangles · '+number(m.waterTriangles,0)+' lake/ocean triangles · '+number(m.bytes/1048576,1)+' MiB of mesh data';
-  try{if(!meshPreview){const {createMeshPreview}=await import('./mesh-preview.mjs?v=0.7.9');meshPreview=createMeshPreview($('mesh-canvas'),state.model.meshFoundation);}drawMeshPreview();}catch(error){$('mesh-error').textContent=error.message;}
+  try{if(!meshPreview){const {createMeshPreview}=await import('./mesh-preview.mjs?v=0.7.10');meshPreview=createMeshPreview($('mesh-canvas'),state.model.meshFoundation);}drawMeshPreview();}catch(error){$('mesh-error').textContent=error.message;}
 });
 $('mesh-close').addEventListener('click',()=>$('mesh-dialog').close());
 for(const id of ['mesh-longitude','mesh-latitude','mesh-water'])$(id).addEventListener('input',drawMeshPreview);
 new ResizeObserver(()=>{if($('mesh-dialog').open)drawMeshPreview();}).observe($('mesh-canvas'));
 function generate(seed){
-  $('river-profile-dialog').close();profileRoute=null;$('mesh-dialog').close();meshPreview?.dispose();meshPreview=null;$('mesh-open').disabled=true;$('mesh-summary').textContent='Building the full-planet mesh foundation…';
+  $('river-profile-dialog').close();profileRoute=null;$('mesh-dialog').close();meshPreview?.dispose();meshPreview=null;$('mesh-open').disabled=true;$('channel-samples-open').disabled=true;$('channel-summary').textContent='Linking the global channel constraints…';$('mesh-summary').textContent='Building the full-planet mesh foundation…';
   state.worker?.terminate();state.worker=null;state.model=null;state.surfaceSampler=null;state.selected=-1;state.trace=[];state.mask=null;state.showTrace=false;state.showCatchment=false;
   $('generate').disabled=true;$('loading').hidden=false;$('loading-progress').style.width='0';$('loading-stage').textContent='Defining continents and drainage divides';
   $('loading').querySelector('h2').textContent='Balancing the whole world’s water';$('top-status').textContent='Generating the whole planet';
@@ -574,7 +583,7 @@ function generate(seed){
     worker.onmessage=({data})=>{
       if(data.type==='progress'){$('loading-stage').textContent=data.stage;$('loading-progress').style.width=data.fraction*100+'%';}
       else if(data.type==='complete'){
-        state.model=data.model;$('mesh-open').disabled=false;const mesh=state.model.meshFoundation.stats;$('mesh-summary').textContent=number(mesh.groundTriangles,0)+' ground triangles · '+number(mesh.waterTriangles,0)+' lake/ocean triangles';const shores=state.model.shorelines.stats;$('shoreline-summary').textContent=number(shores.standingRings,0)+' standing-water rings · '+number(shores.channelPortals,0)+' channel openings';state.surfaceSampler=createSurfaceSampler(state.model);state.worker.terminate();state.worker=null;preparePaths();makeTexture();displayStats();fitWorld();resize();
+        state.model=data.model;$('mesh-open').disabled=false;$('channel-samples-open').disabled=false;const constraints=state.model.channelConstraints.stats;$('channel-summary').textContent=number(constraints.edges,0)+' channel links · '+number(constraints.stations,0)+' saved sections';const mesh=state.model.meshFoundation.stats;$('mesh-summary').textContent=number(mesh.groundTriangles,0)+' ground triangles · '+number(mesh.waterTriangles,0)+' lake/ocean triangles';const shores=state.model.shorelines.stats;$('shoreline-summary').textContent=number(shores.standingRings,0)+' standing-water rings · '+number(shores.channelPortals,0)+' channel openings';state.surfaceSampler=createSurfaceSampler(state.model);state.worker.terminate();state.worker=null;preparePaths();makeTexture();displayStats();fitWorld();resize();
         $('loading').hidden=true;$('generate').disabled=false;
         const url=new URL(location.href);url.searchParams.set('seed',seed);url.searchParams.set('v',VERSION);history.replaceState(null,'',url);
         // Read-only snapshot for reproducible QA and inspection, never a separate simulation.

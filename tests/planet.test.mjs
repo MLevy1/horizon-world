@@ -7,6 +7,7 @@ import {annualPartition,lakeBalance,makeClimate} from '../climate.mjs';
 import {poolWetFraction} from '../pools.mjs';
 import {sampleRiverEdge,FLOW_EPSILON_M3S} from '../river-profiles.mjs';
 import {inspectionRoute,inspectionStation} from '../profile-view.mjs';
+import {buildChannelConstraints,sampleConstraintSection,sphereFaceIndex,nearestConstraintStation} from '../channel-constraints.mjs';
 import {buildMeshFoundation} from '../mesh-foundation.mjs';
 import {extractShorelines,packShorelines,sphereFaces} from '../shorelines.mjs';
 import {createSurfaceSampler} from '../surface-sampler.mjs';
@@ -602,5 +603,58 @@ test('all foundation triangles are finite, nondegenerate and outward-facing in m
     for(const v of p)assert.ok(Number.isFinite(v));
     for(let k=0;k<mesh.indices.length;k+=3){const a=mesh.indices[k]*3,b=mesh.indices[k+1]*3,c=mesh.indices[k+2]*3,ux=p[b]-p[a],uy=p[b+1]-p[a+1],uz=p[b+2]-p[a+2],vx=p[c]-p[a],vy=p[c+1]-p[a+1],vz=p[c+2]-p[a+2];assert.ok((uy*vz-uz*vy)*p[a]+(uz*vx-ux*vz)*p[a+1]+(ux*vy-uy*vx)*p[a+2]>0);}
     for(let i=0;i<mesh.elevationsM.length;i++){const radial=Math.hypot(p[i*3],p[i*3+1],p[i*3+2]);assert.ok(Math.abs(radial-(foundation.radiusM+mesh.elevationsM[i]))<.01);}
+  }
+});
+
+const beforeConstraints=digest(planet),constraints=buildChannelConstraints(planet,surface,shores);
+test('mesh constraints cover every global profile and share exact junction anchors across all incident links',()=>{
+  const c=constraints,p=planet.riverProfiles,a=c.anchors;assert.equal(c.stats.edges,p.from.length);assert.equal(c.stats.anchors,p.corridor.reduce((s,v)=>s+v,0));assert.ok(c.stats.junctions>0);
+  const seen=new Uint8Array(p.from.length);let junctions=0;
+  for(let k=0;k<a.cells.length;k++){
+    const cell=a.cells[k];assert.ok(p.corridor[cell]);if(a.incomingOffsets[k+1]-a.incomingOffsets[k]>1)junctions++;
+    for(let j=a.incomingOffsets[k];j<a.incomingOffsets[k+1];j++){const e=a.incomingEdges[j];assert.equal(p.to[e],cell);assert.equal(a.to[e],k);assert.equal(c.stations.center[c.edges.stationOffsets[e+1]-1],a.point[k]);seen[e]++;}
+    if(a.outgoingEdge[k]>=0){const e=a.outgoingEdge[k];assert.equal(p.from[e],cell);assert.equal(a.from[e],k);assert.equal(c.stations.center[c.edges.stationOffsets[e]],a.point[k]);}
+  }
+  for(const n of seen)assert.equal(n,1);assert.equal(junctions,c.stats.junctions);assert.equal(digest(planet),beforeConstraints);
+});
+test('all channel edges link their two real global faces, with every endpoint, midpoint and shore-contact station retained',()=>{
+  const c=constraints,p=planet.riverProfiles,faces=new Int32Array((2*planet.grid.count-4)*3);let f=0;
+  for(const cells of sphereFaces(planet.grid)){assert.equal(sphereFaceIndex(planet.grid,cells),f);faces.set(cells,f++*3);}
+  for(let e=0;e<p.from.length;e++){
+    const fs=c.edges.faces.subarray(e*2,e*2+2);assert.notEqual(fs[0],fs[1]);for(const id of fs){const cells=faces.subarray(id*3,id*3+3);assert.ok(cells.includes(p.from[e])&&cells.includes(p.to[e]));}
+    const lo=c.edges.stationOffsets[e],hi=c.edges.stationOffsets[e+1],ts=c.stations.t.subarray(lo,hi);assert.equal(ts[0],0);assert.equal(ts.at(-1),1);assert.ok(ts.includes(.5));
+    for(const t of [surface.contacts.start[e],surface.contacts.end[e]])assert.ok([...ts].some(v=>Math.abs(v-t)<1e-12));
+    for(let j=lo;j<hi;j++){assert.equal(c.stations.edge[j],e);assert.ok(c.stations.widthM[j]>0);if(j>lo)assert.ok(c.stations.t[j]>c.stations.t[j-1]);assert.equal(nearestConstraintStation(c,e,c.stations.t[j]),j);}
+  }
+});
+test('every saved global channel and portal center reproduces the shared fitted surface query',()=>{
+  const c=constraints,p=c.points;let wet=0,dry=0;
+  for(let i=0;i<p.groundM.length;i++){
+    const d=p.directions.subarray(i*3,i*3+3);assert.ok(Math.abs(Math.hypot(...d)-1)<1e-12);
+    const q=surface.sample(Math.atan2(d[2],d[0])*(180/Math.PI),Math.asin(Math.max(-1,Math.min(1,d[1])))*(180/Math.PI));assert.equal(p.groundM[i],q.fitted.groundM);assert.equal(p.face[i],sphereFaceIndex(planet.grid,q.triangle.cells));
+    if(q.fitted.waterM===null){assert.ok(Number.isNaN(p.waterM[i]));dry++;}else{assert.equal(p.waterM[i],q.fitted.waterM);assert.ok(p.waterM[i]>p.groundM[i]);wet++;}
+  }
+  assert.ok(wet>0&&dry>0);
+});
+test('every global saved section has nine finite perpendicular fitted samples, retaining wet overlaps and dry designs',()=>{
+  const c=constraints,R=c.radiusM;let wet=0,dry=0,openWater=0;
+  for(let i=0;i<c.stations.t.length;i++){
+    const s=sampleConstraintSection(c,surface,i);assert.equal(s.samples.length,9);const d=s.samples[4].direction;
+    for(const point of s.samples){
+      assert.ok(Number.isFinite(point.groundM));assert.ok(point.face>=-1&&point.face<2359296);
+      if(point.waterM!==null)assert.ok(point.waterM>point.groundM);
+      const v=point.direction,cr=[d[1]*v[2]-d[2]*v[1],d[2]*v[0]-d[0]*v[2],d[0]*v[1]-d[1]*v[0]],distance=Math.atan2(Math.hypot(...cr),d.reduce((a,x,k)=>a+x*v[k],0))*R;assert.ok(Math.abs(distance-Math.abs(point.offsetM))<1e-6);
+    }
+    if(s.samples[4].waterM===null)dry++;else wet++;
+    if(s.samples[0].waterM!==null||s.samples.at(-1).waterM!==null)openWater++;
+  }
+  assert.ok(wet>0&&dry>0&&openWater>0);
+});
+test('every standing-water mouth portal retains its paired endpoints and global contributing channel links',()=>{
+  const c=constraints,p=c.portals;assert.equal(c.stats.portals,shores.portals.length);
+  for(let i=0;i<shores.portals.length;i++){
+    const source=shores.portals[i];assert.ok(p.offsets[i+1]>p.offsets[i]);const linked=[...p.edges.subarray(p.offsets[i],p.offsets[i+1])];assert.equal(new Set(linked).size,linked.length);for(const e of linked)assert.ok(e<planet.riverProfiles.from.length);
+    for(let end=0;end<2;end++){const id=p.endpoints[i*2+end],d=c.points.directions.subarray(id*3,id*3+3),expected=(end?source.points.at(-1):source.points[0]).direction;for(let k=0;k<3;k++)assert.ok(Math.abs(d[k]-expected[k])<1e-12);if(source.closed)assert.ok(c.points.groundM[id]<=source.waterM+.01);else assert.ok(Math.abs(c.points.groundM[id]-source.waterM)<.01);}
+    if(source.closed)assert.equal(p.endpoints[i*2],p.endpoints[i*2+1]);
   }
 });

@@ -1,4 +1,4 @@
-import {sphereFaces} from './shorelines.mjs?v=0.7.9';
+import {sphereFaces} from './shorelines.mjs?v=0.7.10';
 const normalize=a=>{const n=Math.hypot(...a);return a.map(v=>v/n);};
 const edgeKey=(a,b)=>a<b?a+':'+b:b+':'+a;
 class BufferBuilder{
@@ -88,5 +88,5 @@ export function buildMeshFoundation(m,surface,{progress=()=>{}}={}){
     if(processedFaces%100000===0)progress(processedFaces/(2*N-4));
   }
   const groundMesh={positions:gp.finish(),elevationsM:gh.finish(),indices:gi.finish()},standingWater={positions:wp.finish(),elevationsM:wh.finish(),bodies:wb.finish(),groundVertex:wg.finish(),indices:wi.finish()};
-  return {stage:'foundation',radiusM:R,ground:groundMesh,standingWater,stats:{sourceCells:N,sourceFaces:processedFaces,shoreFaces,groundVertices:gh.length,groundTriangles:gi.length/3,waterVertices:wh.length,waterTriangles:wi.length/3,bytes:Object.values(groundMesh).reduce((s,a)=>s+a.byteLength,0)+Object.values(standingWater).reduce((s,a)=>s+a.byteLength,0)},next:'Channel cores, banks, confluences and open mouths (4a2)'};
+  return {stage:'foundation',radiusM:R,ground:groundMesh,standingWater,stats:{sourceCells:N,sourceFaces:processedFaces,shoreFaces,groundVertices:gh.length,groundTriangles:gi.length/3,waterVertices:wh.length,waterTriangles:wi.length/3,bytes:Object.values(groundMesh).reduce((s,a)=>s+a.byteLength,0)+Object.values(standingWater).reduce((s,a)=>s+a.byteLength,0)},next:'Triangulate global channel constraints into ground and water (4a2b)'};
 }
