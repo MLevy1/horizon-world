@@ -1,4 +1,4 @@
-import {sphereFaces} from './shorelines.mjs?v=0.7.15';
+import {sphereFaces} from './shorelines.mjs?v=0.8.0';
 const normalize=a=>{const n=Math.hypot(...a);if(!(n>0&&Number.isFinite(n)))throw Error('Invalid channel frame');return a.map(v=>v/n);};
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const pair=(a,b,N)=>Math.min(a,b)*N+Math.max(a,b);

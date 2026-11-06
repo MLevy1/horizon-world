@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101c22">
+  <meta name="description" content="Horizon: the complete hydrology of a seeded planet. Explore connected headwaters, streams, rivers, ponds, lakes and ocean outlets.">
+  <title>Horizon — Global Hydrology</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23101c22'/%3E%3Cpath d='M11 4q12 6 4 13t3 11M24 7q-3 6-9 10' fill='none' stroke='%2397dedb' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./atlas.css?v=0.8.0">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Return to terrain explorer"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 3q16 6 5 15t4 11M25 7q-4 6-10 11"/></svg><span>HORIZON<small>GLOBAL HYDROLOGY · 0.8.0</small></span></a>
+    <div class="top-note"><span class="status-dot"></span><span id="top-status">Generating the whole planet</span></div>
+    <button class="quiet about-trigger" id="about-open">About this world <span aria-hidden="true">↗</span></button>
+  </header>
+  <main class="workspace">
+    <aside class="sidebar">
+      <section class="world-section">
+        <div class="eyebrow">A WORLD BUILT AROUND WATER</div>
+        <h1>Every river<br>has a way home.</h1>
+        <p class="intro">One planet. A connected system with ocean outlets, closed lakes, and dry basins.</p>
+        <form id="seed-form" class="seed-form">
+          <label for="seed">WORLD SEED</label>
+          <div class="seed-row"><input id="seed" name="seed" maxlength="100" value="HORIZON-01" autocomplete="off" spellcheck="false" aria-label="World seed"><button id="generate" type="submit" aria-label="Generate planet" title="Generate planet">↻</button></div>
+        </form>
+        <div class="world-facts"><span>128 km diameter</span><span>Entire sphere resolved</span></div>
+      </section>
+      <section class="network-section" aria-labelledby="network-title">
+        <div class="section-heading"><h2 id="network-title">The global network</h2><span class="tiny-label">LIVE COUNTS</span></div>
+        <div class="metrics">
+          <div><strong id="stat-headwaters">—</strong><span>Headwaters</span></div><div><strong id="stat-streams">—</strong><span>Stream reaches</span></div>
+          <div><strong id="stat-rivers">—</strong><span>River reaches</span></div><div><strong id="stat-ponds">—</strong><span>Ponds</span></div>
+          <div><strong id="stat-lakes">—</strong><span>Lakes</span></div><div><strong id="stat-mouths">—</strong><span>Ocean mouths</span></div>
+        </div>
+        <div class="verification" id="verification"><span class="verification-symbol">…</span><div><strong id="verification-title">Solving the complete planet</strong><span id="verification-detail">Continents, basins and every downstream link.</span></div></div>
+      </section>
+      <section class="layers-section" aria-labelledby="layers-title">
+        <div class="section-heading"><h2 id="layers-title">Map layers</h2><button id="layers-reset" class="text-button">Reset</button></div>
+        <label class="climate-view-label" for="climate-layer">GLOBAL MAP VIEW</label>
+        <select id="climate-layer" aria-label="Map view"><option value="water">Water & dry regions</option><option value="temperature">Temperature</option><option value="precipitation">Precipitation</option><option value="aridity">Moisture / aridity</option><option value="snow">Snow & ice</option><option value="melt">Meltwater supply</option><option value="geology">Volcanic geography</option></select>
+        <div class="climate-legend"><strong id="climate-legend-title"></strong><div id="climate-ramp"></div><span id="climate-legend-labels"></span></div>
+        <p class="climate-summary" id="climate-summary">Calculating climate and water availability…</p>
+        <p class="climate-summary" id="snow-summary">Calculating snow and glacier storage…</p>
+        <p class="climate-summary" id="geology-summary">Defining volcanic geography…</p>
+        <button id="channel-samples-open" class="secondary" disabled>Inspect fitted channel</button>
+        <p id="channel-summary" class="muted">Linking the global channel constraints…</p>
+        <button id="mesh-open" class="secondary" disabled>Inspect terrain chunks</button>
+        <p id="mesh-summary" class="muted">Terrain is built on demand from the global water system.</p>
+        <p id="shoreline-summary" class="muted">Extracting physical shorelines…</p>
+        <div class="layer-grid">
+          <label><input type="checkbox" id="layer-rivers" checked><span class="layer-swatch river"></span>Rivers</label>
+          <label><input type="checkbox" id="layer-streams" checked><span class="layer-swatch stream"></span>Streams</label>
+          <label><input type="checkbox" id="layer-lakes" checked><span class="layer-swatch lake"></span>Lakes & ponds</label>
+          <label><input type="checkbox" id="layer-headwaters" checked><span class="layer-swatch headwater"></span>Headwaters</label>
+          <label><input type="checkbox" id="layer-basins"><span class="layer-swatch basin"></span>Catchments</label>
+          <label><input type="checkbox" id="layer-arrows"><span class="layer-swatch arrow">→</span>Flow direction</label>
+          <label><input type="checkbox" id="layer-snow" checked><span class="layer-swatch snow"></span>Snow & ice</label>
+          <label><input type="checkbox" id="layer-volcanoes" checked><span class="layer-swatch volcano">△</span>Volcanoes</label>
+          <label><input type="checkbox" id="layer-shores" checked><span class="layer-swatch lake"></span>Physical shores</label>
+          <label><input type="checkbox" id="layer-dry"><span class="layer-swatch dry"></span>Potential spills</label>
+        </div>
+      </section>
+      <section class="inspector-section" aria-labelledby="inspector-title">
+        <div class="section-heading"><h2 id="inspector-title">Follow the water</h2><button id="clear-selection" class="text-button" hidden>Clear</button></div>
+        <div id="inspector" class="inspector-empty"><span class="inspect-icon">⌖</span><p>Select any waterway or place on land to follow its downstream destination.</p></div>
+        <div id="selection-actions" class="selection-actions" hidden><button id="trace-button">Trace flow</button><button id="catchment-button" class="secondary">Show catchment</button></div>
+      </section>
+      <section class="systems-section" aria-labelledby="systems-title">
+        <div class="section-heading"><h2 id="systems-title">Explore water systems</h2><span class="tiny-label">GLOBAL SHORTCUTS</span></div>
+        <div id="systems-list" class="systems-list"><p class="muted">Finding the continental drainage systems…</p></div>
+      </section>
+      <footer class="sidebar-footer">Hydrology first.<br><span>Land is shown only to make the water legible.</span></footer>
+    </aside>
+    <section class="map-panel" aria-label="Interactive global hydrology map">
+      <div class="map-toolbar">
+        <div class="map-title"><span class="eyebrow">PLANETARY ATLAS</span><strong id="map-subtitle">All watersheds. One world.</strong></div>
+        <div class="view-switch" role="group" aria-label="Map projection"><button id="view-map" class="active" aria-pressed="true">World map</button><button id="view-globe" aria-pressed="false">Globe</button></div>
+      </div>
+      <div class="map-stage" id="map-stage">
+        <canvas id="map" role="img" aria-label="Global water network. Drag to pan, pinch or scroll to zoom, and select a waterway to inspect it." tabindex="0"></canvas>
+        <div class="map-loading" id="loading" role="status" aria-live="polite"><div class="loading-mark"><span></span><span></span><span></span></div><h2>Balancing the whole world’s water</h2><p id="loading-stage">Defining continents and drainage divides</p><div class="progress-track"><div id="loading-progress"></div></div><small>The entire planet is generated together.</small></div>
+        <div class="map-controls" role="group" aria-label="Map controls"><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><button id="fit-world" aria-label="Fit complete world" title="Fit complete world">⊙</button></div>
+        <div class="map-compass" aria-hidden="true"><span>N</span><svg viewBox="0 0 20 28"><path d="M10 1 4 21l6-4 6 4z"/></svg></div>
+        <div class="map-hint" id="map-hint">Drag to explore <span>·</span> Scroll or pinch to zoom <span>·</span> Select to trace</div>
+        <div class="map-coordinates" id="coordinates">0° N · 0° E</div>
+      </div>
+      <div class="map-bottom"><div class="map-legend"><span><i class="legend-ocean"></i>Ocean</span><span><i class="legend-inland"></i>Inland water</span><span><i class="legend-route"></i>Selected flow</span></div><div id="scale" class="map-scale"><span>100 km</span><i></i></div></div>
+      <div class="map-caption"><span id="coverage">Loading full-planet coverage…</span><span>Longitude wraps · Poles connected · No outer edge</span></div>
+    </section>
+  </main>
+  <dialog id="about-dialog">
+    <button class="dialog-close quiet" id="about-close" aria-label="Close about dialog">✕</button>
+    <span class="eyebrow">HORIZON · A FRESH FOUNDATION</span><h2>A complete world of water.</h2>
+    <p>This version starts with hydrology. It generates one closed planet, then resolves its ocean, drainage divides, headwaters, streams, rivers, ponds, lakes and spill outlets as a single connected system.</p>
+    <dl><dt>World</dt><dd>A fictional planet, 128 km in diameter; about 51,472 km² of surface.</dd><dt>Coverage</dt><dd>1,179,650 flow cells. Longitude is connected across the map seam; both poles are part of the same graph.</dd><dt>Map resolution</dt><dd>About 262 m between flow cells at the equator. Zooming changes the view of the existing network.</dd><dt>Water</dt><dd>Annual precipitation is partitioned between evaporation and runoff. Lake basins split into independently balanced pools when exposed ridges separate their water. Streams cross exposed margins into the actual wet pools. Active flow ends at an ocean or closed basin; possible overflow connections remain available in the global graph.</dd><dt>Climate</dt><dd>Temperature follows latitude and elevation. An approximate circulation transports moisture around complete latitude rings, including windward rainfall and leeward drying. These annual fields change runoff and lake water balances; they are procedural estimates, not a weather forecast.</dd><dt>Snow & glaciers</dt><dd>A monthly temperature-index estimate partitions snowfall, snowmelt and sublimation after two snow spin-up years. The following annual surplus forms ice. Ice exports only along adjacent descending bed elevations; melt returns to the same liquid-water network. Annual ice gain, sea calving and seasonal storage changes are accounted for explicitly. This does not simulate glacier speed or ice-surface deformation.</dd><dt>Volcanic geography</dt><dd>Seeded volcanic arcs and hotspot chains place composite cones, shields, calderas and cinder cones across the sphere. Broad landforms and cooled downhill lava deposits modify the elevation scaffold before oceans, drainage, climate and glaciers are solved. Rust/orange areas are solid geological deposits. This model does not simulate plate motion, eruptions or molten lava.</dd><dt>Land</dt><dd>Only broad drainage elevations are calculated to establish flow direction. The atlas remains the global overview. Local ground chunks sample the fitted river beds, banks and standing-water boundaries. Water meshes, vegetation and buildings are later checkpoints.</dd></dl>
+    <p class="muted">Lake and pond names use current wet area (0.35 km² threshold); dry/playa pools are counted separately. The blue surface follows estimated annual water availability; exposed basin margins are brown. Dashed waterways indicate seasonal or ephemeral flow estimates. Potential spills are dormant overflow links. Snow values are liquid-water equivalent (SWE), not snow depth. Snow cover and frozen-water shading are annual estimates. Glacier thickness, deformation, evolving shorelines, time-varying river flow and groundwater remain future steps.</p>
+    <a href="https://github.com/MLevy1/horizon-world" target="_blank" rel="noopener">View the source ↗</a>
+  </dialog>
+  <dialog id="river-profile-dialog" class="river-profile-dialog" aria-labelledby="river-profile-title">
+    <button class="dialog-close quiet" id="river-profile-close" aria-label="Close river profile">✕</button>
+    <span class="eyebrow">FOLLOW THE CHANNEL</span><h2 id="river-profile-title">River profiles &amp; mesh samples</h2>
+    <p id="river-profile-route"></p>
+    <div class="river-profile-range"><label for="profile-position">Saved section along river</label><output id="profile-distance" for="profile-position"></output><input id="profile-position" type="range" min="0" max="1000" value="0" step="1"></div>
+    <p id="river-profile-state" class="river-profile-state" aria-live="polite"></p>
+    <div class="river-profile-plots fitted-constraint-block"><h3>Fitted mesh section · 4a2a</h3><p id="constraint-state"></p><div id="constraint-metrics" class="river-profile-metrics"></div><div id="constraint-section"></div><p class="river-profile-note">Dots are actual fitted surface samples; lines connect those samples. Nominal width marks do not force a dry bank when a neighboring channel or lake continues across them. The next mesh pass (4a2b) triangulates these constraints into the bare planet.</p></div>
+    <details class="source-design"><summary>Original river design profiles</summary>
+    <div id="river-profile-metrics" class="river-profile-metrics"></div>
+    <div class="river-profile-plots"><h3>Longitudinal design profile</h3><div id="river-longitudinal"></div><h3>Minimum channel cross-section at selected position</h3><div id="river-cross-section"></div></div>
+    <p class="river-profile-note">Blue: water · Dashed: dry-channel design · Sand: bed · Orange: selected position. Horizontal and vertical scales differ. The section shows minimum channel design; lake/ocean beds can be deeper. Fitted surface queries appear above; the bare foundation still awaits channel triangulation.</p>
+    </details>
+  </dialog>
+  <dialog id="mesh-dialog" class="mesh-dialog" aria-labelledby="mesh-title">
+    <button class="dialog-close quiet" id="mesh-close" aria-label="Close terrain inspection">✕</button>
+    <span class="eyebrow">GLOBAL WATER · LOCAL GEOMETRY</span><h2 id="mesh-title">Connected terrain chunks</h2>
+    <p>Ground and water use the same global river beds, banks and lake levels. Shoreline vertices are shared, and adjacent chunks agree along their borders. Courses now follow bounded curves, with different inside and outside bank shapes. This is the first shaping pass; broader valleys, erosion forms and surface detail follow.</p>
+    <p id="chunk-location"></p><p id="mesh-counts" aria-live="polite"></p>
+    <canvas id="mesh-canvas" tabindex="0" role="img" aria-label="Terrain inspection. Drag to move, scroll to zoom, or use arrow keys and plus or minus."></canvas>
+    <div class="mesh-controls"><label>Zoom preset <select id="chunk-detail"><option value="" disabled>Custom zoom</option><option value="10">Wider terrain</option><option value="12" selected>River banks</option><option value="13">Fine section</option></select></label><label><input type="checkbox" id="chunk-water" checked>Water surfaces</label><label><input type="checkbox" id="chunk-oblique" checked>Oblique view</label><button id="chunk-focus" class="secondary">Focus selection</button><button id="chunk-bend" class="secondary">Find a river bend</button></div>
+    <div class="chunk-pan" role="group" aria-label="Move terrain inspection"><button id="chunk-zoom-in" aria-label="Zoom terrain in">+ Zoom</button><button id="chunk-zoom-out" aria-label="Zoom terrain out">− Zoom</button><button id="chunk-west" aria-label="Move west">← West</button><button id="chunk-north" aria-label="Move north">↑ North</button><button id="chunk-south" aria-label="Move south">↓ South</button><button id="chunk-east" aria-label="Move east">East →</button></div>
+    <p class="muted">Drag to move · Scroll or use + / − to zoom · Nearby terrain loads automatically.</p><p id="chunk-cache" class="muted"></p><p id="mesh-error" role="status"></p>
+  </dialog>
+  <script type="module" src="./atlas.mjs?v=0.8.0"></script>
+</body>
+</html>

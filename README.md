@@ -1,12 +1,13 @@
-# Horizon 0.7.15 — Global hydrology and chunked terrain
+# Horizon 0.8.0 — Walk the world
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.15).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.8.0).
 
-A hydrology-first foundation: one complete, closed, seeded planet. The main
-page displays the actual solved headwaters, streams, rivers, ponds, lakes and
-connected ocean. The terrain inspector builds nearby bare ground chunks from
-that same global surface; vegetation and decorative terrain detail remain later work.
-The old `hydrology.html` link redirects to the same main page.
+The main page is a first-person terrain explorer with keyboard/touch movement,
+ground collision, streamed nearby geometry and world-map travel. It uses the
+same complete seeded planet: rivers, lakes, oceans, climate and volcanic terrain.
+The detailed atlas and older inspection tools remain at [atlas.html](atlas.html),
+also linked from the explorer's world map. The old hydrology.html link opens that
+atlas. Vegetation and decorative surface detail remain later work.
 
 The current viewer is a reviewable checkpoint. Further visual refinement and
 touch-control checks are tracked in [BUILD-PLAN.md](BUILD-PLAN.md).
@@ -600,3 +601,43 @@ not total application memory. This correction does not finish landscape realism.
 Verification: **121 tests pass**, including a new monotonic inland-bank check.
 The same global bend was compared visually before publication. Remaining
 terrain shaping and final appearance are still unfinished.
+
+
+## First-person explorer — 0.8.0
+
+The main page now opens a ground-level world explorer. WASD/arrow keys walk,
+Shift moves faster, and dragging looks around. Touch users can hold the onscreen
+movement buttons and drag elsewhere to look. Auto walk is optional; Stop walking,
+Escape, losing focus and opening the map stop it. Ground-following collision
+intersects the actual visible triangles and blocks steep steps. There is no
+jumping, flying or swimming yet; submerged terrain can be walked underwater.
+
+The entire original planet is still solved, including hydrology, climate and
+volcanic elevation. The worker keeps that data; the client receives only nearby
+meshes and a lightweight whole-world overview. Startup skips physical shoreline
+extraction and saved inspection cross-sections. Those remain in **atlas.html**,
+linked from the world map. The old hydrology.html URL now redirects to that atlas.
+
+Geometry streams with movement, using the existing shared surface, water clipping
+and balanced tile joins. Nearby geometry reaches tile level 12, with progressively
+simpler distant tiles. Each tile uses 16 subdivisions; the default river start has
+about 65,000 base triangles, versus roughly 600,000 in the previous inspector.
+Chunk buffers have a 12 MiB LRU budget and surface samples a 32,768-entry limit.
+A view is requested after moving 24 metres; the last complete view remains active
+while its replacement loads. The current far plane is 260 metres with fog;
+distant horizons and a richer landscape remain later work.
+
+World map opens the complete seeded world and supports click/touch travel to any
+coordinate. Region shortcuts include a river bend, coast, volcano, snowfield and
+desert from the actual solve. Bare ground colors reflect climate, snow/ice and
+cooled lava; no vegetation, decorative assets or new erosion pass were added.
+WebGL2 is preferred, with a lower-resolution software compatibility path when
+WebGL2 is unavailable. This is the first playable foundation, not finished art.
+
+Validation focuses on movement around the sphere, collision against rendered
+triangles, joined near/far terrain, and browser walking/look/travel checks.
+
+Browser verification: walked over 60 m with streaming, changed view direction,
+travelled to volcanic ground, opened the full-world map, and selected another
+location whose submerged terrain correctly enabled underwater viewing.
+Essential movement/collision/join and request-queue checks pass.

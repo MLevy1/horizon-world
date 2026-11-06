@@ -453,3 +453,31 @@ not total application memory. This correction does not finish landscape realism.
 Verification: **121 tests pass**, including a new monotonic inland-bank check.
 The same global bend was compared visually before publication. Remaining
 terrain shaping and final appearance are still unfinished.
+
+
+## Pivot to walking the world — 0.8.0
+
+The terrain explorer becomes the default page. The atlas remains a separate
+map/inspection tool at atlas.html. Exploration startup solves the same global
+planet but skips expensive saved inspection sections and physical shoreline
+extraction. Its worker retains the complete model and streams small mesh views
+with a bounded reusable tile cache. This is global exploration, not a new region
+or a separate showcase generator.
+
+Completed for this checkpoint: first-person perspective, drag look, keyboard and
+touch walking, visible-mesh ground collision, automatic near/far terrain loading,
+whole-world click/touch travel, and actual region destinations. Colors identify
+snow/ice, dry climate and cooled lava. A software perspective renderer supports
+browsers without WebGL2. The first-person camera is 1.7 m above the visible ground;
+steep steps are blocked. Submerged beds remain walkable; swimming and jumping
+are not implemented. Draw distance is currently 260 m with fog.
+
+Validation is limited to essential movement/collision/join checks and direct
+browser exploration. No further hydrology-refinement work is part of this step.
+Next work should be driven by walking: performance and distant terrain first,
+then landscape forms and visual improvements noticed from ground level.
+
+Browser verification: walked over 60 m with streaming, changed view direction,
+travelled to volcanic ground, opened the full-world map, and selected another
+location whose submerged terrain correctly enabled underwater viewing.
+Essential movement/collision/join and request-queue checks pass.
