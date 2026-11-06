@@ -18,8 +18,8 @@ export function createRiverCourse(m,mesh,{protectedNode=()=>false}={}){
   let movedNodes=0,maxShiftM=0;
   for(let e=0;e<E;e++){
     const i=p.from[e],prior=primary[i];if(locked[e]||prior<0||locked[prior]||incoming[i]!==1)continue;
-    const a=mesh.directionAt(p.from[prior]),n=mesh.directionAt(i),b=mesh.directionAt(p.to[e]),target=norm(a.map((v,k)=>v+b[k])),length=angle(n,target)*R,spacing=2*Math.PI*R/g.width*Math.hypot(n[0],n[2]),cap=Math.min(p.lengthM[e],p.lengthM[prior],spacing)*.12;
-    const amount=length?Math.min(.45,cap/length):0,d=amount?norm(n.map((v,k)=>mix(v,target[k],amount))):n;nodes.set(d,e*3);shift[e]=angle(n,d)*R;if(shift[e]>1e-6)movedNodes++;maxShiftM=Math.max(maxShiftM,shift[e]);
+    const a=mesh.directionAt(p.from[prior]),n=mesh.directionAt(i),b=mesh.directionAt(p.to[e]),target=norm(a.map((v,k)=>v+b[k])),length=angle(n,target)*R,spacing=2*Math.PI*R/g.width*Math.hypot(n[0],n[2]),cap=Math.min(p.lengthM[e],p.lengthM[prior],spacing)*.18;
+    const amount=length?Math.min(.7,cap/length):0,d=amount?norm(n.map((v,k)=>mix(v,target[k],amount))):n;nodes.set(d,e*3);shift[e]=angle(n,d)*R;if(shift[e]>1e-6)movedNodes++;maxShiftM=Math.max(maxShiftM,shift[e]);
   }
   function nodeDirection(i){const e=p.edgeAtCell[i];return e>=0?Array.from(nodes.subarray(e*3,e*3+3)):mesh.directionAt(i);}
   function nodeTangent(i){
@@ -36,7 +36,7 @@ export function createRiverCourse(m,mesh,{protectedNode=()=>false}={}){
   let curvedEdges=0,exampleEdge=-1,exampleT=.5,best=0,maxCurveM=0;
   const poly=(e,t)=>{const k=e*6,c=coefficients;return {x:t*(c[k]+t*(c[k+1]+t*c[k+2])),y:t*(c[k+3]+t*(c[k+4]+t*c[k+5])),dx:c[k]+t*(2*c[k+1]+3*t*c[k+2]),dy:c[k+3]+t*(2*c[k+4]+3*t*c[k+5]),ddx:2*c[k+1]+6*t*c[k+2],ddy:2*c[k+4]+6*t*c[k+5]};};
   for(let e=0;e<E;e++){
-    const a=nodeDirection(p.from[e]),b=nodeDirection(p.to[e]),T=tangent(a,b),N=norm(cross(a,b)),ab=dot(a,b),L=R*Math.tan(angle(a,b)),spacing=2*Math.PI*R/g.width*Math.min(Math.hypot(a[0],a[2]),Math.hypot(b[0],b[2])),cap=Math.min(L*.15,spacing*.12);
+    const a=nodeDirection(p.from[e]),b=nodeDirection(p.to[e]),T=tangent(a,b),N=norm(cross(a,b)),ab=dot(a,b),L=R*Math.tan(angle(a,b)),spacing=2*Math.PI*R/g.width*Math.min(Math.hypot(a[0],a[2]),Math.hypot(b[0],b[2])),cap=Math.min(L*.15,spacing*.18);
     ends.set(b,e*3);forward.set(T,e*3);normal.set(N,e*3);let dx0=L,dx1=L,dy0=0,dy1=0;
     if(!locked[e]){
       const handle=(v,end)=>{let x=dot(v,T),y=dot(v,N);if(end){x=(x*ab-dot(b,T)*dot(v,a))/(ab*ab);y=(y*ab-dot(b,N)*dot(v,a))/(ab*ab);}const n=Math.hypot(x,y);x/=n;y/=n;if(x<.15)return [L,0];const h=Math.min(L,Math.abs(y)>1e-12?3*cap/Math.abs(y):L);return [h*x,h*y];};

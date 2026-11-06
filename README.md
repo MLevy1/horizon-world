@@ -1,6 +1,6 @@
-# Horizon 0.7.14 — Global hydrology and chunked terrain
+# Horizon 0.7.15 — Global hydrology and chunked terrain
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.14).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.15).
 
 A hydrology-first foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
@@ -581,3 +581,22 @@ pinned endpoints, tangent continuity, curved projection/signed sections,
 protected chord parameters, asymmetric bank joins, deterministic shaping and
 all global quarter stations. Existing anchor, downhill, portal/shore, global
 water-budget, chunk/LOD and cache checks pass. Build and whitespace checks pass.
+
+
+## Bank and bend correction — 0.7.15
+
+Ordinary inland banks now transition monotonically from waterline to surrounding
+higher ground, removing the artificial raised berm. Standing-water contact
+fitting retains its existing rules. Inland node smoothing and curve control
+bounds increase from 12% to 18% of local spacing so turns have more room to round;
+junctions, sources, ports and protected water-contact neighborhoods stay pinned.
+
+The inspector samples 64 subdivisions per chunk instead of 32. This costs about
+four times as many base triangles per view but resolves narrow banks and curved
+waterlines more closely. The reusable chunk cache is bounded at 32 MiB and the
+refinement input budget is 1.2 million triangles. These limits describe geometry,
+not total application memory. This correction does not finish landscape realism.
+
+Verification: **121 tests pass**, including a new monotonic inland-bank check.
+The same global bend was compared visually before publication. Remaining
+terrain shaping and final appearance are still unfinished.

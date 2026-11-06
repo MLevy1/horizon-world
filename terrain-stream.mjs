@@ -1,8 +1,8 @@
-import {createTerrainChunkBuilder,tileKey} from './terrain-chunks.mjs?v=0.7.14';
-import {selectTerrainTiles} from './terrain-lod.mjs?v=0.7.14';
+import {createTerrainChunkBuilder,tileKey} from './terrain-chunks.mjs?v=0.7.15';
+import {selectTerrainTiles} from './terrain-lod.mjs?v=0.7.15';
 /** Bounded worker-owned geometry cache. Combined output has separate buffers,
  * so transferring a view never detaches the cached chunks. */
-export function createTerrainStream(surface,{cacheBytes=16*1048576,resolution=32}={}){
+export function createTerrainStream(surface,{cacheBytes=32*1048576,resolution=64}={}){
   if(!Number.isInteger(cacheBytes)||cacheBytes<0)throw Error('Invalid terrain cache budget');
   const builder=createTerrainChunkBuilder(surface),cache=new Map();let bytes=0;
   function view(lon,lat,options={}){
@@ -14,7 +14,7 @@ export function createTerrainStream(surface,{cacheBytes=16*1048576,resolution=32
         if(size<=cacheBytes){while(bytes+size>cacheBytes){const oldest=cache.keys().next().value;bytes-=cache.get(oldest).bytes;cache.delete(oldest);evicted++;}cache.set(key,{chunk,bytes:size});bytes+=size;}
         return chunk;
       });
-      mesh=builder.combine(chunks);if(!mesh.stats.ambiguousWaterTriangles||n>=128||selected.length*2*(n*2)**2>300000)break;n*=2;
+      mesh=builder.combine(chunks);if(!mesh.stats.ambiguousWaterTriangles||n>=128||selected.length*2*(n*2)**2>1200000)break;n*=2;
     }while(n<=128);
     mesh.focus={lon,lat,groundM:surface.sample(lon,lat).fitted.groundM};mesh.view={...options,lon,lat};mesh.stats.resolution=n;mesh.stats.minLevel=Math.min(...selected.map(v=>v.tile.level));mesh.stats.maxLevel=Math.max(...selected.map(v=>v.tile.level));
     mesh.stream={built,reused,evicted,cacheBytes:bytes,cacheLimitBytes:cacheBytes,entries:cache.size};return mesh;

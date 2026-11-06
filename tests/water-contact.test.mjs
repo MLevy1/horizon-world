@@ -52,3 +52,7 @@ test('standing water can enter a newly lowered dry throat at its shoreline',()=>
   const q=composeWaterSurface(0,{kind:'ocean',waterM:0,support:1},[river({waterM:0,bedM:-1,wet:false})]);
   close(q.waterM,0);close(q.groundM,-1);assert.equal(q.kind,'ocean');
 });
+
+test('inland banks rise monotonically to surrounding ground without an artificial repeating berm',()=>{
+  let previous=9;for(let k=0;k<=100;k++){const q=composeWaterSurface(9.2,null,[river({distanceM:2+1.4*k/100})]);assert.ok(q.groundM>=previous-1e-8);assert.ok(q.groundM<=9.2+1e-8);previous=q.groundM;}close(previous,9.2);
+});

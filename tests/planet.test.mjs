@@ -708,7 +708,7 @@ test('a real closed lake chunk retains its exact independent water level',()=>{
 
 test('camera-selected mixed detail chunks use real fitted global water and reuse geometry after movement',()=>{
   const stream=createTerrainStream(surface),a=stream.view(-78.33974,-41.71876,{level:12,aspect:1.9,tilt:45});
-  assert.ok(a.stats.waterTriangles>0);assert.equal(a.stats.ambiguousWaterTriangles,0);assert.ok(a.stats.minLevel<a.stats.maxLevel);assert.ok(a.stats.triangles<300000);
+  assert.ok(a.stats.waterTriangles>0);assert.equal(a.stats.ambiguousWaterTriangles,0);assert.ok(a.stats.minLevel<a.stats.maxLevel);assert.ok(a.stats.triangles<1200000);
   const b=stream.view(-78.3397,-41.71876,{level:12,aspect:1.9,tilt:45});assert.ok(b.stream.reused>0);assert.ok(b.stream.cacheBytes<=b.stream.cacheLimitBytes);assert.ok(b.cache.entries<=b.cache.limit);
   for(const mesh of [a,b]){for(const v of mesh.ground.positions)assert.ok(Number.isFinite(v));for(const v of mesh.water.elevationsM)assert.ok(Number.isFinite(v));}
 });

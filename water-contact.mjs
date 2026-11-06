@@ -56,7 +56,7 @@ export function composeWaterSurface(terrainM,plane,rivers){
     if(u<=1)g=h-depth*(1-u**exponent);
     else{
       const s=clamp((r.distanceM-half)/bank,0,1),peak=Math.max(terrainM,h+freeboard);
-      g=s<.5?mix(h,peak,smooth(s*2)):mix(peak,terrainM,smooth(s*2-1));
+      g=!plane&&terrainM>=h?mix(h,terrainM,smooth(s)):s<.5?mix(h,peak,smooth(s*2)):mix(peak,terrainM,smooth(s*2-1));
     }
     if(standing){h=plane.waterM;g=Math.min(terrainM,g);}
     wetCore ||=r.wet&&u<1;
