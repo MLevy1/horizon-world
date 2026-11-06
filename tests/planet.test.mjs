@@ -6,6 +6,7 @@ import {annualSnowBudget,seasonalCycle} from '../cryosphere.mjs';
 import {annualPartition,lakeBalance,makeClimate} from '../climate.mjs';
 import {poolWetFraction} from '../pools.mjs';
 import {sampleRiverEdge,FLOW_EPSILON_M3S} from '../river-profiles.mjs';
+import {inspectionRoute,inspectionStation} from '../profile-view.mjs';
 import {solvePlanet,neighbors,lonLat,cellAt,traceDownstream,catchmentMask,DEFAULT_WORLD,traceActive,tracePotential,createGrid} from '../planet.mjs';
 
 const planet=solvePlanet();
@@ -184,6 +185,19 @@ test('all global confluences use identical endpoint profiles across incoming and
     }
   }
   assert.ok(checked>100);
+});
+
+test('inspection routes cover every global profile edge and finish at exact lake or ocean contacts',()=>{
+  const m=planet,p=m.riverProfiles,covered=new Uint8Array(p.from.length);
+  for(const node of m.nodes){
+    if(p.edgeAtCell[node.cell]<0)continue;
+    const r=inspectionRoute(p,node.cell),end=r.cells.at(-1);
+    assert.ok(p.kind[end]===2||p.kind[end]===3);
+    const station=inspectionStation(p,r,r.totalLengthM);
+    assert.equal(station.t,1);assert.equal(station.waterM,p.waterM[end]);assert.equal(station.bedM,p.bedM[end]);
+    for(const edge of r.edges)covered[edge]=1;
+  }
+  for(const value of covered)assert.equal(value,1);
 });
 
 test('mesh edges are reciprocal across longitude and both unique poles; coordinate lookup round-trips',()=>{

@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.4.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.5.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -118,7 +118,7 @@ support, rather than replace, complete-planet validation.
 | 1b. Independent pools — completed in 0.7.2 | Solve water levels and exchanges between depressions, allowing a contracted lake to separate into pools at different levels. | Conservation and spill-direction checks, including independent closed pools and merging when water reaches a connecting ridge. |
 | 1c. Global lake integration — completed in 0.7.3 | Connect those pools to active global drainage, channels and the atlas inspector. | Full-planet water budget; every active path ends at an ocean or a valid closed pool; no drainage cycles. Publish the lake checkpoint. |
 | 2a. River profiles — completed in 0.7.4 | Establish shared river water heights, bed depths and widths along the entire active network. | Water never flows uphill; junctions share heights; beds remain below water. |
-| 2b. Profile inspection | Add a river cross-section/profile view using those shared definitions. | Inspector displays the same geometry data that terrain generation will consume. Publish the river checkpoint. |
+| 2b. Profile inspection — completed in 0.7.5 | Add a river cross-section/profile view using those shared definitions. | Inspector displays the same geometry data that terrain generation will consume. Publish the river checkpoint. |
 | 3a. Terrain sampling | Add one spherical terrain-and-water sampler used across the whole world. | Consistent values across longitude wrap and at both poles; river/lake contacts agree. |
 | 3b. Physical shorelines | Derive lake/ocean shores and river contacts from that shared surface. | Shore heights agree with water levels; no separate overlapping water patches at mouths. Publish the shoreline checkpoint. |
 | 4a. Bare global mesh | Build the full-planet land and water meshes from the shared sampler. | Complete spherical coverage and connected water geometry; no vegetation or decorative terrain detail. |
@@ -181,7 +181,7 @@ potential-spill separation, complete-planet conservation and another global
 seed. The static build succeeds. Map inspection verifies distinct pool levels
 and the pool navigation control.
 
-Current checkpoint: **0.7.4**, task 2a. `river-profiles.mjs` defines shared
+Task 2a, saved in **0.7.4**. `river-profiles.mjs` defines shared
 water heights, bed elevations, widths, design depths and directed longitudinal
 segments for the complete active network. The default has 84,959 channel cells
 and 85,338 adjacent profile edges, including active lake outlets. Lake/ocean
@@ -200,6 +200,23 @@ backwater, receiving-bank spill crests, dimension bounds, dry edges, lake-port f
 complete seed and deterministic generation. Existing global budgets remain
 conserved.
 
-**Next task: 2b, profile inspection only.** Add inspectable river sections and
-longitudinal profiles using this saved data. Do not combine with the spherical
-terrain sampler, physical shorelines or 3D landscape.
+Current checkpoint: **0.7.5**, task 2b. The atlas offers Inspect river profile
+on river cells and active lake outlets. Its dialog shows a downstream elevation
+plot, a slider, current dimensions and an illustrative minimum channel section.
+Routes follow the saved global edges and stop at the next lake or ocean.
+Cross-section dimensions are read from the same saved profile data. Deeper
+lake/ocean beds remain in the longitudinal chart and actual-depth readouts;
+the minimum design diagram does not depict them as narrow channel trenches.
+Dry design sections use dashed levels and no filled water. Axes use independent
+horizontal and vertical scales. Terrain banks/shorelines are not sampled yet.
+
+Verification: all **50 tests pass**, including complete-planet inspection-route
+coverage of every profile edge, exact terminal contacts, distance/station
+interpolation, dry styling, section dimensions and deeper waterbody contacts.
+Existing global topology and budgets remain unchanged. The static build and
+browser inspection verify opening the dialog and updating stations.
+
+**Next task: 3a, terrain sampling only.** Add one spherical terrain-and-water
+sampler using the authoritative scaffold and river/pool definitions. Verify
+longitude wrapping, both poles and water contacts before the separate shoreline
+and 3D mesh tasks. Do not combine these into one large turn.

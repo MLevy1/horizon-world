@@ -1,6 +1,6 @@
-# Horizon 0.7.4 — Global hydrology atlas
+# Horizon 0.7.5 — Global hydrology atlas
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.4).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.5).
 
 A fresh hydrology-only foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
@@ -70,6 +70,8 @@ Serve the repository root or `dist/` over HTTP. Module workers do not run from a
   closed-pool sinks and optional dormant spill edges.
 - `river-profiles.mjs`: shared water heights, bed elevations, channel dimensions
   and longitudinal edge sampling across the complete active network.
+- `profile-view.mjs`: downstream inspection routes, exact station sampling and
+  SVG profile/design-section diagrams from that shared data.
 - `geology.mjs`: spherical volcanic landforms, cooled lava deposits and water links.
 - `climate.mjs`: global climate fields, annual runoff partition and lake balances.
 - `cryosphere.mjs`: monthly snow balance, retained ice, glacier routing and meltwater.
@@ -212,3 +214,24 @@ These profiles are derived data: they do not alter drainage, climate budgets or
 the elevation scaffold. The existing atlas still uses schematic line widths.
 The next checkpoint adds profile inspection, followed by the shared terrain
 sampler and physical shoreline/mesh generation in separate tasks.
+
+## River profile viewer — 0.7.5
+
+Select a river or an active lake outlet, then choose **Inspect river profile**.
+The river-system shortcuts provide easy starting points. A downstream elevation
+plot follows existing profile edges to the next lake or ocean. It stops at that
+contact rather than drawing a fictitious channel across an unprofiled lake.
+
+Move **Position along river** to inspect widths, water/design elevation, mapped
+center-bed elevation, actual center depth and minimum design depth. Junction
+stations and final waterbody contacts read the exact shared endpoint values.
+The minimum cross-section is an illustrative parabolic channel using saved
+width, design depth and freeboard. It is not a sampled terrain bank/shoreline.
+A deeper underlying lake/ocean bed remains visible in the longitudinal plot
+and mapped-depth readouts; it does not become an artificial narrow trench in
+the minimum design section. Horizontal and vertical chart scales differ.
+
+Dry portions use dashed design levels and no filled section water. These are
+annual estimates, not time-varying river stages. The viewer reads the same
+complete global data used by future geometry; it does not generate local trials.
+The next task is the spherical terrain-and-water sampler (3a).

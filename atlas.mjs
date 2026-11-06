@@ -1,5 +1,6 @@
-import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.4';
-import {ZONES,flowRegime} from './climate.mjs?v=0.7.4';
+import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.5';
+import {ZONES,flowRegime} from './climate.mjs?v=0.7.5';
+import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.7.5';
 
 const $=id=>document.getElementById(id);
 const canvas=$('map'),ctx=canvas.getContext('2d'),stage=$('map-stage');
@@ -372,7 +373,10 @@ function selectCell(i,{focus=false}={}){
     (glacierId>=0?field('Glacier melt supply',number(ice.iceMeltMm[i],0)+' mm water/yr')+field('Ice region area',number(ice.glaciers[glacierId].areaKm2,2)+' km²'):'');
   const climateData=field('Mean temperature',number(m.climate.temperature[i],1)+' °C')+field('Precipitation',number(m.rainfall[i],0)+' mm/yr')+
     field('Evaporative demand',number(m.climate.potentialEvaporation[i],0)+' mm/yr')+field('Climate estimate',ZONES[m.climate.zone[i]]);
-  $('inspector').className='';$('inspector').innerHTML=`<div class="selection-kind">${kind}</div><div class="selection-name">${name}</div><div class="selection-coord">${coordText(lon,lat)}</div><div class="selection-data">${geologyData}${data}${climateData}${frozenData}</div><p class="selection-destination">${m.ocean[i]?'Connected planetary ocean.':`Meltwater / flow destination: <b>${destination}</b><br>${wb?'Water area follows this pool’s annual balance.':flowRegime(flow,area)+' flow estimate · '+lakeCount(state.trace,m)+' inland basins on this route.'}`}</p>${parts.length>1?'<button id=next-pool class=secondary type=button>Inspect next pool</button>':''}`;
+  const hasProfile=m.riverProfiles.edgeAtCell[i]>=0;
+  const profileEntry=hasProfile?`<div class="profile-entry"><button id="inspect-river-profile">Inspect river profile</button><span>${number(m.riverProfiles.widthM[i],2)} m wide · ${number(m.riverProfiles.designDepthM[i],2)} m design depth</span></div>`:'';
+  $('inspector').className='';$('inspector').innerHTML=`<div class="selection-kind">${kind}</div><div class="selection-name">${name}</div><div class="selection-coord">${coordText(lon,lat)}</div>${profileEntry}<div class="selection-data">${geologyData}${data}${climateData}${frozenData}</div><p class="selection-destination">${m.ocean[i]?'Connected planetary ocean.':`Meltwater / flow destination: <b>${destination}</b><br>${wb?'Water area follows this pool’s annual balance.':flowRegime(flow,area)+' flow estimate · '+lakeCount(state.trace,m)+' inland basins on this route.'}`}</p>${parts.length>1?'<button id=next-pool class=secondary type=button>Inspect next pool</button>':''}`;
+  if(hasProfile)$('inspect-river-profile').addEventListener('click',()=>openRiverProfile(i));
   if(parts.length>1)$('next-pool').addEventListener('click',()=>{const cycle=wetParts.length>1?wetParts:[...parts],index=cycle.indexOf(wb.id),next=m.waterbodies[cycle[(index+1)%cycle.length]];selectCell(next.outletCell,{focus:true});});
 
   if(focus){
@@ -382,6 +386,27 @@ function selectCell(i,{focus=false}={}){
   makeTexture();requestDraw();
 }
 function lakeCount(path,m){return new Set(path.map(i=>m.waterbody[i]).filter(i=>i>=0)).size;}
+let profileRoute=null;
+function openRiverProfile(cell){
+  const m=state.model,p=m.riverProfiles;profileRoute=inspectionRoute(p,cell);if(!profileRoute)return;
+  const end=profileRoute.cells.at(-1),id=m.waterbody[end],body=id>=0?m.waterbodies[id]:null;
+  const destination=body?(body.status==='playa'?'dry pool':body.kind)+' '+String(body.id+1).padStart(3,'0'):'the ocean';
+  const fall=p.waterM[cell]-p.waterM[end];
+  $('river-profile-route').textContent=`Downstream from selection · ${number(profileRoute.totalLengthM/1000,2)} km to ${destination} · ${number(fall,2)} m surface fall`;
+  $('profile-position').value=0;updateRiverProfile();$('river-profile-dialog').showModal();
+}
+function updateRiverProfile(){
+  if(!profileRoute||!state.model)return;
+  const p=state.model.riverProfiles,d=Number($('profile-position').value)/1000*profileRoute.totalLengthM;
+  const s=inspectionStation(p,profileRoute,d),field=(label,value)=>`<div><span>${label}</span><strong>${value}</strong></div>`;
+  $('profile-distance').textContent=`${number(s.distanceM/1000,2)} / ${number(profileRoute.totalLengthM/1000,2)} km`;
+  $('river-profile-state').textContent=s.wet?'Annual-flow estimate':'Dry channel design · no modeled annual surface flow';
+  $('river-profile-metrics').innerHTML=field('Channel width',number(s.widthM,2)+' m')+field('Mapped center depth',number(s.waterM-s.bedM,2)+' m')+field('Design minimum depth',number(s.designDepthM,2)+' m')+field('Water / design elevation',number(s.waterM,2)+' m')+field('Center bed elevation',number(s.bedM,2)+' m')+field('Distance downstream',number(s.distanceM/1000,2)+' km');
+  $('river-longitudinal').innerHTML=longitudinalSvg(p,profileRoute,s);$('river-cross-section').innerHTML=sectionSvg(s);
+}
+$('profile-position').addEventListener('input',updateRiverProfile);
+$('river-profile-close').addEventListener('click',()=>$('river-profile-dialog').close());
+$('river-profile-dialog').addEventListener('click',e=>{if(e.target===e.currentTarget){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});
 function clearSelection(){
   state.selected=-1;state.trace=[];state.mask=null;state.showTrace=false;state.showCatchment=false;
   $('inspector').className='inspector-empty';$('inspector').innerHTML='<span class="inspect-icon">⌖</span><p>Select any waterway or place on land to follow its downstream destination.</p>';
@@ -505,6 +530,7 @@ function displayStats(){
   }
 }
 function generate(seed){
+  $('river-profile-dialog').close();profileRoute=null;
   state.worker?.terminate();state.worker=null;state.model=null;state.selected=-1;state.trace=[];state.mask=null;state.showTrace=false;state.showCatchment=false;
   $('generate').disabled=true;$('loading').hidden=false;$('loading-progress').style.width='0';$('loading-stage').textContent='Defining continents and drainage divides';
   $('loading').querySelector('h2').textContent='Balancing the whole world’s water';$('top-status').textContent='Generating the whole planet';
