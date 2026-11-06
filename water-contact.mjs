@@ -38,7 +38,7 @@ export function createContactFitter(m){
  */
 export function composeWaterSurface(terrainM,plane,rivers){
   const standing=plane&&terrainM<plane.waterM,baseHead=standing?plane.waterM:plane?Math.max(plane.waterM,terrainM-.25):terrainM-.25;
-  if(!rivers.length)return {groundM:terrainM,waterM:standing?plane.waterM:null,depthM:standing?plane.waterM-terrainM:0,kind:standing?plane.kind:'land'};
+  if(!rivers.length)return {groundM:terrainM,waterM:standing?plane.waterM:null,depthM:standing?plane.waterM-terrainM:0,kind:standing?plane.kind:'land',potentialWaterM:plane?plane.waterM:null};
   const exact=rivers.filter(r=>r.distanceM<1e-6),active=exact.length?exact:rivers;
   let sum=0,ground=0,head=0,maxFade=0,wetCore=false;
   for(const r of active){
@@ -63,12 +63,12 @@ export function composeWaterSurface(terrainM,plane,rivers){
     sum+=weight;ground+=weight*g;head+=weight*h;
   }
   const base=1-maxFade;sum+=base;ground+=base*terrainM;head+=base*baseHead;
-  if(!sum)return {groundM:terrainM,waterM:standing?plane.waterM:null,depthM:standing?plane.waterM-terrainM:0,kind:standing?plane.kind:'land'};
+  if(!sum)return {groundM:terrainM,waterM:standing?plane.waterM:null,depthM:standing?plane.waterM-terrainM:0,kind:standing?plane.kind:'land',potentialWaterM:plane?plane.waterM:null};
   ground/=sum;head/=sum;
   if(standing){ground=Math.min(ground,terrainM);head=plane.waterM;}
   const flooded=plane&&ground<plane.waterM;
   if(flooded)head=Math.max(head,plane.waterM);
   const wet=(standing||wetCore||flooded)&&head-ground>1e-7;
   return {groundM:ground,waterM:wet?head:null,depthM:wet?head-ground:0,
-    kind:wet?(plane&&Math.abs(head-plane.waterM)<1e-8?plane.kind:'river'):'land'};
+    kind:wet?(plane&&Math.abs(head-plane.waterM)<1e-8?plane.kind:'river'):'land',potentialWaterM:plane||active.some(r=>r.wet)?head:null};
 }

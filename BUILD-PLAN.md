@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.11.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.12.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -359,3 +359,26 @@ shoreline checks pass. Inspection lighting and local camera centering are tested
 the same globally addressed chunks, preserving level standing-water surfaces,
 river junctions and border continuity. Then implement C3 camera-driven streaming
 and balanced LOD selection. Keep vegetation and decorative detail separate.
+
+
+## C2 — clipped chunk water, 0.7.12
+
+Completed: unified river/lake/ocean triangles clipped against fitted ground,
+shared shoreline roots, fixed standing-water levels, downhill sampled river
+heads, exact independently built borders and stitched 2:1 LOD borders. Dry
+channel designs do not become water. Incompatible fixed heads request finer
+sampling and are flagged if still unresolved at the resolution cap. The
+inspector adds a Water surfaces toggle and separate water triangle counts.
+Global surface normals smooth lighting consistently across chunk boundaries.
+
+Natural shape refinement remains required: smooth lighting does not establish
+realistic geography. Refine courses, bank asymmetry, shore outlines, valleys,
+ridges and erosion/sediment forms in the common surface. No decorative detail
+or vegetation has been added. Next small task: C3 camera-driven streaming and
+balanced LOD selection.
+
+Verification for 0.7.12: **106 tests pass**. New checks cover fixed-level
+shore intersections, dry designs, downhill heads, ambiguous fixed planes,
+shared shore roots, global normals across LODs, cube-face and stitched LOD
+water borders, actual planetary ground/water edge topology and a real closed
+lake's independent level. Build and whitespace checks pass.

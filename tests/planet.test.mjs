@@ -681,7 +681,25 @@ test('actual global surface border positions agree bit for bit across cube seams
 });
 test('on-demand neighborhoods build local fitted geometry for wet rivers, dry channels and both poles',()=>{
   const builder=createTerrainChunkBuilder(surface),p=planet.riverProfiles,examples=[0,Math.max(0,p.wetEdge.findIndex(v=>v===1)),Math.max(0,p.wetEdge.findIndex(v=>v===0))].map(e=>lonLat(planet.grid,p.from[e]));examples.push([0,90],[0,-90],[-180,0]);
-  for(const [lon,lat] of examples){const patch=builder.patch(lon,lat,{level:12,resolution:16});assert.equal(patch.stage,'terrain-chunks');assert.ok(patch.stats.chunks>=9&&patch.stats.chunks<=13);assert.ok(patch.stats.triangles<10000);assert.ok(patch.stats.sharedVertices>0);assert.equal(patch.standingWater.indices.length,0);
+  for(const [lon,lat] of examples){const patch=builder.patch(lon,lat,{level:12,resolution:16});assert.equal(patch.stage,'terrain-chunks');assert.ok(patch.stats.chunks>=9&&patch.stats.chunks<=13);assert.ok(patch.stats.triangles<10000);assert.ok(patch.stats.sharedVertices>0);assert.equal(patch.waterStage,'clipped');assert.equal(patch.water.indices.length,patch.stats.waterTriangles*3);
     for(const v of patch.ground.positions)assert.ok(Number.isFinite(v));for(const id of patch.ground.indices)assert.ok(id<patch.ground.elevationsM.length);
   }
+});
+
+test('actual planet clipped water has manifold edges and every open edge is a shore or patch border',()=>{
+  const builder=createTerrainChunkBuilder(surface),p=planet.riverProfiles,e=p.wetEdge.findIndex(v=>v===1),[lon,lat]=lonLat(planet.grid,p.from[e]),patch=builder.patch(lon,lat,{level:12,resolution:32});
+  const key=(a,b)=>a<b?a+':'+b:b+':'+a,edges=data=>{const out=new Map();for(let k=0;k<data.indices.length;k+=3)for(let j=0;j<3;j++){const a=data.indices[k+j],b=data.indices[k+(j+1)%3],s=key(a,b);out.set(s,(out.get(s)||0)+1);}return out;},boundary=new Set();
+  for(let k=0;k<patch.ground.boundaryIndices.length;k+=2)boundary.add(key(patch.ground.boundaryIndices[k],patch.ground.boundaryIndices[k+1]));
+  for(const [edge,count] of edges(patch.ground))assert.equal(count,boundary.has(edge)?1:2);
+  const w=patch.water,g=patch.ground,isShore=id=>[0,1,2].every(k=>w.positions[id*3+k]===g.positions[w.groundVertex[id]*3+k]);
+  assert.ok(w.indices.length>0);assert.equal(patch.stats.ambiguousWaterTriangles,0);
+  for(const [edge,count] of edges(w)){assert.ok(count<=2);if(count===1){const [a,b]=edge.split(':').map(Number);assert.ok((isShore(a)&&isShore(b))||boundary.has(key(w.groundVertex[a],w.groundVertex[b])));}}
+  for(let i=0;i<w.elevationsM.length;i++)assert.ok(w.elevationsM[i]>=g.elevationsM[w.groundVertex[i]]-1e-8);
+});
+
+test('a real closed lake chunk retains its exact independent water level',()=>{
+  const wb=planet.waterbodies.find(w=>w.closed&&w.wetAreaKm2>10);assert.ok(wb);
+  let cell=-1;for(let i=0;i<planet.grid.count;i++)if(planet.waterbody[i]===wb.id&&(cell<0||planet.height[i]<planet.height[cell]))cell=i;
+  assert.ok(cell>=0);const [lon,lat]=lonLat(planet.grid,cell),patch=createTerrainChunkBuilder(surface).patch(lon,lat,{level:13,resolution:16});
+  assert.ok(patch.water.indices.length>0);assert.equal(patch.stats.ambiguousWaterTriangles,0);for(const h of patch.water.elevationsM)assert.ok(Math.abs(h-wb.waterLevelM)<1e-7);
 });

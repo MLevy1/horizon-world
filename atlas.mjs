@@ -1,9 +1,9 @@
-import {sampleConstraintSection} from './channel-constraints.mjs?v=0.7.11';
-import {constraintSectionSvg} from './constraint-view.mjs?v=0.7.11';
-import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.11';
-import {ZONES,flowRegime} from './climate.mjs?v=0.7.11';
-import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.7.11';
-import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.11';
+import {sampleConstraintSection} from './channel-constraints.mjs?v=0.7.12';
+import {constraintSectionSvg} from './constraint-view.mjs?v=0.7.12';
+import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.12';
+import {ZONES,flowRegime} from './climate.mjs?v=0.7.12';
+import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.7.12';
+import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.12';
 
 const $=id=>document.getElementById(id);
 const canvas=$('map'),ctx=canvas.getContext('2d'),stage=$('map-stage');
@@ -563,13 +563,13 @@ let meshPreview=null,chunkWorker=null,chunkRequest=0,chunkMesh=null,chunkLocatio
 function drawMeshPreview(){
   if(!meshPreview||!chunkMesh)return;
   const rect=$('mesh-canvas').getBoundingClientRect(),zoom=2**Number($('chunk-detail').value)*Math.max(1,rect.width/Math.max(1,rect.height)/1.6);
-  try{meshPreview.draw(chunkLocation.lon,chunkLocation.lat,false,zoom,$('chunk-oblique').checked?45:0);}catch(error){$('mesh-error').textContent=error.message;}
+  try{meshPreview.draw(chunkLocation.lon,chunkLocation.lat,$('chunk-water').checked,zoom,$('chunk-oblique').checked?45:0);}catch(error){$('mesh-error').textContent=error.message;}
 }
 async function displayChunkMesh(patch){
   meshPreview?.dispose();meshPreview=null;chunkMesh=patch;
-  $('mesh-counts').textContent=number(patch.stats.chunks,0)+' connected chunks · '+number(patch.stats.triangles,0)+' ground triangles · '+number(patch.stats.bytes/1048576,1)+' MiB';
-  $('mesh-summary').textContent='On-demand ground · '+number(patch.stats.chunks,0)+' chunks in the current view';$('mesh-error').textContent='';
-  try{const {createMeshPreview}=await import('./mesh-preview.mjs?v=0.7.11');if(chunkMesh!==patch)return;meshPreview=createMeshPreview($('mesh-canvas'),patch);drawMeshPreview();}catch(error){$('mesh-error').textContent=error.message;}
+  $('mesh-counts').textContent=number(patch.stats.chunks,0)+' connected chunks · '+number(patch.stats.triangles,0)+' ground triangles · '+number(patch.stats.waterTriangles,0)+' water triangles · '+number(patch.stats.bytes/1048576,1)+' MiB';
+  $('mesh-summary').textContent='On-demand ground · '+number(patch.stats.chunks,0)+' chunks in the current view';$('mesh-error').textContent=patch.stats.ambiguousWaterTriangles?'Some water boundaries need a finer view.':'';
+  try{const {createMeshPreview}=await import('./mesh-preview.mjs?v=0.7.12');if(chunkMesh!==patch)return;meshPreview=createMeshPreview($('mesh-canvas'),patch);drawMeshPreview();}catch(error){$('mesh-error').textContent=error.message;}
 }
 function requestTerrainChunks(lon,lat){
   if(!state.model)return;
@@ -595,6 +595,7 @@ $('mesh-close').addEventListener('click',()=>$('mesh-dialog').close());
 $('chunk-focus').addEventListener('click',focusTerrainSelection);
 $('chunk-detail').addEventListener('change',()=>requestTerrainChunks(chunkLocation.lon,chunkLocation.lat));
 $('chunk-oblique').addEventListener('change',drawMeshPreview);
+$('chunk-water').addEventListener('change',drawMeshPreview);
 for(const [name,sign] of [['west',-1],['east',1],['north',1],['south',-1]])$('chunk-'+name).addEventListener('click',()=>{
   const l=chunkLocation.lon*Math.PI/180,p=chunkLocation.lat*Math.PI/180,d=[Math.cos(p)*Math.cos(l),Math.sin(p),Math.cos(p)*Math.sin(l)],side=name==='west'||name==='east'?[-Math.sin(l),0,Math.cos(l)]:[-Math.sin(p)*Math.cos(l),Math.cos(p),-Math.sin(p)*Math.sin(l)],angle=sign*2/2**Number($('chunk-detail').value),next=d.map((v,k)=>v*Math.cos(angle)+side[k]*Math.sin(angle));
   requestTerrainChunks(Math.atan2(next[2],next[0])*180/Math.PI,Math.asin(Math.max(-1,Math.min(1,next[1])))*180/Math.PI);

@@ -1,6 +1,6 @@
-# Horizon 0.7.11 — Global hydrology and chunked terrain
+# Horizon 0.7.12 — Global hydrology and chunked terrain
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.11).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.12).
 
 A hydrology-first foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
@@ -493,3 +493,26 @@ zoom, tilt basis and lighting on the opposite hemisphere.
 **Next checkpoint: water surfaces clipped and joined within these chunks.**
 Then add camera-driven chunk selection/eviction and automatic balanced LOD.
 The monolithic detailed-mesh path is retired from the live viewer.
+
+
+## Clipped chunk water — 0.7.12
+
+The terrain inspector now includes a unified river/lake/ocean water mesh and a
+Water surfaces toggle. Shore intersections split the ground and water at the
+same vertices. Fixed standing-water levels are retained; river heads come from
+the shared fitted surface. Independently built borders, including stitched 2:1
+LOD borders, use the same canonical intersections. Conflicting standing-water
+levels request finer sampling rather than creating a sloping bridge.
+
+Lighting uses normals sampled from the global surface independently of chunk
+resolution. This removes triangle-grid lighting artifacts; it does not finish
+natural landform shaping. Continuous river courses, asymmetric banks, irregular
+shores, valley/ridge structure and erosion/sediment forms still need refinement
+in the shared surface before final 3D presentation. Vegetation and decorative
+detail remain separate. Automatic camera streaming and balanced LOD are next.
+
+Verification for 0.7.12: **106 tests pass**. New checks cover fixed-level
+shore intersections, dry designs, downhill heads, ambiguous fixed planes,
+shared shore roots, global normals across LODs, cube-face and stitched LOD
+water borders, actual planetary ground/water edge topology and a real closed
+lake's independent level. Build and whitespace checks pass.

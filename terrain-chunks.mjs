@@ -1,3 +1,4 @@
+import {clipChunkWater} from './chunk-water.mjs?v=0.7.12';
 /** Globally addressed cube-sphere ground chunks. Hydrology is queried from the
  * existing global surface; chunks neither solve nor invent independent water.
  * Integer direction keys are identical across face seams and dyadic LODs.
@@ -59,13 +60,19 @@ export function createTerrainChunkBuilder(surface,{sampleCacheLimit=65536}={}){
     if(value){hits++;cache.delete(vertex.key);cache.set(vertex.key,value);return value;}
     const d=vertex.direction,q=surface.sample(Math.atan2(d[2],d[0])*DEG,Math.asin(Math.max(-1,Math.min(1,d[1])))*DEG),h=q.fitted.groundM;
     if(!Number.isFinite(h)||radiusM+h<=0)throw Error('Invalid global fitted height');
-    value={position:d.map(v=>v*(radiusM+h)),groundM:h,waterM:q.fitted.waterM===null?NaN:q.fitted.waterM};misses++;cache.set(vertex.key,value);
+    const horizontal=Math.hypot(d[0],d[2]),east=horizontal?[-d[2]/horizontal,0,d[0]/horizontal]:[0,0,1],north=horizontal?[-d[1]*d[0]/horizontal,horizontal,-d[1]*d[2]/horizontal]:[-d[1],0,0],step=.25,angle=step/radiusM;
+    const query=v=>surface.sample(Math.atan2(v[2],v[0])*DEG,Math.asin(Math.max(-1,Math.min(1,v[1])))*DEG).fitted;
+    const around=[east,north].map(axis=>[-1,1].map(sign=>query(d.map((v,k)=>v*Math.cos(angle)+axis[k]*Math.sin(angle)*sign))));
+    const normalFrom=(gradient,height)=>normalize(d.map((v,k)=>v-(east[k]*gradient[0]+north[k]*gradient[1])*radiusM/(radiusM+height)));
+    const normal=normalFrom(around.map(pair=>(pair[1].groundM-pair[0].groundM)/(2*step)),h),head=Number.isFinite(q.fitted.waterM)?q.fitted.waterM:Number.isFinite(q.fitted.potentialWaterM)?q.fitted.potentialWaterM:NaN,fixed=q.fitted.waterM!==null&&(q.fitted.kind==='ocean'||q.fitted.kind==='pool');
+    const waterNormal=fixed||!Number.isFinite(head)?d:normalFrom(around.map(pair=>{const levels=pair.map(v=>Number.isFinite(v.waterM)?v.waterM:Number.isFinite(v.potentialWaterM)?v.potentialWaterM:head);return (levels[1]-levels[0])/(2*step);}),head);
+    value={position:d.map(v=>v*(radiusM+h)),groundM:h,waterM:q.fitted.waterM===null?NaN:q.fitted.waterM,headM:head,fixed:fixed?1:0,normal,waterNormal};misses++;cache.set(vertex.key,value);
     if(cache.size>sampleCacheLimit)cache.delete(cache.keys().next().value);return value;
   }
   function build(tile,{resolution=64,coarseEdges=[]}={}){
     validate(tile,resolution);if(coarseEdges.some(e=>!EDGES.includes(e)))throw Error('Invalid coarse-neighbor edge');
-    const n=resolution,vertices=(n+1)**2,positions=new Float64Array(vertices*3),elevationsM=new Float64Array(vertices),waterM=new Float64Array(vertices),triangles=[],coarse=new Set(coarseEdges);
-    for(let j=0;j<=n;j++)for(let i=0;i<=n;i++){const id=j*(n+1)+i,value=sample(terrainVertex(tile,n,i,j));positions.set(value.position,id*3);elevationsM[id]=value.groundM;waterM[id]=value.waterM;}
+    const n=resolution,vertices=(n+1)**2,positions=new Float64Array(vertices*3),elevationsM=new Float64Array(vertices),waterM=new Float64Array(vertices),headM=new Float64Array(vertices),fixed=new Uint8Array(vertices),normals=new Float32Array(vertices*3),waterNormals=new Float32Array(vertices*3),triangles=[],coarse=new Set(coarseEdges);
+    for(let j=0;j<=n;j++)for(let i=0;i<=n;i++){const id=j*(n+1)+i,value=sample(terrainVertex(tile,n,i,j));positions.set(value.position,id*3);elevationsM[id]=value.groundM;waterM[id]=value.waterM;headM[id]=value.headM;fixed[id]=value.fixed;normals.set(value.normal,id*3);waterNormals.set(value.waterNormal,id*3);}
     // A 2x2 fan keeps every boundary segment explicit. When a neighbor is one
     // LOD coarser, skip its unmatched odd boundary vertex and stitch the strip
     // to the same coarse segment, including corners with two coarse neighbors.
@@ -74,24 +81,29 @@ export function createTerrainChunkBuilder(surface,{sampleCacheLimit=65536}={}){
       const ring=[[x,y],[x+1,y],[x+2,y],[x+2,y+1],[x+2,y+2],[x+1,y+2],[x,y+2],[x,y+1]].filter(([i,j])=>!(i===0&&j%2&&coarse.has('left'))&&!(i===n&&j%2&&coarse.has('right'))&&!(j===0&&i%2&&coarse.has('bottom'))&&!(j===n&&i%2&&coarse.has('top')));
       const center=vertex(x+1,y+1);for(let k=0;k<ring.length;k++)triangles.push(center,vertex(...ring[k]),vertex(...ring[(k+1)%ring.length]));
     }
-    return {tile:{...tile},resolution:n,coarseEdges:[...coarse],radiusM,positions,elevationsM,waterM,indices:Uint32Array.from(triangles),stats:{vertices,triangles:triangles.length/3}};
+    return {tile:{...tile},resolution:n,coarseEdges:[...coarse],radiusM,positions,elevationsM,waterM,headM,fixed,normals,waterNormals,indices:Uint32Array.from(triangles),stats:{vertices,triangles:triangles.length/3}};
   }
   function combine(chunks){
-    const byKey=new Map(),positions=[],elevations=[],waters=[],indices=[],boundary=new Map();let sharedVertices=0;
+    const byKey=new Map(),positions=[],elevations=[],waters=[],heads=[],fixed=[],normals=[],waterNormals=[],keys=[],indices=[],boundary=new Map();let sharedVertices=0;
     for(const chunk of chunks){const n=chunk.resolution,remap=new Uint32Array(chunk.elevationsM.length);
       for(let j=0;j<=n;j++)for(let i=0;i<=n;i++){
         const id=j*(n+1)+i,key=terrainVertex(chunk.tile,n,i,j).key;let index=byKey.get(key);
-        if(index===undefined){index=elevations.length;byKey.set(key,index);positions.push(...chunk.positions.subarray(id*3,id*3+3));elevations.push(chunk.elevationsM[id]);waters.push(chunk.waterM[id]);}
+        if(index===undefined){index=elevations.length;byKey.set(key,index);positions.push(...chunk.positions.subarray(id*3,id*3+3));elevations.push(chunk.elevationsM[id]);waters.push(chunk.waterM[id]);heads.push(chunk.headM[id]);fixed.push(chunk.fixed[id]);normals.push(...chunk.normals.subarray(id*3,id*3+3));waterNormals.push(...chunk.waterNormals.subarray(id*3,id*3+3));keys.push(key);}
         else{sharedVertices++;for(let k=0;k<3;k++)if(positions[index*3+k]!==chunk.positions[id*3+k])throw Error('Chunk border disagrees with the global surface');}
         remap[id]=index;
       }
       for(const edge of EDGES){const edgeIds=terrainEdgeIndices(n,edge,chunk.coarseEdges.includes(edge));for(let k=1;k<edgeIds.length;k++){const a=remap[edgeIds[k-1]],b=remap[edgeIds[k]],key=a<b?a+':'+b:b+':'+a;if(boundary.has(key))boundary.delete(key);else boundary.set(key,[a,b]);}}
       for(const i of chunk.indices)indices.push(remap[i]);
     }
-    const ground={positions:Float64Array.from(positions),elevationsM:Float64Array.from(elevations),indices:Uint32Array.from(indices),boundaryIndices:Uint32Array.from([...boundary.values()].flat())},waterM=Float64Array.from(waters);
-    return {stage:'terrain-chunks',radiusM,ground,waterSamplesM:waterM,standingWater:{positions:new Float64Array(0),indices:new Uint32Array(0)},tiles:chunks.map(c=>({tile:c.tile,resolution:c.resolution,coarseEdges:c.coarseEdges})),stats:{chunks:chunks.length,vertices:elevations.length,triangles:indices.length/3,sharedVertices,bytes:ground.positions.byteLength+ground.elevationsM.byteLength+ground.indices.byteLength+ground.boundaryIndices.byteLength+waterM.byteLength},cache:{entries:cache.size,limit:sampleCacheLimit,hits,misses}};
+    const ground={positions:Float64Array.from(positions),elevationsM:Float64Array.from(elevations),normals:Float32Array.from(normals),indices:Uint32Array.from(indices),boundaryIndices:Uint32Array.from([...boundary.values()].flat())},waterM=Float64Array.from(waters),samples={waterM,headM:Float64Array.from(heads),fixed:Uint8Array.from(fixed),waterNormals:Float32Array.from(waterNormals)},clipped=clipChunkWater(ground,samples,keys,radiusM);
+    const bytes=[...Object.values(clipped.ground),...Object.values(clipped.water),waterM].reduce((sum,a)=>sum+a.byteLength,0);
+    return {stage:'terrain-chunks',waterStage:'clipped',radiusM,ground:clipped.ground,water:clipped.water,waterSamplesM:waterM,standingWater:clipped.water,tiles:chunks.map(c=>({tile:c.tile,resolution:c.resolution,coarseEdges:c.coarseEdges})),stats:{chunks:chunks.length,vertices:clipped.ground.elevationsM.length,triangles:clipped.ground.indices.length/3,sharedVertices,...clipped.stats,bytes},cache:{entries:cache.size,limit:sampleCacheLimit,hits,misses}};
   }
-  function patch(lon,lat,{level=12,resolution=64,radius=2}={}){const mesh=combine(neighborhood(coordinateTile(lon,lat,level),radius).map(tile=>build(tile,{resolution})));mesh.focus={lon,lat,groundM:surface.sample(lon,lat).fitted.groundM};return mesh;}
+  function patch(lon,lat,{level=12,resolution=64,radius=2}={}){
+    const tiles=neighborhood(coordinateTile(lon,lat,level),radius);let mesh,n=resolution;
+    do{mesh=combine(tiles.map(tile=>build(tile,{resolution:n})));if(!mesh.stats.ambiguousWaterTriangles||n>=256)break;n=Math.min(256,n*2);}while(n<=256);
+    mesh.stats.resolution=n;mesh.focus={lon,lat,groundM:surface.sample(lon,lat).fitted.groundM};return mesh;
+  }
   return {build,combine,patch,cacheStats:()=>({entries:cache.size,limit:sampleCacheLimit,hits,misses})};
 }
 export {FACES,EDGES};

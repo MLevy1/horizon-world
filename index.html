@@ -7,11 +7,11 @@
   <meta name="description" content="Horizon: the complete hydrology of a seeded planet. Explore connected headwaters, streams, rivers, ponds, lakes and ocean outlets.">
   <title>Horizon — Global Hydrology</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23101c22'/%3E%3Cpath d='M11 4q12 6 4 13t3 11M24 7q-3 6-9 10' fill='none' stroke='%2397dedb' stroke-width='3'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./atlas.css?v=0.7.11">
+  <link rel="stylesheet" href="./atlas.css?v=0.7.12">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="./" aria-label="Horizon home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 3q16 6 5 15t4 11M25 7q-4 6-10 11"/></svg><span>HORIZON<small>GLOBAL HYDROLOGY · 0.7.11</small></span></a>
+    <a class="brand" href="./" aria-label="Horizon home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 3q16 6 5 15t4 11M25 7q-4 6-10 11"/></svg><span>HORIZON<small>GLOBAL HYDROLOGY · 0.7.12</small></span></a>
     <div class="top-note"><span class="status-dot"></span><span id="top-status">Generating the whole planet</span></div>
     <button class="quiet about-trigger" id="about-open">About this world <span aria-hidden="true">↗</span></button>
   </header>
@@ -114,13 +114,13 @@
   <dialog id="mesh-dialog" class="mesh-dialog" aria-labelledby="mesh-title">
     <button class="dialog-close quiet" id="mesh-close" aria-label="Close terrain inspection">✕</button>
     <span class="eyebrow">GLOBAL WATER · LOCAL GEOMETRY</span><h2 id="mesh-title">Connected terrain chunks</h2>
-    <p>Ground geometry comes from the same global river beds, banks and lake levels. Adjacent chunks share their border vertices. Water surfaces are the next chunk pass.</p>
+    <p>Ground and water use the same global river beds, banks and lake levels. Shoreline vertices are shared, and adjacent chunks agree along their borders. This is a bare-geometry inspection view; natural landform shaping and surface detail follow.</p>
     <p id="chunk-location"></p><p id="mesh-counts" aria-live="polite"></p>
     <canvas id="mesh-canvas" role="img" aria-label="Local ground chunks sampled from the global hydrology"></canvas>
-    <div class="mesh-controls"><label>View <select id="chunk-detail"><option value="10">Wider terrain</option><option value="12" selected>River banks</option><option value="13">Fine section</option></select></label><label><input type="checkbox" id="chunk-oblique" checked>Oblique view</label><button id="chunk-focus" class="secondary">Focus selection</button></div>
+    <div class="mesh-controls"><label>View <select id="chunk-detail"><option value="10">Wider terrain</option><option value="12" selected>River banks</option><option value="13">Fine section</option></select></label><label><input type="checkbox" id="chunk-water" checked>Water surfaces</label><label><input type="checkbox" id="chunk-oblique" checked>Oblique view</label><button id="chunk-focus" class="secondary">Focus selection</button></div>
     <div class="chunk-pan" role="group" aria-label="Move terrain inspection"><button id="chunk-west" aria-label="Move west">← West</button><button id="chunk-north" aria-label="Move north">↑ North</button><button id="chunk-south" aria-label="Move south">↓ South</button><button id="chunk-east" aria-label="Move east">East →</button></div>
     <p id="mesh-error" role="status"></p>
   </dialog>
-  <script type="module" src="./atlas.mjs?v=0.7.11"></script>
+  <script type="module" src="./atlas.mjs?v=0.7.12"></script>
 </body>
 </html>

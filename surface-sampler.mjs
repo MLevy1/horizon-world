@@ -1,7 +1,7 @@
-import {createWaterScaffold} from './water-scaffold.mjs?v=0.7.11';
-import {neighbors,cellAt} from './planet.mjs?v=0.7.11';
+import {createWaterScaffold} from './water-scaffold.mjs?v=0.7.12';
+import {neighbors,cellAt} from './planet.mjs?v=0.7.12';
 import {sampleRiverEdge} from './river-profiles.mjs?v=0.7.4';
-import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.7.11';
+import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.7.12';
 
 const RAD=Math.PI/180,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
@@ -98,7 +98,7 @@ export function createSurfaceSampler(m){
     for(const p of planes.values())if(geometry.terrainM<p.waterM&&(!standingWater||p.waterM>standingWater.waterM))standingWater={kind:p.kind,id:p.id,waterM:p.waterM,depthM:p.waterM-geometry.terrainM};
     const rivers=riverCandidates(q.direction),plane=standingWater?planes.get(standingWater.id):[...planes.values()].sort((a,b)=>b.support-a.support)[0]||null;
     const fitted=composeWaterSurface(geometry.terrainM,plane,rivers.map(contacts.fit));
-    return {lon:q.lon,lat:q.lat,terrainM:q.terrainM,triangle:{cells:q.cells,weights:q.weights},standingWater,river:nearest(rivers),fitted};
+    return {lon:q.lon,lat:q.lat,terrainM:q.terrainM,triangle:{cells:q.cells,weights:q.weights},standingWater,waterPlane:plane?{id:plane.id,waterM:plane.waterM,kind:plane.kind}:null,river:nearest(rivers),fitted};
   }
   // Conservative index query for a complete minor arc, including corridor support.
   function shoreArc(a,b){
