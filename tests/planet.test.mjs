@@ -7,6 +7,7 @@ import {annualPartition,lakeBalance,makeClimate} from '../climate.mjs';
 import {poolWetFraction} from '../pools.mjs';
 import {sampleRiverEdge,FLOW_EPSILON_M3S} from '../river-profiles.mjs';
 import {inspectionRoute,inspectionStation} from '../profile-view.mjs';
+import {extractShorelines,packShorelines,sphereFaces} from '../shorelines.mjs';
 import {createSurfaceSampler} from '../surface-sampler.mjs';
 import {solvePlanet,neighbors,lonLat,cellAt,traceDownstream,catchmentMask,DEFAULT_WORLD,traceActive,tracePotential,createGrid} from '../planet.mjs';
 
@@ -530,4 +531,45 @@ test('spherical volcanic footprints cross longitude and include a polar cap with
   assert.equal(g.ids[row*grid.width],0);assert.equal(g.ids[row*grid.width+grid.width-1],0);
   assert.ok(height[row*grid.width]>0&&height[row*grid.width+grid.width-1]>0);
   assert.equal(g.ids[grid.north],1);assert.equal(g.ids[grid.south],-1);
+});
+
+const shores=extractShorelines(planet,surface);
+test('global standing-water shorelines close using shared spherical vertices and preserve independent pool levels',()=>{
+  assert.equal(shores.stats.faces,2*planet.grid.count-4);
+  assert.ok(shores.rings.some(r=>r.body===-1));assert.ok(shores.rings.some(r=>r.body>=0));assert.ok(shores.portals.length>100);
+  const seen=new Set();
+  for(const r of shores.rings){
+    assert.equal(r.vertices[0],r.vertices.at(-1));assert.equal(r.vertices.length,r.segments.length+1);
+    assert.equal(r.waterM,r.body<0?0:planet.waterbodies[r.body].waterLevelM);
+    for(const e of r.segments){assert.ok(!seen.has(e));seen.add(e);assert.equal(shores.segments[e].body,r.body);}
+  }
+  assert.equal(seen.size,shores.segments.length);
+  for(let i=0;i<planet.grid.count;i++)if(planet.ocean[i]||planet.waterbody[i]>=0&&planet.height[i]<planet.waterbodies[planet.waterbody[i]].waterLevelM)assert.notEqual(surface.waterScaffold.owner[i],-2);
+});
+test('every exposed global shoreline point and span agrees with its fixed water plane in the shared fitted query',()=>{
+  let count=0,seam=false;
+  for(const path of shores.paths){
+    for(let k=0;k<path.points.length;k++){
+      const v=path.points[k],q=surface.sample(v.lon,v.lat);
+      assert.ok(Math.abs(q.fitted.groundM-path.waterM)<.01,JSON.stringify({v,ground:q.fitted.groundM}));
+      if(!k)continue;
+      const a=path.points[k-1].direction,b=v.direction,n=Math.hypot(...a.map((x,j)=>x+b[j])),d=a.map((x,j)=>(x+b[j])/n),lon=Math.atan2(d[2],d[0])*180/Math.PI,lat=Math.asin(d[1])*180/Math.PI;
+      const mid=surface.sample(lon,lat);assert.ok(Math.abs(mid.fitted.groundM-path.waterM)<.01,JSON.stringify({lon,lat,level:path.waterM,ground:mid.fitted.groundM}));
+      seam ||=Math.abs(v.lon-path.points[k-1].lon)>180;count++;
+    }
+  }
+  assert.ok(count>10000);assert.ok(seam,'shore paths cross the longitude seam without a cut');
+});
+test('shoreline portals are paired with shore endpoints and the compact worker payload preserves all paths',()=>{
+  const packed=packShorelines(shores);
+  assert.equal(packed.paths.length,shores.paths.length);assert.equal(packed.portals.length,shores.portals.length);
+  const ends=new Set(shores.paths.flatMap(p=>p.closed?[]:[p.points[0],p.points.at(-1)]).map(p=>p.direction.map(x=>x.toFixed(10)).join(':')));
+  for(const p of shores.portals){
+    assert.equal(p.waterM,p.body<0?0:planet.waterbodies[p.body].waterLevelM);
+    if(!p.closed)for(const v of [p.points[0],p.points.at(-1)])assert.ok(ends.has(v.direction.map(x=>x.toFixed(10)).join(':')));
+  }
+  for(let k=0;k<packed.paths.length;k++){
+    const p=packed.paths[k],original=shores.paths[k];assert.ok(p.coordinates instanceof Float64Array);assert.equal(p.coordinates.length,original.points.length*2);
+    for(let j=0;j<p.coordinates.length;j++)assert.equal(p.coordinates[j],j%2?original.points[j>>1].lat:original.points[j>>1].lon);
+  }
 });

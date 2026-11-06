@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.7.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.8.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -120,7 +120,7 @@ support, rather than replace, complete-planet validation.
 | 2a. River profiles — completed in 0.7.4 | Establish shared river water heights, bed depths and widths along the entire active network. | Water never flows uphill; junctions share heights; beds remain below water. |
 | 2b. Profile inspection — completed in 0.7.5 | Add a river cross-section/profile view using those shared definitions. | Inspector displays the same geometry data that terrain generation will consume. Publish the river checkpoint. |
 | 3a. Terrain sampling — completed in 0.7.6 | Add one spherical terrain-and-water sampler used across the whole world. | Consistent values across longitude wrap and at both poles; river/lake contacts agree. |
-| 3b. Physical shorelines | Derive lake/ocean shores and river contacts from that shared surface. | Shore heights agree with water levels; no separate overlapping water patches at mouths. Publish the shoreline checkpoint. |
+| 3b. Physical shorelines — completed in 0.7.8 | Derive lake/ocean shores and river contacts from that shared surface. | Shore heights agree with water levels; no separate overlapping water patches at mouths. Publish the shoreline checkpoint. |
 | 4a. Bare global mesh | Build the full-planet land and water meshes from the shared sampler. | Complete spherical coverage and connected water geometry; no vegetation or decorative terrain detail. |
 | 4b. 3D navigation | Add navigation and inspect the bare world at global and local scales. | Usable navigation and visible terrain/water joins on the published Pages viewer. |
 
@@ -237,7 +237,7 @@ both poles and invalid queries. Existing hydrology/budgets are unchanged.
 The static build succeeds; browser probes verify both a channel node and an
 arbitrary off-node ocean coordinate.
 
-Current checkpoint: **0.7.7**, task 3b1. `water-contact.mjs` fits profiles to
+Previous checkpoint: **0.7.7**, task 3b1. `water-contact.mjs` fits profiles to
 actual scaffold shore crossings and combines channel cores/banks with fixed
 water planes. Surface queries now include a `fitted` ground/water/depth result.
 Overlapping channel patches blend through shared anchors. Standing water stays
@@ -256,6 +256,27 @@ lateral banks. Focused checks cover overlap order, dry designs, shoreline
 continuity and protection from submerged bank fills. Existing topology, climate,
 snow, geology and water-budget checks pass. The static build succeeds.
 
-**Next task: 3b2, shoreline extraction only.** Extract boundaries from the shared
-fitted queries, retaining the same water levels and continuity across the sphere.
-Keep bare-global-mesh generation (4a) as a separate turn.
+Current checkpoint: **0.7.8**, task **3b2 complete**. `shorelines.mjs`
+extracts lake/ocean contours from the same spherical geometry and fixed planes
+used by fitted queries. Shared vertex IDs close the rings across longitude and
+polar fans; touching saddle lobes remain separate closed rings. Channel cores
+cut paired portals rather than receiving a shoreline across their mouths.
+
+`water-scaffold.mjs` closes geometric support gaps beyond discrete pool masks
+and supplies shared separating saddles where independent pool levels meet.
+These constraints affect the shared geometry, not the drainage graph or annual
+water accounting. `packShorelines` transfers compact path coordinates from the
+worker. Physical shores are visible by default in both atlas projections.
+The original water fill is still the cell texture; the bare mesh is task 4a.
+
+Verification: **74 tests pass**, including all default-planet exposed shore
+vertices and span midpoints (within 1 cm of their fixed plane), paired portal
+endpoints, all global contour edges accounted for once, an alternate full-size
+seed with touching saddle lobes, polar/seam triangulation and a narrow off-centre
+channel opening. Existing water, snow, geology and river-profile checks pass.
+Adaptive unresolved tangencies are at most 2 cm long; these are numeric, not
+physical-accuracy promises.
+
+**Next task: 4a, bare global mesh only.** Consume these shared geometry queries,
+shore paths and portal constraints for full-planet land and water meshes.
+Keep 3D navigation (4b), vegetation and decorative detail as separate work.

@@ -1,6 +1,6 @@
 {
   "name": "horizon-world",
-  "version": "0.7.7",
+  "version": "0.7.8",
   "private": true,
   "type": "module",
   "description": "The complete hydrology of a closed, seeded planet.",

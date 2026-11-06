@@ -1,6 +1,7 @@
-import {neighbors,cellAt,lonLat} from './planet.mjs?v=0.7.7';
+import {createWaterScaffold} from './water-scaffold.mjs?v=0.7.8';
+import {neighbors,cellAt} from './planet.mjs?v=0.7.8';
 import {sampleRiverEdge} from './river-profiles.mjs?v=0.7.4';
-import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.7.7';
+import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.7.8';
 
 const RAD=Math.PI/180,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
@@ -61,7 +62,7 @@ export function createSphereSampler(grid,height){
  */
 export function createSurfaceSampler(m){
   const {grid:g,riverProfiles:p}=m,mesh=createSphereSampler(g,m.height),E=p.from.length,R=g.radiusKm*1000;
-  const contacts=createContactFitter(m);
+  const contacts=createContactFitter(m),waterScaffold=createWaterScaffold(m,mesh);
   const B=clamp(Math.ceil(g.width/6),16,256),step=2/B,buckets=new Map(),xyz=new Float64Array(E*6);
   const bin=v=>clamp(Math.floor((v+1)/step),0,B-1),key=(x,y,z)=>x+B*(y+B*z);
   for(let e=0;e<E;e++){
@@ -73,8 +74,8 @@ export function createSurfaceSampler(m){
       const id=key(x,y,z);let bucket=buckets.get(id);if(!bucket){bucket=[];buckets.set(id,bucket);}bucket.push(e);
     }
   }
-  function riverCandidates(direction){
-    const candidates=buckets.get(key(...direction.map(bin)))||[],found=[];
+  function riverCandidates(direction,candidates=buckets.get(key(...direction.map(bin)))||[],includeOutside=false){
+    const found=[];
     for(const edge of candidates){
       const a=[xyz[edge*6],xyz[edge*6+1],xyz[edge*6+2]],b=[xyz[edge*6+3],xyz[edge*6+4],xyz[edge*6+5]],normal=cross(a,b);
       const sa=dot(cross(a,subtract(direction,a)),normal),sb=dot(cross(subtract(direction,b),b),normal);
@@ -83,7 +84,7 @@ export function createSurfaceSampler(m){
       const closest=normalize(a.map((v,k)=>v+(b[k]-v)*t));
       const distanceM=R*Math.atan2(Math.hypot(...cross(direction,closest)),clamp(dot(direction,closest),-1,1));
       const s=sampleRiverEdge(p,edge,t),support=s.widthM/2+Math.max(1,s.widthM*.35);
-      if(distanceM>support+1e-6)continue;
+      if(!includeOutside&&distanceM>support+1e-6)continue;
       const insideChannel=distanceM<=s.widthM/2;
       const freeboardM=p.freeboardM[p.from[edge]]+(p.freeboardM[p.to[edge]]-p.freeboardM[p.from[edge]])*t;
       found.push({edge,t,distanceM,waterM:s.waterM,bedM:s.bedM,widthM:s.widthM,designDepthM:s.designDepthM,freeboardM,
@@ -93,20 +94,24 @@ export function createSurfaceSampler(m){
   }
   function nearest(rivers){return rivers.sort((a,b)=>Math.abs(a.distanceM-b.distanceM)>1e-7?a.distanceM-b.distanceM:Number(b.wet)-Number(a.wet)||a.edge-b.edge)[0]||null;}
   function sample(lon,lat){
-    const q=mesh.locate(lon,lat),planes=new Map();let standingWater=null;
-    for(let k=0;k<3;k++){
-      if(q.weights[k]<1e-10)continue;
-      const i=q.cells[k],id=m.waterbody[i];
-      const level=m.ocean[i]?0:id>=0&&m.height[i]<m.waterbodies[id].waterLevelM?m.waterbodies[id].waterLevelM:null;
-      if(level===null)continue;
-      const key=m.ocean[i]?-1:id,old=planes.get(key);
-      if(old)old.support+=q.weights[k];else planes.set(key,{kind:m.ocean[i]?'ocean':'pool',id:key,waterM:level,support:q.weights[k]});
-      if(q.terrainM<level&&(!standingWater||level>standingWater.waterM))standingWater={kind:m.ocean[i]?'ocean':'pool',id:key,waterM:level,depthM:level-q.terrainM};
-    }
+    const q=mesh.locate(lon,lat),geometry=waterScaffold.interpolate(q),planes=geometry.planes;let standingWater=null;
+    for(const p of planes.values())if(geometry.terrainM<p.waterM&&(!standingWater||p.waterM>standingWater.waterM))standingWater={kind:p.kind,id:p.id,waterM:p.waterM,depthM:p.waterM-geometry.terrainM};
     const rivers=riverCandidates(q.direction),plane=standingWater?planes.get(standingWater.id):[...planes.values()].sort((a,b)=>b.support-a.support)[0]||null;
-    const fitted=composeWaterSurface(q.terrainM,plane,rivers.map(contacts.fit));
+    const fitted=composeWaterSurface(geometry.terrainM,plane,rivers.map(contacts.fit));
     return {lon:q.lon,lat:q.lat,terrainM:q.terrainM,triangle:{cells:q.cells,weights:q.weights},standingWater,river:nearest(rivers),fitted};
   }
-  return {sample,mesh,contacts,riverAtDirection(direction){return nearest(riverCandidates(normalize(direction)));},
-    stats:{globalEdges:E,buckets:buckets.size,indexResolution:B,scaffoldCells:g.count,...contacts.stats}};
+  // Conservative index query for a complete minor arc, including corridor support.
+  function shoreArc(a,b){
+    const sagitta=1-Math.sqrt(Math.max(0,(1+dot(a,b))/2)),ids=new Set();
+    const lo=a.map((v,k)=>bin(Math.min(v,b[k])-sagitta-1e-12)),hi=a.map((v,k)=>bin(Math.max(v,b[k])+sagitta+1e-12));
+    for(let x=lo[0];x<=hi[0];x++)for(let y=lo[1];y<=hi[1];y++)for(let z=lo[2];z<=hi[2];z++)for(const e of buckets.get(key(x,y,z))||[])ids.add(e);
+    const edges=[...ids];
+    return {edges,clearance(direction){
+      let margin=Infinity;
+      for(const r of riverCandidates(direction,edges,true))margin=Math.min(margin,(r.distanceM-r.widthM/2)/(1+2*Math.abs(p.widthM[p.from[r.edge]]-p.widthM[p.to[r.edge]])/Math.max(1e-9,p.lengthM[r.edge])));
+      return margin;
+    }};
+  }
+  return {sample,mesh,contacts,shoreArc,waterScaffold,riverAtDirection(direction){return nearest(riverCandidates(normalize(direction)));},
+    stats:{globalEdges:E,buckets:buckets.size,indexResolution:B,scaffoldCells:g.count,...contacts.stats,...waterScaffold.stats}};
 }

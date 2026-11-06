@@ -1,14 +1,14 @@
-import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.7';
-import {ZONES,flowRegime} from './climate.mjs?v=0.7.7';
-import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.7.7';
-import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.7';
+import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.8';
+import {ZONES,flowRegime} from './climate.mjs?v=0.7.8';
+import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.7.8';
+import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.8';
 
 const $=id=>document.getElementById(id);
 const canvas=$('map'),ctx=canvas.getContext('2d'),stage=$('map-stage');
 const fmt=new Intl.NumberFormat('en-US'),number=(x,d=1)=>new Intl.NumberFormat('en-US',{maximumFractionDigits:d}).format(x);
 const state={model:null,worker:null,projection:'map',climateLayer:'water',zoom:1,cx:768,cy:384,lon:0,lat:0,selected:-1,trace:[],mask:null,showTrace:false,showCatchment:false,
   width:0,height:0,dpr:1,fit:1,frame:0,texture:null,textureData:null,catchmentTexture:null,globeCanvas:null,globeKey:'',paths:[],heads:[],mouths:[]};
-const layers={rivers:true,streams:true,lakes:true,headwaters:true,basins:false,arrows:false,dry:false,snow:true,volcanoes:true};
+const layers={rivers:true,streams:true,lakes:true,headwaters:true,basins:false,arrows:false,dry:false,snow:true,volcanoes:true,shores:true};
 const palette={ocean:[17,48,65],land:[54,70,66],coast:[70,86,78],lake:[90,170,187],shore:[28,66,80]};
 const TAU=Math.PI*2,DEG=Math.PI/180;
 let renderRevision=0;
@@ -157,7 +157,25 @@ function draw(){
   if(!state.model)return;
   if(state.projection==='map')drawMap();else drawGlobe();
   if(layers.volcanoes)drawVolcanoMarkers();
+  if(layers.shores)drawShorelines();
   drawSelection();updateScale();
+}
+function drawShorelines(){
+  const shores=state.model.shorelines;if(!shores)return;
+  const grid=state.model.grid,g=state.projection==='globe'?globeSetup():null;
+  ctx.save();if(!g){const [,top]=mapPosition(0,0),[,bottom]=mapPosition(0,grid.height);ctx.beginPath();ctx.rect(0,top,state.width,bottom-top);ctx.clip();}ctx.lineWidth=.8;ctx.strokeStyle='#c5e1c3';ctx.globalAlpha=.7;ctx.setLineDash([]);ctx.beginPath();
+  for(const path of shores.paths){
+    if(path.kind==='pool'&&!layers.lakes)continue;
+    const p=path.coordinates;
+    if(g){let drawing=false;for(let k=0;k<p.length;k+=2){const [x,y,z]=globeProject(p[k],p[k+1],g);if(z<=0){drawing=false;continue;}if(drawing)ctx.lineTo(x,y);else{ctx.moveTo(x,y);drawing=true;}}}
+    else{
+      const points=[];let previous=null;
+      for(let k=0;k<p.length;k+=2){let x=(p[k]+180)/360*grid.width;const y=(90-p[k+1])/180*grid.height;if(previous!==null){while(x-previous>grid.width/2)x-=grid.width;while(x-previous< -grid.width/2)x+=grid.width;}points.push(x,y);previous=x;}
+      let minX=Infinity,maxX=-Infinity;for(let k=0;k<points.length;k+=2){minX=Math.min(minX,points[k]);maxX=Math.max(maxX,points[k]);}const s=state.fit*state.zoom,first=Math.floor((state.cx-state.width/(2*s)-maxX)/grid.width),last=Math.ceil((state.cx+state.width/(2*s)-minX)/grid.width);
+      for(let copy=first;copy<=last;copy++){let drawing=false;for(let k=0;k<points.length;k+=2){const [x,y]=mapPosition(points[k],points[k+1],copy*grid.width);if(drawing)ctx.lineTo(x,y);else{ctx.moveTo(x,y);drawing=true;}}}
+    }
+  }
+  ctx.stroke();ctx.restore();
 }
 function drawMap(){
   const {width:w,height:h}=state.model.grid,s=state.fit*state.zoom,origin=mapPosition(0,0);
@@ -546,7 +564,7 @@ function generate(seed){
     worker.onmessage=({data})=>{
       if(data.type==='progress'){$('loading-stage').textContent=data.stage;$('loading-progress').style.width=data.fraction*100+'%';}
       else if(data.type==='complete'){
-        state.model=data.model;state.surfaceSampler=createSurfaceSampler(state.model);state.worker.terminate();state.worker=null;preparePaths();makeTexture();displayStats();fitWorld();resize();
+        state.model=data.model;const shores=state.model.shorelines.stats;$('shoreline-summary').textContent=number(shores.standingRings,0)+' standing-water rings · '+number(shores.channelPortals,0)+' channel openings';state.surfaceSampler=createSurfaceSampler(state.model);state.worker.terminate();state.worker=null;preparePaths();makeTexture();displayStats();fitWorld();resize();
         $('loading').hidden=true;$('generate').disabled=false;
         const url=new URL(location.href);url.searchParams.set('seed',seed);url.searchParams.set('v',VERSION);history.replaceState(null,'',url);
         // Read-only snapshot for reproducible QA and inspection, never a separate simulation.
