@@ -19,7 +19,7 @@ Detailed terrain, vegetation and the old explorer are excluded from the new app.
 4. **Pages viewer — published.** The existing main page now opens the
    hydrology-only atlas. Retired terrain/explorer source has been removed.
 
-The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.8.
+The current atlas is available at https://mlevy1.github.io/horizon-world/?v=0.7.9.
 It displays the complete global solver, with no detailed terrain or vegetation.
 This is a viewable work checkpoint; the remaining visual and touch-control
 review continues in small tasks.
@@ -121,7 +121,8 @@ support, rather than replace, complete-planet validation.
 | 2b. Profile inspection — completed in 0.7.5 | Add a river cross-section/profile view using those shared definitions. | Inspector displays the same geometry data that terrain generation will consume. Publish the river checkpoint. |
 | 3a. Terrain sampling — completed in 0.7.6 | Add one spherical terrain-and-water sampler used across the whole world. | Consistent values across longitude wrap and at both poles; river/lake contacts agree. |
 | 3b. Physical shorelines — completed in 0.7.8 | Derive lake/ocean shores and river contacts from that shared surface. | Shore heights agree with water levels; no separate overlapping water patches at mouths. Publish the shoreline checkpoint. |
-| 4a. Bare global mesh | Build the full-planet land and water meshes from the shared sampler. | Complete spherical coverage and connected water geometry; no vegetation or decorative terrain detail. |
+| 4a1. Mesh foundation — completed in 0.7.9 | Build the entire ground scaffold and fixed lake/ocean sheets with shared shore vertices. | Closed global indexed ground; shared shore positions; preview actual buffers on Pages. |
+| 4a2. River mesh integration | Fit channel cores, banks and confluences into that entire mesh; open paired lake/ocean mouth portals. | River dimensions and junctions agree with the shared surface queries; connected water without overlapping mouth caps. |
 | 4b. 3D navigation | Add navigation and inspect the bare world at global and local scales. | Usable navigation and visible terrain/water joins on the published Pages viewer. |
 
 Task 1a, saved in **0.7.1**, adds `basins.mjs` and the model's
@@ -256,7 +257,7 @@ lateral banks. Focused checks cover overlap order, dry designs, shoreline
 continuity and protection from submerged bank fills. Existing topology, climate,
 snow, geology and water-budget checks pass. The static build succeeds.
 
-Current checkpoint: **0.7.8**, task **3b2 complete**. `shorelines.mjs`
+Previous checkpoint: **0.7.8**, task **3b2 complete**. `shorelines.mjs`
 extracts lake/ocean contours from the same spherical geometry and fixed planes
 used by fitted queries. Shared vertex IDs close the rings across longitude and
 polar fans; touching saddle lobes remain separate closed rings. Channel cores
@@ -277,6 +278,28 @@ channel opening. Existing water, snow, geology and river-profile checks pass.
 Adaptive unresolved tangencies are at most 2 cm long; these are numeric, not
 physical-accuracy promises.
 
-**Next task: 4a, bare global mesh only.** Consume these shared geometry queries,
-shore paths and portal constraints for full-planet land and water meshes.
-Keep 3D navigation (4b), vegetation and decorative detail as separate work.
+Current checkpoint: **0.7.9**, task **4a1 complete**. Task 4a is split into
+foundation and river integration so one turn remains a small global checkpoint.
+`mesh-foundation.mjs` builds the complete indexed ground and lake/ocean sheets.
+It clips both surfaces at identical shore vertices and preserves shared saddle
+constraints. Every source cell and spherical face is included. The default has
+2,469,672 ground and 1,569,797 standing-water triangles (~107.1 MiB).
+
+Map layers → View mesh foundation opens the actual buffers with simple globe
+orientation controls and a water toggle. A WebGL renderer and a software
+compatibility renderer use the same data. The atlas remains available. The
+preview clearly labels the missing 4a2 channel integration; it does not present
+this scaffold as a finished river/terrain mesh. Detailed navigation stays 4b.
+
+Verification: **78 tests pass**. Ground edges each have exactly two incident
+faces and Euler characteristic 2; every source node is used. Every water-boundary
+vertex exactly matches a ground vertex at its fixed water level. All geometry
+is finite, indexed and outward-facing. Double positions avoid losing very thin
+shore triangles, and pool-specific caches preserve touching independent pools.
+Software rendering checks cover depth, water visibility and opposite hemispheres.
+Existing global hydrology, climate, snow, geology and shoreline checks pass.
+
+**Next task: 4a2, river mesh integration.** Insert subcell channels and their
+banks/confluences, and replace standing-water mouth caps with the previously
+extracted paired portal constraints. Continue globally, with no test regions.
+Keep local 3D navigation (4b), vegetation and decorative detail separate.

@@ -1,7 +1,7 @@
-import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.8';
-import {ZONES,flowRegime} from './climate.mjs?v=0.7.8';
-import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.7.8';
-import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.8';
+import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.7.9';
+import {ZONES,flowRegime} from './climate.mjs?v=0.7.9';
+import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.7.9';
+import {createSurfaceSampler} from './surface-sampler.mjs?v=0.7.9';
 
 const $=id=>document.getElementById(id);
 const canvas=$('map'),ctx=canvas.getContext('2d'),stage=$('map-stage');
@@ -550,8 +550,18 @@ function displayStats(){
     button.addEventListener('click',()=>selectCell(site.centerCell,{focus:true}));$('systems-list').append(button);
   }
 }
+let meshPreview=null;
+function drawMeshPreview(){if(meshPreview)try{meshPreview.draw(Number($('mesh-longitude').value),Number($('mesh-latitude').value),$('mesh-water').checked);}catch(error){$('mesh-error').textContent=error.message;}}
+$('mesh-open').addEventListener('click',async()=>{
+  $('mesh-dialog').showModal();$('mesh-error').textContent='';
+  const m=state.model.meshFoundation.stats;$('mesh-counts').textContent=number(m.groundTriangles,0)+' ground triangles · '+number(m.waterTriangles,0)+' lake/ocean triangles · '+number(m.bytes/1048576,1)+' MiB of mesh data';
+  try{if(!meshPreview){const {createMeshPreview}=await import('./mesh-preview.mjs?v=0.7.9');meshPreview=createMeshPreview($('mesh-canvas'),state.model.meshFoundation);}drawMeshPreview();}catch(error){$('mesh-error').textContent=error.message;}
+});
+$('mesh-close').addEventListener('click',()=>$('mesh-dialog').close());
+for(const id of ['mesh-longitude','mesh-latitude','mesh-water'])$(id).addEventListener('input',drawMeshPreview);
+new ResizeObserver(()=>{if($('mesh-dialog').open)drawMeshPreview();}).observe($('mesh-canvas'));
 function generate(seed){
-  $('river-profile-dialog').close();profileRoute=null;
+  $('river-profile-dialog').close();profileRoute=null;$('mesh-dialog').close();meshPreview?.dispose();meshPreview=null;$('mesh-open').disabled=true;$('mesh-summary').textContent='Building the full-planet mesh foundation…';
   state.worker?.terminate();state.worker=null;state.model=null;state.surfaceSampler=null;state.selected=-1;state.trace=[];state.mask=null;state.showTrace=false;state.showCatchment=false;
   $('generate').disabled=true;$('loading').hidden=false;$('loading-progress').style.width='0';$('loading-stage').textContent='Defining continents and drainage divides';
   $('loading').querySelector('h2').textContent='Balancing the whole world’s water';$('top-status').textContent='Generating the whole planet';
@@ -564,7 +574,7 @@ function generate(seed){
     worker.onmessage=({data})=>{
       if(data.type==='progress'){$('loading-stage').textContent=data.stage;$('loading-progress').style.width=data.fraction*100+'%';}
       else if(data.type==='complete'){
-        state.model=data.model;const shores=state.model.shorelines.stats;$('shoreline-summary').textContent=number(shores.standingRings,0)+' standing-water rings · '+number(shores.channelPortals,0)+' channel openings';state.surfaceSampler=createSurfaceSampler(state.model);state.worker.terminate();state.worker=null;preparePaths();makeTexture();displayStats();fitWorld();resize();
+        state.model=data.model;$('mesh-open').disabled=false;const mesh=state.model.meshFoundation.stats;$('mesh-summary').textContent=number(mesh.groundTriangles,0)+' ground triangles · '+number(mesh.waterTriangles,0)+' lake/ocean triangles';const shores=state.model.shorelines.stats;$('shoreline-summary').textContent=number(shores.standingRings,0)+' standing-water rings · '+number(shores.channelPortals,0)+' channel openings';state.surfaceSampler=createSurfaceSampler(state.model);state.worker.terminate();state.worker=null;preparePaths();makeTexture();displayStats();fitWorld();resize();
         $('loading').hidden=true;$('generate').disabled=false;
         const url=new URL(location.href);url.searchParams.set('seed',seed);url.searchParams.set('v',VERSION);history.replaceState(null,'',url);
         // Read-only snapshot for reproducible QA and inspection, never a separate simulation.

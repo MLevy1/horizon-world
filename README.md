@@ -1,6 +1,6 @@
-# Horizon 0.7.8 — Global hydrology atlas
+# Horizon 0.7.9 — Global hydrology atlas
 
-[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.8).
+[Open the atlas on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.7.9).
 
 A fresh hydrology-only foundation: one complete, closed, seeded planet. The main
 page displays the actual solved headwaters, streams, rivers, ponds, lakes and
@@ -76,6 +76,10 @@ Serve the repository root or `dist/` over HTTP. Module workers do not run from a
   shared separating saddles between incompatible pool levels.
 - `shorelines.mjs`: spherical contour rings, open channel portals and compact
   transferable shore paths for both map projections.
+- `mesh-foundation.mjs`: globally indexed ground and clipped standing-water
+  surfaces, sharing exact shore vertices.
+- `mesh-preview.mjs` / `mesh-raster.mjs`: actual mesh rendering through WebGL 2
+  or a software compatibility renderer.
 - `surface-sampler.mjs`: shared spherical scaffold interpolation, standing-water
   queries and a complete 3D index of nearby channel profiles.
 - `water-contact.mjs`: shore-crossing profile constraints and composed fitted
@@ -335,3 +339,45 @@ are extracted in the worker and transferred once for rendering.
 All **74 tests pass**, including a second full-resolution seed, touching-saddle
 regression, polar/seam geometry, narrow channel openings, endpoint pairing and
 all prior hydrology checks. Next: **4a, bare global land and water meshes**.
+
+
+## Bare global mesh foundation — 0.7.9
+
+Task 4a is split into two global checkpoints to keep each implementation small.
+**4a1 is complete:** open **Map layers → View mesh foundation** to see the actual
+indexed ground and lake/ocean buffers. The preview has longitude/latitude
+controls and a lake/ocean visibility toggle. It uses no atlas texture, height
+texture, vegetation, decorative noise or new hydrology solve. WebGL 2 renders
+the buffers when available; the software renderer draws the same complete
+triangle arrays as a compatibility fallback.
+
+`buildMeshFoundation(model, surface)` consumes every spherical scaffold face,
+including the wrapped seam and both unique poles. It keeps the original nodal
+heights and the shared water-scaffold saddles between incompatible pool levels.
+Ground triangles are split at fixed standing-water contours. Matching shore
+vertices have bit-identical ground/water positions, and each water triangle
+belongs to exactly one pool or ocean plane. Neighbouring faces share every
+extra edge split, preventing T-junctions. Touching independent pools cache their
+vertices separately even where their numerical levels happen to match.
+
+HORIZON-01 contains **2,469,672 ground triangles** and **1,569,797 lake/ocean
+triangles** in about **107.1 MiB** of indexed mesh data. Double-precision metre
+coordinates preserve very thin shore triangles in the authoritative buffers;
+GPU uploads use float positions. The worker transfers those arrays once. The
+preview allocates graphics buffers when opened and releases them before a new
+world is generated. Full-size arrays are retained for the next mesh checkpoint.
+
+**4a2 remains next:** insert the shared subcell river cores, banks, confluences
+and paired mouth openings into these meshes. This foundation preview therefore
+shows the broad ground scaffold and fixed standing-water sheets, rather than
+claiming to be the finished terrain/water mesh. The hydrology atlas and fitted
+surface inspector retain the complete river network. Local 3D navigation is
+still task 4b.
+
+All **78 tests pass**. New complete-planet checks count two incident ground
+triangles at every edge, verify Euler characteristic 2 and every source node,
+check every standing-water boundary against its identical ground vertex, and
+validate all triangle indices, orientations, finite coordinates and fixed water
+levels. The compatibility renderer is checked for indexed geometry, depth,
+water visibility and hemisphere changes. Existing hydrology and shoreline
+checks continue to pass.

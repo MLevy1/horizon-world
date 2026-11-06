@@ -7,6 +7,7 @@ import {annualPartition,lakeBalance,makeClimate} from '../climate.mjs';
 import {poolWetFraction} from '../pools.mjs';
 import {sampleRiverEdge,FLOW_EPSILON_M3S} from '../river-profiles.mjs';
 import {inspectionRoute,inspectionStation} from '../profile-view.mjs';
+import {buildMeshFoundation} from '../mesh-foundation.mjs';
 import {extractShorelines,packShorelines,sphereFaces} from '../shorelines.mjs';
 import {createSurfaceSampler} from '../surface-sampler.mjs';
 import {solvePlanet,neighbors,lonLat,cellAt,traceDownstream,catchmentMask,DEFAULT_WORLD,traceActive,tracePotential,createGrid} from '../planet.mjs';
@@ -571,5 +572,35 @@ test('shoreline portals are paired with shore endpoints and the compact worker p
   for(let k=0;k<packed.paths.length;k++){
     const p=packed.paths[k],original=shores.paths[k];assert.ok(p.coordinates instanceof Float64Array);assert.equal(p.coordinates.length,original.points.length*2);
     for(let j=0;j<p.coordinates.length;j++)assert.equal(p.coordinates[j],j%2?original.points[j>>1].lat:original.points[j>>1].lon);
+  }
+});
+
+const foundation=buildMeshFoundation(planet,surface);
+function meshEdges(mesh){
+  const n=mesh.positions.length/3,edges=new Float64Array(mesh.indices.length);
+  for(let k=0;k<mesh.indices.length;k+=3)for(let j=0;j<3;j++){const a=mesh.indices[k+j],b=mesh.indices[k+(j+1)%3];assert.ok(a<n&&b<n&&a!==b);edges[k+j]=Math.min(a,b)*n+Math.max(a,b);}
+  return edges.sort();
+}
+test('the complete ground foundation is a closed indexed sphere without seam, pole or shoreline cracks',()=>{
+  const m=foundation.ground,n=m.positions.length/3,edges=meshEdges(m);let unique=0;
+  for(let k=0;k<edges.length;){let end=k+1;while(end<edges.length&&edges[end]===edges[k])end++;assert.equal(end-k,2,'every ground edge must have exactly two incident faces');unique++;k=end;}
+  assert.equal(n-unique+m.indices.length/3,2);assert.equal(foundation.stats.sourceFaces,2359296);assert.equal(foundation.stats.sourceCells,1179650);
+  assert.equal(foundation.stage,'foundation');assert.match(foundation.next,/4a2/);
+  const used=new Uint8Array(n);for(const i of m.indices)used[i]=1;for(const v of used)assert.equal(v,1);
+  for(let i=0;i<planet.grid.count;i++)assert.equal(m.elevationsM[i],planet.height[i]);
+});
+test('every standing-water mesh boundary uses the exact same ground position at its fixed pool or ocean level',()=>{
+  const m=foundation.standingWater,n=m.positions.length/3,edges=meshEdges(m);let boundary=0;
+  for(let k=0;k<edges.length;){let end=k+1;while(end<edges.length&&edges[end]===edges[k])end++;assert.ok(end-k===1||end-k===2);if(end-k===1){boundary++;for(const i of [Math.floor(edges[k]/n),edges[k]%n]){const v=m.groundVertex[i];assert.equal(foundation.ground.elevationsM[v],m.elevationsM[i]);for(let j=0;j<3;j++)assert.equal(foundation.ground.positions[v*3+j],m.positions[i*3+j]);}}k=end;}
+  assert.ok(boundary>10000);
+  for(let k=0;k<m.indices.length;k+=3){const ids=m.indices.subarray(k,k+3);assert.equal(m.bodies[ids[0]],m.bodies[ids[1]]);assert.equal(m.bodies[ids[0]],m.bodies[ids[2]]);}
+  for(let i=0;i<n;i++){const level=m.bodies[i]===-1?0:planet.waterbodies[m.bodies[i]].waterLevelM;assert.ok(Math.abs(level-m.elevationsM[i])<.0002);}
+});
+test('all foundation triangles are finite, nondegenerate and outward-facing in metre coordinates',()=>{
+  for(const mesh of [foundation.ground,foundation.standingWater]){
+    const p=mesh.positions;
+    for(const v of p)assert.ok(Number.isFinite(v));
+    for(let k=0;k<mesh.indices.length;k+=3){const a=mesh.indices[k]*3,b=mesh.indices[k+1]*3,c=mesh.indices[k+2]*3,ux=p[b]-p[a],uy=p[b+1]-p[a+1],uz=p[b+2]-p[a+2],vx=p[c]-p[a],vy=p[c+1]-p[a+1],vz=p[c+2]-p[a+2];assert.ok((uy*vz-uz*vy)*p[a]+(uz*vx-ux*vz)*p[a+1]+(ux*vy-uy*vx)*p[a+2]>0);}
+    for(let i=0;i<mesh.elevationsM.length;i++){const radial=Math.hypot(p[i*3],p[i*3+1],p[i*3+2]);assert.ok(Math.abs(radial-(foundation.radiusM+mesh.elevationsM[i]))<.01);}
   }
 });
