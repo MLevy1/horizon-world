@@ -1,11 +1,11 @@
-import {scenicFog} from './explorer-visibility.mjs?v=0.9.2';
-import {rockBlocks} from './explorer-rocks.mjs?v=0.9.2';
-import {waterState} from './explorer-water.mjs?v=0.9.2';
-import {direction,coordinates,frame,moveDirection,createGroundCollider,dot} from './explorer-world.mjs?v=0.9.2';
-import {createExplorerRenderer} from './explorer-render.mjs?v=0.9.2';
-import {createTerrainViewQueue} from './terrain-stream.mjs?v=0.9.2';
-import {WALK_SPEEDS,FLY_SPEEDS,flightStep} from './explorer-navigation.mjs?v=0.9.2';
-import {createExplorerMap} from './explorer-map.mjs?v=0.9.2';
+import {scenicFog} from './explorer-visibility.mjs?v=0.9.3';
+import {rockBlocks} from './explorer-rocks.mjs?v=0.9.3';
+import {waterState} from './explorer-water.mjs?v=0.9.3';
+import {direction,coordinates,frame,moveDirection,createGroundCollider,dot} from './explorer-world.mjs?v=0.9.3';
+import {createExplorerRenderer} from './explorer-render.mjs?v=0.9.3';
+import {createTerrainViewQueue} from './terrain-stream.mjs?v=0.9.3';
+import {WALK_SPEEDS,FLY_SPEEDS,flightStep} from './explorer-navigation.mjs?v=0.9.3';
+import {createExplorerMap} from './explorer-map.mjs?v=0.9.3';
 const $=id=>document.getElementById(id),canvas=$('world'),keys=new Set();
 let renderer,worker,ground,water,mesh,position=null,yaw=0,pitch=-.1,foot=0,R=64000,auto=false,dirty=true,streamOrigin=null,travelling=false,drag=null,last=0,lastHud=0,steps=0,queue,crouched=false,lastWaterFrame=0,flying=false,flightHeight=0,speed=3,walkSpeed=3,flySpeed=30,viewPending=false,viewId=0,requestedClearance=0,requestedFlying=false,requestedSpeed=3,infoPending=false,infoId=0,lastInspect=0,lastInfo=null;
 const distance=(a,b)=>a&&b?Math.hypot(...a.map((v,k)=>v-b[k]))*R:Infinity;
@@ -26,10 +26,10 @@ function updateSpeeds(){const list=flying?FLY_SPEEDS:WALK_SPEEDS;speed=flying?fl
 function toggleFlight(){if(!position||travelling)return;stop();if(!flying){flightHeight=Math.max(foot+9.7,(water?.(position)??-Infinity)+4);flying=true;}else{const h=ground?.(position);if(h===null||h===undefined){$('stream-state').textContent='Wait for the terrain to load before landing';return;}flying=false;foot=h;}
  updateSpeeds();streamOrigin=null;dirty=true;requestView();}
 function generate(seed){stop();steps=0;lastHud=0;lastInspect=0;pitch=-.1;yaw=0;flying=false;updateSpeeds();lastInfo=null;infoPending=false;viewPending=false;$('environment-state').textContent='Preparing terrain';$('climate-state').textContent='';$('location').textContent='';$('movement-state').textContent='Ground-level exploration';worker?.terminate();queue?.reset();ground=null;water=null;mesh=null;position=null;streamOrigin=null;travelling=false;for(const id of ['destination','auto-walk','reset-look','fly'])$(id).disabled=true;$('welcome').hidden=false;$('retry').hidden=true;$('generate').disabled=true;$('loading').textContent='Building the complete world…';$('progress').value=0;
- const active=new Worker(new URL('./explorer-worker.mjs?v=0.9.2',import.meta.url),{type:'module'});worker=active;queue=createTerrainViewQueue(message=>active.postMessage(message),data=>install(data.mesh));
+ const active=new Worker(new URL('./explorer-worker.mjs?v=0.9.3',import.meta.url),{type:'module'});worker=active;queue=createTerrainViewQueue(message=>active.postMessage(message),data=>install(data.mesh));
  active.onmessage=({data})=>{if(worker!==active)return;
   if(data.type==='progress'){$('loading').textContent=data.stage;$('progress').value=data.fraction;}
-  else if(data.type==='ready'){R=data.radiusM;position=direction(data.start.lon,data.start.lat);yaw=data.start.yaw;foot=data.start.groundM;const image=new ImageData(data.map.data,data.map.width,data.map.height);map.setWorld(image,data.places);$('destination').replaceChildren(...data.places.map(p=>{const option=new Option(p.name,p.name);option.dataset.lon=p.lon;option.dataset.lat=p.lat;option.dataset.yaw=p.yaw??0;return option;}));$('map-places').replaceChildren(new Option('Find destination…',''),...data.places.map(p=>{const o=new Option(p.name,p.name);o.dataset.lon=p.lon;o.dataset.lat=p.lat;o.dataset.yaw=p.yaw??0;return o;}));$('destination').disabled=false;$('generate').disabled=false;$('atlas-link').href='./atlas.html?seed='+encodeURIComponent(data.seed);const url=new URL(location.href);url.searchParams.set('seed',data.seed);url.searchParams.set('v','0.9.2');history.replaceState(null,'',url);requestView();}
+  else if(data.type==='ready'){R=data.radiusM;position=direction(data.start.lon,data.start.lat);yaw=data.start.yaw;foot=data.start.groundM;const image=new ImageData(data.map.data,data.map.width,data.map.height);map.setWorld(image,data.places);$('destination').replaceChildren(...data.places.map(p=>{const option=new Option(p.name,p.name);option.dataset.lon=p.lon;option.dataset.lat=p.lat;option.dataset.yaw=p.yaw??0;return option;}));$('map-places').replaceChildren(new Option('Find destination…',''),...data.places.map(p=>{const o=new Option(p.name,p.name);o.dataset.lon=p.lon;o.dataset.lat=p.lat;o.dataset.yaw=p.yaw??0;return o;}));$('destination').disabled=false;$('generate').disabled=false;$('atlas-link').href='./atlas.html?seed='+encodeURIComponent(data.seed);const url=new URL(location.href);url.searchParams.set('seed',data.seed);url.searchParams.set('v','0.9.3');history.replaceState(null,'',url);requestView();}
   else if(data.type==='view'){if(data.requestId===viewId)viewPending=false;queue.finish(data);}
   else if(data.type==='inspect'){if(data.requestId===infoId){infoPending=false;showInfo(data.info);}}
   else if(data.type==='travel'){position=direction(data.point.lon,data.point.lat);foot=data.point.groundM;if(flying)flightHeight=Math.max(foot+30,flightHeight);streamOrigin=null;ground=null;water=null;mesh=null;travelling=false;requestView();}

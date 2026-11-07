@@ -1,4 +1,4 @@
-import {mapGeometry,mapPoint,zoomMap,panMap} from './explorer-navigation.mjs?v=0.9.2';
+import {mapGeometry,mapPoint,zoomMap,panMap} from './explorer-navigation.mjs?v=0.9.3';
 export function createExplorerMap({canvas,getPosition,onSelect}){
  const ctx=canvas.getContext('2d'),pointers=new Map();let source,places=[],view={cx:.5,cy:.5,zoom:1},selected=null,gesture=false,press=null;
  const size=()=>{const r=canvas.getBoundingClientRect();return {w:r.width,h:r.height};},point=e=>{const r=canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};};

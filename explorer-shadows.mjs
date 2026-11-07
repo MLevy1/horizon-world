@@ -1,4 +1,4 @@
-import {dot,frame,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.2';
+import {dot,frame,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.3';
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 export function sunlight(d){const f=frame(d);return unit(d.map((x,k)=>x*.8+f.east[k]*.35+f.north[k]*.5));}
 /** Coordinates are relative to the current terrain anchor, never planet-sized floats. */
@@ -24,7 +24,7 @@ export function createSunShadows(gl,compile,leafTexture,groundTexture){
  return {texture,size,available,render(resources,s){if(!available)return;gl.bindFramebuffer(gl.FRAMEBUFFER,buffer);gl.viewport(0,0,size,size);gl.colorMask(false,false,false,false);gl.depthMask(true);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LESS);gl.clearDepth(1);gl.clear(gl.DEPTH_BUFFER_BIT);gl.useProgram(program);
    gl.uniform3fv(uniforms.shadowCenter,s.center);gl.uniform3fv(uniforms.shadowRight,s.right);gl.uniform3fv(uniforms.shadowUp,s.up);gl.uniform3fv(uniforms.sun,s.light);gl.uniform2f(uniforms.shadowExtent,s.half,s.depth);
    gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,leafTexture);gl.uniform1i(uniforms.foliageTexture,1);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,groundTexture);gl.uniform1i(uniforms.groundTexture,2);
-   for(const r of resources)if(!r.water&&!r.terrain){gl.bindVertexArray(r.vao);gl.drawElements(gl.TRIANGLES,r.count,gl.UNSIGNED_INT,0);}
+   for(const r of resources)if(!r.water&&!r.terrain&&r.castShadow!==false){gl.bindVertexArray(r.vao);gl.drawElements(gl.TRIANGLES,r.count,gl.UNSIGNED_INT,0);}
    gl.bindVertexArray(null);gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.colorMask(true,true,true,true);
  },dispose(){gl.deleteFramebuffer(buffer);gl.deleteTexture(texture);gl.deleteProgram(program);}};
 }
