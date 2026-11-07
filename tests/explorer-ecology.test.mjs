@@ -18,3 +18,16 @@ test('open biome labels and placement policies agree on tree cover',async()=>{
  for(const [aridity,biome] of [[.2,'Desert'],[.55,'Dry grassland'],[.75,'Grassland']]){const e={...coast,coastNear:0,elevationM:60,aridity};assert.equal(landHabitat(e).biome,biome);assert.equal(plantHabitat(e).kind,'shrub');assert.ok(plantHabitat(e).density<=.12);assert.notEqual(groundHabitat(e).kind,'woodland');}
  assert.equal(landHabitat({...coast,coastNear:0,elevationM:4000}).trees,'bare');
 });
+
+test('dry coastal slopes do not become a narrow belt of tall woodland',()=>{
+ for(const aridity of [.59,.65,.75]){const e={...coast,elevationM:16,slope:.014,aridity};assert.equal(plantHabitat(e).kind,'shrub');assert.equal(ecologyHabitat(e).biome,aridity<.7?'Dune scrub':'Coastal grassland');}
+ assert.equal(plantHabitat({...coast,elevationM:20,aridity:1}).kind,'broadleaf');
+});
+test('the reported bare hillside has persistent herb cover, with mineral and water exclusions',async()=>{
+ const {meadowAppearance}=await import('../explorer-ecology.mjs');
+ for(const [elevationM,aridity,slope] of [[41,.621,.018],[89,.639,.037],[254,.743,.113],[554,.641,.101]]){
+  const e={...coast,coastNear:0,elevationM,aridity,slope},a=meadowAppearance(e);assert.ok(a.cover>.8);assert.ok(a.tint.every(v=>v>0&&v<1));assert.equal(plantHabitat(e).kind,'shrub');
+ }
+ for(const changes of [{aridity:.2},{depthM:1},{glacier:1},{lava:1},{elevationM:3000},{slope:.6}])assert.equal(meadowAppearance({...coast,coastNear:0,elevationM:100,aridity:.65,...changes}).cover,0);
+ const dry=meadowAppearance({...coast,coastNear:0,elevationM:100,aridity:.55}),wet=meadowAppearance({...coast,coastNear:0,elevationM:100,aridity:.79});assert.ok(dry.tint[0]>wet.tint[0]);
+});

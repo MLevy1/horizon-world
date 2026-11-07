@@ -1,7 +1,7 @@
-import {landHabitat} from './explorer-ecology.mjs?v=0.9.4';
-import {lonLat,neighbors,cellAt} from './planet.mjs?v=0.9.4';
-import {direction,coordinates,unit,frame,dot} from './explorer-world.mjs?v=0.9.4';
-import {ZONES} from './climate.mjs?v=0.9.4';
+import {landHabitat} from './explorer-ecology.mjs?v=0.9.5';
+import {lonLat,neighbors,cellAt} from './planet.mjs?v=0.9.5';
+import {direction,coordinates,unit,frame,dot} from './explorer-world.mjs?v=0.9.5';
+import {ZONES} from './climate.mjs?v=0.9.5';
 export function describeLocation(model,surface,lon,lat){
  const q=surface.sample(lon,lat),cells=q.triangle.cells,w=q.triangle.weights,blend=values=>cells.reduce((s,i,k)=>s+values[i]*w[k],0),temperature=blend(model.climate.temperature),precipitation=blend(model.climate.precipitation),aridity=blend(model.climate.aridity),snowMonths=blend(model.cryosphere.snowMonths),glacier=blend(model.cryosphere.glacier),lava=blend(model.geology.lava),i=cellAt(model.grid,lon,lat),groundM=q.fitted.groundM,waterM=q.fitted.waterM,waterKind=q.waterPlane?.kind||(q.river&&q.river.distanceM<q.river.widthM*.5?'river':null);
  const env=model.ecologySample?model.ecologySample(lon,lat):{temperature,aridity,snow:snowMonths/12,glacier,lava,elevationM:groundM,slope:0,shore:0};let biome=landHabitat(env).biome;

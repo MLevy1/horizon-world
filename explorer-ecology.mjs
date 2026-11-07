@@ -1,4 +1,4 @@
-import {neighbors} from './planet.mjs?v=0.9.4';
+import {neighbors} from './planet.mjs?v=0.9.5';
 const clamp=x=>Math.max(0,Math.min(1,x));
 /** A small coastal buffer on the existing planet grid; no new water or terrain. */
 export function buildCoastalFields(model){
@@ -17,6 +17,7 @@ export function ecologyHabitat(e){
   if(e.elevationM<4&&e.slope<.012&&e.temperature>2&&e.aridity>.75)return {biome:'Salt marsh',trees:'bare',treeFactor:0,ground:'bank',density:.95};
   if(e.elevationM<11&&e.slope<.18)return {biome:e.aridity<.7?'Dune scrub':'Coastal grassland',trees:'shrub',treeFactor:.2,ground:e.aridity<.7?'desert':'coastal',density:.72};
   if(e.slope>.18&&e.elevationM<45)return {biome:'Rocky coast',trees:'shrub',treeFactor:.14,ground:'scree',density:.6};
+  if(e.elevationM<24&&e.aridity<.8)return {biome:e.aridity<.7?'Dune scrub':'Coastal grassland',trees:'shrub',treeFactor:.15,ground:e.aridity<.7?'desert':'coastal',density:.8};
   if(e.elevationM<24)return {biome:'Maritime woodland',trees:null,treeFactor:clamp((e.elevationM-10)/14)*.65,ground:'woodland',density:.8};
  }
  if(e.shore>.3&&e.slope<.04&&e.aridity>.8&&e.temperature>3)return {biome:'Riparian woodland',trees:null,treeFactor:.65,ground:'bank',density:.9};
@@ -38,4 +39,12 @@ export function landHabitat(e){
  if(e.aridity<.7)return {biome:'Dry grassland',trees:'shrub',treeFactor:.10,ground:'grassland',density:.8};
  if(e.aridity<.8)return {biome:'Grassland',trees:'shrub',treeFactor:.12,ground:'grassland',density:.9};
  return {biome:e.temperature<8?'Boreal woodland':'Woodland',trees:e.temperature<8||e.snow>.4?'conifer':'broadleaf',treeFactor:clamp((e.aridity-.78)/.25),ground:'woodland',density:.9};
+}
+
+/** Continuous herb cover survives the detail radius; bare mineral biomes retain their materials. */
+export function meadowAppearance(e){
+ const h=landHabitat(e),open=h.ground==='grassland'||h.biome==='Coastal grassland';
+ if(!open||e.depthM>.02)return {cover:0,tint:[0,0,0]};
+ const green=clamp((e.aridity-.45)/.5),exposed=clamp((e.slope-.12)/.28),wet=clamp(e.shore||0);
+ return {cover:.94*(1-exposed)*(1-wet),tint:[.48-.25*green,.44-.08*green,.23-.11*green]};
 }
