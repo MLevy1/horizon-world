@@ -1,4 +1,4 @@
-import {coordinateTile,terrainVertex,tileNeighbor,tileKey,neighborhood,EDGES} from './terrain-chunks.mjs?v=0.8.9';
+import {coordinateTile,terrainVertex,tileNeighbor,tileKey,neighborhood,EDGES} from './terrain-chunks.mjs?v=0.9.0';
 const length=a=>Math.hypot(...a),distance=(a,b)=>length(a.map((v,k)=>v-b[k]));
 const children=t=>[0,1,2,3].map(k=>({face:t.face,level:t.level+1,x:t.x*2+k%2,y:t.y*2+(k>>1)}));
 export function coveringTile(tiles,tile){
@@ -8,7 +8,7 @@ export function coveringTile(tiles,tile){
 /** Camera footprint in a globally addressed quadtree. Only geometry is local;
  * every height and water value still comes from the complete planetary solve. */
 export function selectTerrainTiles(lon,lat,{level=12,aspect=1.8,tilt=45,radiusM=64000}={}){
-  if(!Number.isFinite(level)||level<8||level>14||!Number.isFinite(aspect)||aspect<=0||aspect>8||!Number.isFinite(tilt)||Math.abs(tilt)>60)throw Error('Invalid terrain view');
+  if(!Number.isFinite(level)||level<6||level>14||!Number.isFinite(aspect)||aspect<=0||aspect>8||!Number.isFinite(tilt)||Math.abs(tilt)>60)throw Error('Invalid terrain view');
   const finest=Math.ceil(level),base=finest-2,l=lon*Math.PI/180,p=lat*Math.PI/180,focus=[Math.cos(p)*Math.cos(l),Math.sin(p),Math.cos(p)*Math.sin(l)],zoom=2**level*Math.max(1,aspect/1.6),footprint=(radiusM+4000)*Math.hypot(aspect,1/Math.cos(tilt*Math.PI/180))/(.9*zoom*radiusM),leaves=new Map();
   const visit=t=>{
     const center=terrainVertex(t,4,2,2).direction,bound=Math.max(...[[0,0],[4,0],[4,4],[0,4]].map(([i,j])=>distance(center,terrainVertex(t,4,i,j).direction)));

@@ -625,3 +625,14 @@ Added a cached 1024² depth-only WebGL sun map for trunks, foliage, ground cover
 Terrain receives object shadows, but terrain casting is deferred: the render comparison exposed severe terrain self-shadow artifacts on steep desert geometry. Excluding terrain casters also reduces map update cost. Far terrain occlusion, moving sun, ambient occlusion and night lighting remain later work. Compatibility mode preserves canopy shade and labels its disabled control accordingly.
 
 Validation: projection tests across hemispheres/poles, caster exclusions and framebuffer state; actual terrain and depth shader compile/link; offscreen graphics comparisons at woodland and desert coordinates; explorer/ground/plant/rock/water/material regressions; production build. Desktop software graphics timings are diagnostic only and do not establish iPhone performance.
+
+
+## 0.9.0 — Flight, map interaction, zoom protection and location information
+
+Implemented the five requested usability changes. Walking/flight mode, speed selection and flight height controls remain on the main screen. Flight preserves the spherical heading, normalizes combined movement, clears loaded water/ground and uses altitude/speed-dependent terrain LOD. Stream requests are gated to one active view so continuous flight cannot invalidate every completed result. Landing switches back to terrain collision. Added a 20 km render clip distance and altitude-dependent fog; small objects are omitted from broad aerial views.
+
+Replaced immediate map teleport with explicit pin selection and Travel here. App-owned pinch/wheel/button zoom is anchored under the gesture, drag pans, longitude wraps, polar bounds are constrained and multi-touch gestures cannot select a point. Whole world, Find me and named-destination lookup provide recovery/navigation. Raised the global raster from 384×192 to 1536×768. Added page gesture guards, viewport bounds, mobile form font sizes and conditional page-zoom reset control. Native browser zoom overrides remain browser-controlled.
+
+The live HUD reads interpolated global climate: biome, annual mean surface temperature in °C, precipitation in mm/year, snow months, coordinates and elevation. Flight adds height above ground and speed. Added actual lakefront, non-volcanic mountain and glacier destinations. Features are discovered from the current seed; unavailable features are not invented. Existing glacier data are a coverage mask, not ice thickness.
+
+Validation: flight speed/diagonal/heading and altitude checks; map anchor/wrap/scale/bounds and real controller tap-vs-drag/pinch tests; biome/units and destination exclusions; full HORIZON-01 worker run confirms all nine travel targets and 500 m / 4,000 m aerial views. Full regression suite and build checked. Browser interaction checks follow deployment; native iPhone gesture behavior still requires on-device review.

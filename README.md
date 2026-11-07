@@ -1,8 +1,8 @@
-# Horizon 0.8.9 — Walk the world
+# Horizon 0.9.0 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.8.9).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.0).
 
-The main page is a first-person terrain explorer with keyboard/touch movement,
+The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
 same complete seeded planet: rivers, lakes, oceans, climate and volcanic terrain.
 The detailed atlas and older inspection tools remain at [atlas.html](atlas.html),
@@ -28,6 +28,17 @@ WebGL now adds alpha-tested nearby sun shadows from trees, shrubs, grass and roc
 
 The current viewer is a reviewable checkpoint. Further visual refinement and
 touch-control checks are tracked in [BUILD-PLAN.md](BUILD-PLAN.md).
+
+
+### Navigation and location controls (0.9.0)
+
+- **Fly / Walk** switches movement mode. **Up / Down** appear in flight; keyboard **F** switches mode and **Q / E** descend/ascend. Forward flight follows your view direction; **Level view** restores horizontal travel. Walking retains ground and obstacle collision. Switching back to walking lands on the local terrain.
+- **Speed** stays on the main screen: 0.5–12 m/s on foot and 3–1,000 m/s in flight. Shift boosts speed. Flight is limited to 6,000 m elevation and stays above loaded ground and water. Higher/faster flight streams a wider, coarser terrain footprint; detailed objects remain a low-altitude feature.
+- **World map** supports pinch, wheel and +/− zoom, drag panning, **Whole world**, **Find me**, and destination lookup. A tap selects a pin; **Travel here** confirms travel. Dragging/pinching never triggers travel. Keyboard arrows pan, +/− zoom and Enter selects the map center. The map raster is four times the previous resolution in each axis.
+- Page pinch/double-tap scaling is suppressed within the app, with 16 px mobile form controls to avoid focus zoom. A **Reset page zoom** control appears if the browser reports residual visual-viewport scaling. Native Safari browser settings can still override viewport restrictions.
+- The HUD shows the modelled biome, annual mean surface temperature, annual precipitation, snow-cover months, coordinates and elevation; flight also shows height above the land/water surface and selected speed. These are procedural climate estimates, not live weather.
+- Travel destinations now include **Lakefront**, **Mountains** (excluding volcanic terrain), and **Glacier**, alongside River bend, Coast, Volcano, Snowfield, Desert and Woodland when those features exist in the generated world. Lakefront placement searches an actual fitted lake boundary and faces the water; Glacier uses glacier-covered terrain, distinct from seasonal snow.
+- Crouch, shadows and textures are grouped under **View options** to keep movement and speed controls easy to reach.
 
 ## Implemented model
 
