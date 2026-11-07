@@ -1,6 +1,6 @@
-# Horizon 0.9.1 — Walk the world
+# Horizon 0.9.2 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.1).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.2).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -47,6 +47,12 @@ Terrain now covers all six faces of the planet continuously, with adaptive detai
 A coastal buffer around the existing ocean mask guides vegetation and material transitions. Low, wet, temperate shores use marsh vegetation; drier low shores use dune scrub or coastal grassland; steep shores expose rock; maritime woodland develops farther upslope. Warm, wet, low, sheltered coast candidates can support mangrove margins with prop roots. Tropical forest, temperate rainforest and riparian woodland are also distinguished where the climate supports them. These are initial habitat rules and vegetation variants, not a tidal/salinity or species simulation. Forest beside a steep rocky coast is still allowed.
 
 New coastal and tropical destinations appear when suitable locations are found in the generated seed. The HUD uses the same habitat rules as placement. Underlying geography and hydrology remain the same world.
+
+### Aerial rendering and habitat stability (0.9.2)
+
+The WebGL viewer now uses logarithmic camera depth plus altitude-aware clipping, preserving separation between shallow lake water and terrain from high flight. Near terrain detail fades into broad material color variation with distance, reducing repeating aerial texture patterns. Distant woodland receives a regional canopy-color approximation; this is a coarse representation rather than individually modelled distant trees.
+
+The HUD, near vegetation and ground cover now share one complete land-habitat classification. Desert, grassland and coastal grassland use short shrub/grass policies rather than full woodland placement. Conifers use dedicated needle cutouts, layered branch spokes and foliage over the leader. The travel menu is explicitly labelled as the travel destination, separate from the biome currently under the camera.
 
 ## Implemented model
 

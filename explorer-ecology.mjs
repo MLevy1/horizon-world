@@ -1,4 +1,4 @@
-import {neighbors} from './planet.mjs?v=0.9.1';
+import {neighbors} from './planet.mjs?v=0.9.2';
 const clamp=x=>Math.max(0,Math.min(1,x));
 /** A small coastal buffer on the existing planet grid; no new water or terrain. */
 export function buildCoastalFields(model){
@@ -23,4 +23,19 @@ export function ecologyHabitat(e){
  if(e.temperature>21&&e.aridity>1&&e.snow<.1)return {biome:'Tropical forest',trees:'tropical',treeFactor:1,ground:'woodland',density:1};
  if(e.temperature>3&&e.temperature<18&&e.aridity>1.4)return {biome:'Temperate rainforest',trees:null,treeFactor:1,ground:'woodland',density:.98};
  return null;
+}
+
+/** One complete land classification shared by readout, plants and ground cover. */
+export function landHabitat(e){
+ if(e.glacier>.25)return {biome:'Glacier',trees:'bare',treeFactor:0,ground:'snow',density:.18};
+ if(e.lava>.3)return {biome:'Volcanic terrain',trees:'bare',treeFactor:0,ground:'rubble',density:.7};
+ if(e.snow>.72)return {biome:'Snowfield',trees:'bare',treeFactor:0,ground:'snow',density:.18};
+ if(e.elevationM>1600)return {biome:'Alpine mountains',trees:'bare',treeFactor:0,ground:'scree',density:.5};
+ if(e.temperature< -4)return {biome:'Tundra',trees:'bare',treeFactor:0,ground:'tundra',density:.3};
+ const eco=ecologyHabitat(e);if(eco)return {...eco,trees:eco.trees??(e.temperature<8||e.snow>.4?'conifer':'broadleaf')};
+ if(e.slope>.32)return {biome:'Rocky slopes',trees:'bare',treeFactor:0,ground:'scree',density:.65};
+ if(e.aridity<.4)return {biome:'Desert',trees:'shrub',treeFactor:.10,ground:'desert',density:.65};
+ if(e.aridity<.7)return {biome:'Dry grassland',trees:'shrub',treeFactor:.10,ground:'grassland',density:.8};
+ if(e.aridity<.8)return {biome:'Grassland',trees:'shrub',treeFactor:.12,ground:'grassland',density:.9};
+ return {biome:e.temperature<8?'Boreal woodland':'Woodland',trees:e.temperature<8||e.snow>.4?'conifer':'broadleaf',treeFactor:clamp((e.aridity-.78)/.25),ground:'woodland',density:.9};
 }

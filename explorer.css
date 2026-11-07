@@ -3,3 +3,5 @@
 @media(max-height:500px){#hud{top:95px;bottom:auto;max-width:48vw}header{padding:8px 14px}#controls{bottom:24px}.tools{gap:3px}.tools button,.tools summary,.tools select{min-height:32px;padding:5px 8px}footer{display:none}#world-map{height:40dvh}}
 
 @media(max-width:360px){.tools,.travel-controls,.speed-controls,.primary-tools{width:160px;max-width:160px}.tools summary{min-width:160px}.speed-controls select{width:80px}.speed-controls button{width:75px;min-width:75px}.walk-pad{grid-template-columns:38px 38px 38px;gap:3px}.walk-pad button{width:38px;min-width:38px}}
+
+.travel-controls label{display:block;font-size:10px;color:#c4d7d0;margin:0 0 3px 3px}#hud{bottom:224px}@media(max-width:650px){#hud{bottom:255px}}

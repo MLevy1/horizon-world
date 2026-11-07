@@ -1,17 +1,16 @@
-import {ecologyHabitat} from './explorer-ecology.mjs?v=0.9.1';
-import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.1';
-import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.1';
-import {rockBlocks} from './explorer-rocks.mjs?v=0.9.1';
+import {landHabitat} from './explorer-ecology.mjs?v=0.9.2';
+import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.2';
+import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.2';
+import {rockBlocks} from './explorer-rocks.mjs?v=0.9.2';
 const hash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;};
 const random=seed=>()=>{seed=(seed+0x6d2b79f5)|0;let t=Math.imul(seed^(seed>>>15),1|seed);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const clamp=x=>Math.max(0,Math.min(1,x));
 export function plantHabitat(e){
  if(e.depthM>.02||e.glacier>.2||e.lava>.3||e.slope>.3||e.temperature< -5||e.elevationM>2600)return {density:0,kind:'bare'};
- const eco=ecologyHabitat(e);if(eco?.trees==='bare')return {density:0,kind:'bare'};if(eco?.trees==='mangrove')return {density:.48,kind:'mangrove'};if(eco?.trees==='shrub')return {density:eco.treeFactor,kind:'shrub'};
- const warmth=clamp((e.temperature+3)/9),moisture=clamp((e.aridity-.15)/.7),slope=1-clamp(e.slope/.3),snow=1-clamp((e.snow-.55)/.4);
- const trees=warmth*moisture*slope*snow*(eco?.treeFactor??1);
- return trees>.18?{density:trees*(.78+.15*e.shore),kind:eco?.trees==='tropical'?'tropical':e.temperature<8||e.snow>.4?'conifer':'broadleaf'}:{density:(e.aridity<.4?.42:.16)*warmth*slope*snow,kind:'shrub'};
+ const eco=landHabitat(e);if(eco.trees==='bare')return {density:0,kind:'bare'};if(eco.trees==='mangrove')return {density:.48,kind:'mangrove'};if(eco.trees==='shrub')return {density:eco.treeFactor,kind:'shrub'};
+ const warmth=clamp((e.temperature+3)/9),moisture=clamp((e.aridity-.15)/.7),slope=1-clamp(e.slope/.3),snow=1-clamp((e.snow-.55)/.4),trees=warmth*moisture*slope*snow*eco.treeFactor;
+ return trees>.18?{density:trees*(.78+.15*e.shore),kind:eco.trees}:{density:.08*warmth*slope*snow,kind:'shrub'};
 }
 /** Seeded plant addresses and per-plant shape seeds survive streaming and LOD. */
 export function buildPlantField({seed,lon,lat,radiusM,mesh,environment,rangeM=140}){
@@ -27,15 +26,16 @@ export function buildPlantField({seed,lon,lat,radiusM,mesh,environment,rangeM=14
   function branch(a,b,r0,r1){const axis=unit(b.map((v,k)=>v-a[k])),ref=Math.abs(axis[1])>.9?[1,0,0]:[0,1,0],right=unit(cross(axis,ref)),up=cross(axis,right),sides=near?7:5;for(let j=0;j<sides;j++){const ring=(base,r,t)=>base.map((v,k)=>v+r*(right[k]*Math.cos(t)+up[k]*Math.sin(t))),t=j/sides*6.283185,u=(j+1)/sides*6.283185,p=world(ring(a,r0,t)),q=world(ring(a,r0,u)),r=world(ring(b,r1,u)),s=world(ring(b,r1,t));triangle(p,q,r,bark);triangle(p,r,s,bark);}}
   if(mangrove){for(let root=0;root<5;root++){const a=root/5*6.283;branch([0,height*.24,0],[Math.cos(a)*width*.65,-.15,Math.sin(a)*width*.65],trunk*.28,.025);}}
   let previous=[0,0,0];for(let j=1;j<=3;j++){const t=j/3,next=[leanX*t*t,height*t*(pine?1:.82),leanZ*t*t];branch(previous,next,trunk*(1-(j-1)/3)*.85+.008,trunk*(1-t)*.85+.008);previous=next;}
-  const branchCount=shrub?5:pine?(near?11:7):(near?9:6);
+  const branchCount=shrub?5:pine?(near?18:12):(near?9:6);
   for(let b=0;b<branchCount;b++){
-   const r=random(hash(seed+':plant-branch:'+id+':'+b)),t=shrub?.18+r()*.55:pine?.24+b/branchCount*.64:.25+r()*.40,angle=r()*6.28,reach=width*(pine?(1-t)*1.6:.55+r()*.55),start=[leanX*t*t,height*t,leanZ*t*t],end=[start[0]+Math.cos(angle)*reach,start[1]+height*(pine?.025:.17+r()*.18),start[2]+Math.sin(angle)*reach];branch(start,end,trunk*(1-t)*.45+.008,.008);
-   const sprays=near?5:3;
+   const r=random(hash(seed+':plant-branch:'+id+':'+b)),t=shrub?.18+r()*.55:pine?.18+Math.floor(b/3)/(branchCount/3)*.70:.25+r()*.40,angle=pine?(b%3)*2.094+t*4+r()*.3:r()*6.28,reach=width*(pine?(1-t)*1.6:.55+r()*.55),start=[leanX*t*t,height*t,leanZ*t*t],end=[start[0]+Math.cos(angle)*reach,start[1]+height*(pine?.025:.17+r()*.18),start[2]+Math.sin(angle)*reach];branch(start,end,trunk*(1-t)*.45+.008,.008);
+   const sprays=pine?(near?3:2):near?5:3;
    for(let s=0;s<sprays;s++){
-    const cr=random(hash(seed+':crown:'+id+':'+b+':'+s)),fraction=.55+cr()*.6,at=start.map((v,k)=>v+(end[k]-v)*fraction),a=cr()*6.28,tilt=(cr()-.5)*1.8,size=width*(shrub?.8:pine?.65:.75)*(0.75+cr()*.5),right=[Math.cos(a),0,Math.sin(a)],up=[-Math.sin(a)*Math.sin(tilt),Math.cos(tilt),Math.cos(a)*Math.sin(tilt)],n=unit(d.map((v,k)=>v*.65+f.right[k]*Math.sin(a)*.2+f.forward[k]*Math.cos(a)*.2)),corners=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>world(at.map((v,k)=>v+right[k]*x*size*.5+up[k]*y*size*.5))),uvs=[[0,1],[1,1],[1,0],[0,0]],color=(pine?[.58,.73,.56]:[.78,.86,.67]).map(v=>v*(.82+cr()*.25));
-    for(const face of [[0,1,2],[0,2,3]]){const offset=positions.length/3;for(const i of face){positions.push(...corners[i]);normals.push(...n);colors.push(...color);foliage.push(...uvs[i],1);shade.push(.85);}indices.push(offset,offset+1,offset+2);}
+    const cr=random(hash(seed+':crown:'+id+':'+b+':'+s)),fraction=pine?.25+cr()*.75:.55+cr()*.6,at=start.map((v,k)=>v+(end[k]-v)*fraction),a=cr()*6.28,tilt=(cr()-.5)*1.8,size=width*(shrub?.8:pine?.65:.75)*(0.75+cr()*.5),right=[Math.cos(a),0,Math.sin(a)],up=[-Math.sin(a)*Math.sin(tilt),Math.cos(tilt),Math.cos(a)*Math.sin(tilt)],n=unit(d.map((v,k)=>v*.65+f.right[k]*Math.sin(a)*.2+f.forward[k]*Math.cos(a)*.2)),corners=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>world(at.map((v,k)=>v+right[k]*x*size*.5+up[k]*y*size*.5))),uvs=pine?[[.75,1],[1,1],[1,0],[.75,0]]:[[0,1],[1,1],[1,0],[0,0]],color=(pine?[.90,1,.82]:[.78,.86,.67]).map(v=>v*(.82+cr()*.25));
+    for(const face of [[0,1,2],[0,2,3]]){const offset=positions.length/3;for(const i of face){positions.push(...corners[i]);normals.push(...n);colors.push(...color);foliage.push(...uvs[i],pine?3:1);shade.push(.85);}indices.push(offset,offset+1,offset+2);}
    }
   }
+  if(pine){const h=height*.18,w=height*.08;for(let j=0;j<3;j++){const a=j*Math.PI/3,dx=Math.cos(a)*w,dz=Math.sin(a)*w,at=[leanX,height*.94,leanZ],corners=[[-dx,-h/2,-dz],[dx,-h/2,dz],[dx,h/2,dz],[-dx,h/2,-dz]].map(p=>world(p.map((v,k)=>v+at[k]))),uv=[[.75,1],[1,1],[1,0],[.75,0]];for(const face of [[0,1,2],[0,2,3]]){const i=positions.length/3;for(const v of face){positions.push(...corners[v]);normals.push(...d);colors.push(.9,1,.82);foliage.push(...uv[v],3);shade.push(.9);}indices.push(i,i+1,i+2);}}}
   canopies.push({direction:d,heightM:height*.67,radiusM:width*.95});
 
   placements.push({id,direction:d,right:f.right,forward:f.forward,rx:trunk,rz:trunk,groundM:h,topM:h+height,heightM:height,kind:habitat.kind});

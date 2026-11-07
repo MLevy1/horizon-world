@@ -12,3 +12,9 @@ test('coastal habitats keep tall temperate trees off low wet and exposed shores'
 test('coastal fields buffer the actual ocean mask and retain a noncoastal interior',()=>{
  const grid=createGrid({width:32,height:16,radiusKm:64}),ocean=new Uint8Array(grid.count);for(let y=0;y<16;y++)for(let x=0;x<10;x++)ocean[y*32+x]=1;const result=buildCoastalFields({grid,ocean});assert.equal(result.band[8*32+2],0);assert.equal(result.band[8*32+10],1);assert.equal(result.band[8*32+18],255);assert.ok(result.exposure[8*32+10]>0);assert.ok(result.exposure.every(v=>v>=0&&v<=1));
 });
+
+test('open biome labels and placement policies agree on tree cover',async()=>{
+ const {landHabitat}=await import('../explorer-ecology.mjs');
+ for(const [aridity,biome] of [[.2,'Desert'],[.55,'Dry grassland'],[.75,'Grassland']]){const e={...coast,coastNear:0,elevationM:60,aridity};assert.equal(landHabitat(e).biome,biome);assert.equal(plantHabitat(e).kind,'shrub');assert.ok(plantHabitat(e).density<=.12);assert.notEqual(groundHabitat(e).kind,'woodland');}
+ assert.equal(landHabitat({...coast,coastNear:0,elevationM:4000}).trees,'bare');
+});
