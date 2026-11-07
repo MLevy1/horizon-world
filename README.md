@@ -1,6 +1,6 @@
-# Horizon 0.8.8 — Walk the world
+# Horizon 0.8.9 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.8.8).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.8.9).
 
 The main page is a first-person terrain explorer with keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -21,8 +21,10 @@ patches, with branching trunks, open geometric foliage and trunk collision.
 Choose **Travel to → Woodland** to inspect an inland temperate location.
 The canopy pass now uses mature tree proportions, layered alpha-cutout foliage,
 understory shrubs, broad canopy shade and a leaf-litter floor. These are initial
-approximations; full shadow maps, wind and detailed botanical assets remain later
+approximations; wind and detailed botanical assets remain later
 work. Nearby ground now carries clustered ferns, grass, deadwood and stones. Fine botanical cutouts replace solid plant wedges; each card edge is grounded independently on the visible terrain. Desert scrub has varied heights and denser branching foliage, with patchy mineral/gravel ground and lower, spreading shrubs. Deserts receive dry scrub and gravel; volcanic and steep terrain receive rubble; snowfields expose scattered rock; banks and shores receive reeds, stones and deadwood. Detail uses stable seeded addresses, fits the visible terrain and stops at water. It is merged into one additional draw batch within 72 m of the streamed view center.
+
+WebGL now adds alpha-tested nearby sun shadows from trees, shrubs, grass and rocks, with warm direct light and cooler sky fill. Use **Shadows on/off** to compare. The 1024² depth map updates only as nearby geometry streams, with shadows fading between 100 and 125 m. Terrain receives these shadows; terrain casting and distant mountain occlusion remain later work. Compatibility rendering retains approximate canopy shade.
 
 The current viewer is a reviewable checkpoint. Further visual refinement and
 touch-control checks are tracked in [BUILD-PLAN.md](BUILD-PLAN.md).
