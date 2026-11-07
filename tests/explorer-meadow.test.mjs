@@ -9,6 +9,8 @@ test('grassland ground cover remains visible beyond the nearby prop radius in co
  renderer.setMesh({radiusM:R,anchor:d,ground:{...ground,meadow:new Float32Array(4).fill(.94)},water});renderer.draw(camera);
  let changed=0;for(let i=0;i<pixels.length;i+=4)if(pixels[i+1]>before[i+1]+5&&pixels[i]<before[i])changed++;
  assert.ok(changed>500,'distant ground pixels must receive the grass material');
+ const bankPixels=heights=>{renderer.setMesh({radiusM:R,anchor:d,ground:{...ground,bankHeight:Float32Array.from(heights)},water});renderer.draw(camera);let n=0;for(let i=0;i<pixels.length;i+=4)if(Math.abs(pixels[i]-before[i])+Math.abs(pixels[i+1]-before[i+1])+Math.abs(pixels[i+2]-before[i+2])>3)n++;return n;};
+ const narrow=bankPixels([0,0,80,80]),whole=bankPixels([0,0,0,0]);assert.ok(narrow>0);assert.ok(narrow<whole*.2,'a narrow shore band must not spread over the entire triangle');
 });
 
 test('independent ground tiles reveal gradually, survive terrain swaps and retire after their fade',()=>{

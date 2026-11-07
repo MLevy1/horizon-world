@@ -1,6 +1,6 @@
 {
   "name": "horizon-world",
-  "version": "0.9.10",
+  "version": "0.9.11",
   "private": true,
   "type": "module",
   "description": "Explore a complete seeded planet shaped by water, climate and volcanoes.",

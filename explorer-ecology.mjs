@@ -1,4 +1,4 @@
-import {neighbors} from './planet.mjs?v=0.9.10';
+import {neighbors} from './planet.mjs?v=0.9.11';
 const clamp=x=>Math.max(0,Math.min(1,x));
 /** A small coastal buffer on the existing planet grid; no new water or terrain. */
 export function buildCoastalFields(model){

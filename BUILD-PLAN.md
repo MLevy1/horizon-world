@@ -728,3 +728,12 @@ User images from 38.8124–38.8370 S, 171.0173–171.4302 E show artificial vert
 Restored the production surface sampler to the pre-deformation 0.9.6 implementation, retaining current module versions. The earlier alpine incision layer also had hard protection cutoffs and is disabled in this hotfix. No talus field is constructed or sampled in production, so no fan uplift or talus material/vegetation mask is emitted. The experimental module remains isolated for further development. Climate-led alpine variants, snow rules and independent detail streaming remain enabled. Both experimental terrain deformation layers are disabled. Existing cached geometry is discarded when the newly versioned page initializes its worker.
 
 Validation: exact source comparison to the pre-deformation 0.9.6 surface sampler after normalizing import version strings, full terrain/hydrology/collision/streaming tests, actual HORIZON-01 samples at the three reported coordinates confirming no talus output, and production build. This is a stability rollback, not a completed talus implementation.
+
+
+## 0.9.11 — Shore material interpolation and control recovery
+
+The reported lake-edge triangles are consistent with a thin wet-gravel mask evaluated at sparse clipped terrain vertices and interpolated over full triangles. Standing-lake material weights no longer bake that narrow mask into vertices. A signed lake-height attribute is interpolated instead and the 0.3–2.5 m blend is evaluated per fragment; compatibility rendering uses the same height rule. Terrain and water geometry remain unchanged.
+
+The animation loop previously scheduled its successor only after movement/rendering completed, so any uncaught frame error could stop the loop permanently. Added a resilient frame scheduler, throttled renderer recovery after frame failures, WebGL context loss/restoration handling and a Recover view button. Lost-focus/input resets now clear stale look drags as well as movement keys. This addresses identified failure paths; the exact cause of the user's intermittent iPhone freeze has not been reproduced on-device.
+
+Validation: injected frame failure followed by continued movement/render callbacks and cancellation; existing rendering/streaming regressions; shader compile/link, worker and production build checks. Native iPhone interruption and shoreline appearance still require device review.

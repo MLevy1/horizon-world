@@ -1,6 +1,6 @@
-# Horizon 0.9.10 — Walk the world
+# Horizon 0.9.11 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.10).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.11).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -697,3 +697,5 @@ Mountain readouts distinguish Dry alpine, Snowy alpine and Glaciated terrain. Dr
 Experimental talus deformation is currently disabled after the 0.9.9 visual regression.
 
 The 0.9.10 hotfix disables the experimental talus deformation after reported cliff-like discontinuities and floating detail. Both talus uplift and alpine incisions are disabled; the shared sampler uses the pre-deformation 0.9.6 geometry; climate-led alpine variants and snow appearance remain. Talus shaping requires further continuity and visual validation before re-enabling.
+
+View options includes Recover view. Frame errors cannot terminate future frames; graphics-context restoration rebuilds the renderer. Lake-edge wet gravel is blended per pixel from height above water rather than being stretched across shoreline triangles.
