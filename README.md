@@ -1,6 +1,6 @@
-# Horizon 0.9.0 — Walk the world
+# Horizon 0.9.1 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.0).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.1).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -39,6 +39,14 @@ touch-control checks are tracked in [BUILD-PLAN.md](BUILD-PLAN.md).
 - The HUD shows the modelled biome, annual mean surface temperature, annual precipitation, snow-cover months, coordinates and elevation; flight also shows height above the land/water surface and selected speed. These are procedural climate estimates, not live weather.
 - Travel destinations now include **Lakefront**, **Mountains** (excluding volcanic terrain), and **Glacier**, alongside River bend, Coast, Volcano, Snowfield, Desert and Woodland when those features exist in the generated world. Lakefront placement searches an actual fitted lake boundary and faces the water; Glacier uses glacier-covered terrain, distinct from seasonal snow.
 - Crouch, shadows and textures are grouped under **View options** to keep movement and speed controls easy to reach.
+
+### Scenic terrain and coastal habitats (0.9.1)
+
+Terrain now covers all six faces of the planet continuously, with adaptive detail near the viewer. Flight changes resolution rather than exposing the edge of a finite patch. Nearby collision bins remain bounded independently of the distant terrain. Clear-air haze is much lighter, especially in alpine and dry areas, and no longer changes with selected flight speed. Cold alpine ground favors exposed rock rather than desert sand when snow cover is incomplete.
+
+A coastal buffer around the existing ocean mask guides vegetation and material transitions. Low, wet, temperate shores use marsh vegetation; drier low shores use dune scrub or coastal grassland; steep shores expose rock; maritime woodland develops farther upslope. Warm, wet, low, sheltered coast candidates can support mangrove margins with prop roots. Tropical forest, temperate rainforest and riparian woodland are also distinguished where the climate supports them. These are initial habitat rules and vegetation variants, not a tidal/salinity or species simulation. Forest beside a steep rocky coast is still allowed.
+
+New coastal and tropical destinations appear when suitable locations are found in the generated seed. The HUD uses the same habitat rules as placement. Underlying geography and hydrology remain the same world.
 
 ## Implemented model
 

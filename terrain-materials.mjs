@@ -30,7 +30,7 @@ export function makeTerrainTextures(size=256){
 export function sampleTerrainTextureLevel(textures,id,u,v,lod,out){const scale=MATERIALS[id].scale,level=textures.levels[clamp(lod,0,textures.levels.length-1)],n=level.size,x=Math.floor(wrap(u/scale,1)*n),y=Math.floor(wrap(v/scale,1)*n),i=((id*n+y)*n+x)*4;for(let k=0;k<3;k++)out[k]=level.data[i+k]/255;return out;}
 export function sampleTerrainTexture(textures,id,u,v,footprint,out){const lod=Math.floor(Math.log2(Math.max(1,footprint*textures.size/MATERIALS[id].scale)));return sampleTerrainTextureLevel(textures,id,u,v,lod,out);}
 /** Continuous climate/slope/water masks; caller supplies interpolated fields. */
-export function terrainMaterialWeights({aridity,snow,glacier,lava,slope,shore,coast}){
-  const w=new Float32Array(6);const volcanic=clamp(lava),frozen=clamp(Math.max(glacier,smooth(6,10,snow)))*(1-.65*smooth(.65,.95,slope))*(1-clamp(shore)*.85),rock=smooth(.12,.6,slope),dry=1-smooth(.2,.55,aridity),wet=clamp(shore)*(1-rock*.7);
+export function terrainMaterialWeights({aridity,snow,glacier,lava,slope,shore,coast,elevationM=0,temperature=15}){
+  const w=new Float32Array(6);const volcanic=clamp(lava),frozen=clamp(Math.max(glacier,smooth(6,10,snow)))*(1-.65*smooth(.65,.95,slope))*(1-clamp(shore)*.85),rock=Math.max(smooth(.12,.6,slope),.7*smooth(1200,2200,elevationM)*(1-smooth(2,10,temperature))),dry=1-smooth(.2,.55,aridity),wet=clamp(shore)*(1-rock*.7);
   w[3]=frozen;let remain=1-frozen;w[4]=remain*volcanic;remain*=1-volcanic;w[2]=remain*rock;remain*=1-rock;w[5]=remain*wet;remain*=1-wet;const sand=Math.max(dry,clamp(coast)*.8);w[1]=remain*sand;w[0]=remain*(1-sand);return w;
 }

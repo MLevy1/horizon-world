@@ -1,9 +1,11 @@
-import {lonLat,neighbors,cellAt} from './planet.mjs?v=0.9.0';
-import {direction,coordinates,unit,frame,dot} from './explorer-world.mjs?v=0.9.0';
-import {ZONES} from './climate.mjs?v=0.9.0';
+import {ecologyHabitat} from './explorer-ecology.mjs?v=0.9.1';
+import {lonLat,neighbors,cellAt} from './planet.mjs?v=0.9.1';
+import {direction,coordinates,unit,frame,dot} from './explorer-world.mjs?v=0.9.1';
+import {ZONES} from './climate.mjs?v=0.9.1';
 export function describeLocation(model,surface,lon,lat){
  const q=surface.sample(lon,lat),cells=q.triangle.cells,w=q.triangle.weights,blend=values=>cells.reduce((s,i,k)=>s+values[i]*w[k],0),temperature=blend(model.climate.temperature),precipitation=blend(model.climate.precipitation),aridity=blend(model.climate.aridity),snowMonths=blend(model.cryosphere.snowMonths),glacier=blend(model.cryosphere.glacier),lava=blend(model.geology.lava),i=cellAt(model.grid,lon,lat),groundM=q.fitted.groundM,waterM=q.fitted.waterM,waterKind=q.waterPlane?.kind||(q.river&&q.river.distanceM<q.river.widthM*.5?'river':null);
  let biome=glacier>.25?'Glacier':lava>.25?'Volcanic terrain':snowMonths>8?'Snowfield':groundM>1600?'Alpine mountains':temperature< -4?'Tundra':aridity<.4?'Desert':aridity<.7?'Dry grassland':temperature<8?'Boreal woodland':aridity>.8?'Woodland':'Grassland';
+ const eco=model.ecologySample?ecologyHabitat(model.ecologySample(lon,lat)):null;if(eco&&waterM===null)biome=eco.biome;
  if(waterM!==null)biome=waterKind==='ocean'?'Ocean':waterKind==='river'?'River':waterKind==='pond'?'Pond':'Lake';
  let setting=null;if(waterM===null){const lakeId=cells.map(i=>model.waterbody[i]).find(id=>id>=0&&model.waterbodies?.[id]?.status!=='playa');if(lakeId!==undefined&&model.waterbodies?.[lakeId]&&Math.abs(groundM-model.waterbodies[lakeId].surfaceM)<6)setting='Lakefront';else if(q.river&&Math.abs(q.river.distanceM-q.river.widthM*.5)<10)setting='Riverbank';else if(cells.some(i=>model.ocean[i])&&Math.abs(groundM)<6)setting='Coast';}
  return {lon,lat,biome,setting,climate:ZONES[model.climate.zone[i]],temperature,precipitation,aridity,snowMonths,glacier,lava,groundM,waterM,waterKind,depthM:q.fitted.depthM};

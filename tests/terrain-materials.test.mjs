@@ -18,3 +18,5 @@ test('shared image mips retain six layers and world phase across streaming origi
  }
  assert.ok(textures.levels.reduce((sum,l)=>sum+l.data.byteLength,0)<2.1*1024*1024);
 });
+
+test('cold alpine ground favors rock over desert sand even in an arid climate',()=>{const w=terrainMaterialWeights({elevationM:4000,temperature:-4,aridity:.1,snow:6,glacier:0,lava:0,slope:.02,shore:0,coast:0});assert.ok(w[2]>w[1]);assert.ok(Math.abs(w.reduce((a,b)=>a+b,0)-1)<1e-6);});

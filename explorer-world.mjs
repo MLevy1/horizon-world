@@ -1,5 +1,5 @@
-import {coordinateTile,terrainVertex,tileNeighbor,tileKey,neighborhood,EDGES} from './terrain-chunks.mjs?v=0.9.0';
-import {coveringTile} from './terrain-lod.mjs?v=0.9.0';
+import {coordinateTile,terrainVertex,tileNeighbor,tileKey,neighborhood,EDGES} from './terrain-chunks.mjs?v=0.9.1';
+import {coveringTile} from './terrain-lod.mjs?v=0.9.1';
 export const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 export const unit=a=>{const n=Math.hypot(...a);return a.map(v=>v/n);};
 export function direction(lon,lat){const l=lon*Math.PI/180,p=lat*Math.PI/180;return [Math.cos(p)*Math.cos(l),Math.sin(p),Math.cos(p)*Math.sin(l)];}
@@ -15,9 +15,9 @@ export function explorerTiles(lon,lat,R){
 }
 /** Collision rays intersect the actual indexed mesh, rather than an unseen
  * high-resolution height field. Gnomonic bins preserve spherical coverage. */
-export function createGroundCollider(data,anchor,R){
-  const basis=frame(anchor),bins=new Map(),size=12,p=data.positions,triangles=[],key=(x,y)=>Math.floor(x/size)+':'+Math.floor(y/size),xy=d=>{const z=dot(d,anchor);return z>0?[dot(d,basis.east)/z*R,dot(d,basis.north)/z*R]:null;};
-  for(let k=0;k<data.indices.length;k+=3){const ids=Array.from(data.indices.subarray(k,k+3)),v=ids.map(i=>Array.from(p.subarray(i*3,i*3+3))),q=v.map(xy);if(q.some(x=>!x))continue;const [a,b,c]=v,u=b.map((x,k)=>x-a[k]),w=c.map((x,k)=>x-a[k]),n=[u[1]*w[2]-u[2]*w[1],u[2]*w[0]-u[0]*w[2],u[0]*w[1]-u[1]*w[0]],id=triangles.length;triangles.push({q,n,plane:dot(n,a)});
-    const lo=[0,1].map(k=>Math.floor(Math.min(...q.map(v=>v[k]))/size)),hi=[0,1].map(k=>Math.floor(Math.max(...q.map(v=>v[k]))/size));for(let x=lo[0];x<=hi[0];x++)for(let y=lo[1];y<=hi[1];y++){const key=x+':'+y;if(!bins.has(key))bins.set(key,[]);bins.get(key).push(id);}}
+export function createGroundCollider(data,anchor,R,{rangeM=512,binSize=12}={}){
+  const basis=frame(anchor),bins=new Map(),size=binSize,p=data.positions,triangles=[],key=(x,y)=>Math.floor(x/size)+':'+Math.floor(y/size),xy=d=>{const z=dot(d,anchor);return z>0?[dot(d,basis.east)/z*R,dot(d,basis.north)/z*R]:null;};
+  for(let k=0;k<data.indices.length;k+=3){const ids=Array.from(data.indices.subarray(k,k+3)),v=ids.map(i=>Array.from(p.subarray(i*3,i*3+3))),q=v.map(xy);if(q.some(x=>!x))continue;if([0,1].some(k=>Math.min(...q.map(v=>v[k]))>rangeM||Math.max(...q.map(v=>v[k]))< -rangeM))continue;const [a,b,c]=v,u=b.map((x,k)=>x-a[k]),w=c.map((x,k)=>x-a[k]),n=[u[1]*w[2]-u[2]*w[1],u[2]*w[0]-u[0]*w[2],u[0]*w[1]-u[1]*w[0]],id=triangles.length;triangles.push({q,n,plane:dot(n,a)});
+    const lo=[0,1].map(k=>Math.floor(Math.max(-rangeM,Math.min(...q.map(v=>v[k])))/size)),hi=[0,1].map(k=>Math.floor(Math.min(rangeM,Math.max(...q.map(v=>v[k])))/size));for(let x=lo[0];x<=hi[0];x++)for(let y=lo[1];y<=hi[1];y++){const key=x+':'+y;if(!bins.has(key))bins.set(key,[]);bins.get(key).push(id);}}
   return d=>{const q=xy(d);if(!q)return null;for(const id of bins.get(key(...q))||[]){const t=triangles[id],[a,b,c]=t.q,den=(b[1]-c[1])*(a[0]-c[0])+(c[0]-b[0])*(a[1]-c[1]);if(Math.abs(den)<1e-12)continue;const wa=((b[1]-c[1])*(q[0]-c[0])+(c[0]-b[0])*(q[1]-c[1]))/den,wb=((c[1]-a[1])*(q[0]-c[0])+(a[0]-c[0])*(q[1]-c[1]))/den;if(wa>=-1e-7&&wb>=-1e-7&&wa+wb<=1+1e-7){const r=t.plane/dot(t.n,d);return Number.isFinite(r)?r-R:null;}}return null;};
 }

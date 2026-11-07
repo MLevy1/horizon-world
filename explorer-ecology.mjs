@@ -1,0 +1,26 @@
+import {neighbors} from './planet.mjs?v=0.9.1';
+const clamp=x=>Math.max(0,Math.min(1,x));
+/** A small coastal buffer on the existing planet grid; no new water or terrain. */
+export function buildCoastalFields(model){
+ const N=model.grid.count,band=new Uint8Array(N).fill(255),exposure=new Float32Array(N),queue=new Int32Array(N),near=new Int32Array(model.grid.width);let head=0,tail=0;
+ for(let i=0;i<N;i++)if(model.ocean[i]){band[i]=0;exposure[i]=1;queue[tail++]=i;}
+ while(head<tail){const i=queue[head++];if(band[i]>=3)continue;const n=neighbors(model.grid,i,near);for(let k=0;k<n;k++){const j=near[k];if(band[j]>band[i]+1){band[j]=band[i]+1;queue[tail++]=j;}}}
+ for(let i=0;i<N;i++)if(band[i]>0&&band[i]<=3){const n=neighbors(model.grid,i,near);let sea=0;for(let k=0;k<n;k++)sea+=model.ocean[near[k]];exposure[i]=sea/Math.max(1,n);}
+ return {band,exposure};
+}
+/** Coastal ecology is conditioned by elevation, climate, exposure and slope.
+ * A forested cliff is valid; low shores need their own vegetation transition. */
+export function ecologyHabitat(e){
+ if(e.glacier>.2||e.lava>.3||e.snow>.72||e.temperature< -5)return null;
+ if(e.coastNear>.1){
+  if(e.elevationM<2&&e.slope<.004&&e.temperature>20&&e.aridity>.8&&e.coastExposure<.38)return {biome:'Mangrove margin',trees:'mangrove',treeFactor:.75,ground:'bank',density:.8};
+  if(e.elevationM<4&&e.slope<.012&&e.temperature>2&&e.aridity>.75)return {biome:'Salt marsh',trees:'bare',treeFactor:0,ground:'bank',density:.95};
+  if(e.elevationM<11&&e.slope<.18)return {biome:e.aridity<.7?'Dune scrub':'Coastal grassland',trees:'shrub',treeFactor:.2,ground:e.aridity<.7?'desert':'coastal',density:.72};
+  if(e.slope>.18&&e.elevationM<45)return {biome:'Rocky coast',trees:'shrub',treeFactor:.14,ground:'scree',density:.6};
+  if(e.elevationM<24)return {biome:'Maritime woodland',trees:null,treeFactor:clamp((e.elevationM-10)/14)*.65,ground:'woodland',density:.8};
+ }
+ if(e.shore>.3&&e.slope<.04&&e.aridity>.8&&e.temperature>3)return {biome:'Riparian woodland',trees:null,treeFactor:.65,ground:'bank',density:.9};
+ if(e.temperature>21&&e.aridity>1&&e.snow<.1)return {biome:'Tropical forest',trees:'tropical',treeFactor:1,ground:'woodland',density:1};
+ if(e.temperature>3&&e.temperature<18&&e.aridity>1.4)return {biome:'Temperate rainforest',trees:null,treeFactor:1,ground:'woodland',density:.98};
+ return null;
+}

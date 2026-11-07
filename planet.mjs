@@ -11,7 +11,7 @@ import {buildRiverProfiles} from './river-profiles.mjs?v=0.7.4';
  * Depression filling follows Priority-Flood (Barnes, Lehman & Mulla, 2014).
  * The grid is a staggered triangular mesh, closed by two unique polar nodes.
  */
-export const VERSION = '0.9.0';
+export const VERSION = '0.9.1';
 export const DEFAULT_WORLD = Object.freeze({width:1536, height:768, radiusKm:64});
 const TAU = Math.PI * 2;
 const YEAR_SECONDS = 365.25 * 86400;
