@@ -701,3 +701,12 @@ The supplied alpine viewpoint (24.0248 S, 63.1641 W) exposes broad interpolated 
 Cold alpine material weights now support patchy seasonal snow using slope and world-stable deposition variation, while steep faces retain exposed rock. This is a local relief/material pass, not a reconstruction of mountain-range topology, a glacier-thickness model or a glacial erosion simulation. Further reference review is needed for sharp rock towers, larger cirques and talus geometry.
 
 Validation: bounded seeded relief and continuity at the supplied ridge; water/ice/lava/lowland exclusions; sheltered versus steep-face snow/rock selection; full hydrology/terrain/collision and streaming regressions; production build. Native iPhone visual/performance review remains outstanding.
+
+
+## 0.9.8 — Climate-led alpine variants
+
+Added a shared alpine classification and snow-supply proxy based on elevation, annual precipitation, snow-month fraction, temperature and the glacier mask. High terrain with frozen-input proxy below 250 mm/yr is labelled Dry alpine; wetter cold terrain is Snowy alpine. Existing glacier coverage above 0.25 is labelled Glaciated terrain. This is an explicit visual heuristic, not an accumulation or snow-depth simulation. No generated temperature, precipitation, cryosphere or drainage fields are changed.
+
+The HUD setting displays the variant alongside the existing biome. Separate Dry alpine and Snowy alpine destinations replace the generic Mountains entry when supported by the seed. Candidates exclude water, volcanoes and glaciers, then verify the final spawn against interpolated climate and fitted surface; unsupported variants are omitted. Glacier travel remains available separately. Alpine material snow coverage now scales with available moisture while preserving the glacier mask and the existing non-alpine material rules. The dry mountain at 24.0231 S, 63.1639 W remains predominantly exposed rock.
+
+Validation: dry/wet/cold/warm/glacier classification, dry-versus-wet material coverage, normalized blends and glacier retention, existing destination and ecology checks, actual HORIZON-01 destination discovery and original-mountain readout, full regression suite and build. Native iPhone visual review remains outstanding.

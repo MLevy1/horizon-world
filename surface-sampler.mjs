@@ -1,9 +1,9 @@
-import {createAlpineRelief} from './alpine-surface.mjs?v=0.9.7';
-import {createRiverCourse} from './river-course.mjs?v=0.9.7';
-import {createWaterScaffold} from './water-scaffold.mjs?v=0.9.7';
-import {neighbors,cellAt} from './planet.mjs?v=0.9.7';
+import {createAlpineRelief} from './alpine-surface.mjs?v=0.9.8';
+import {createRiverCourse} from './river-course.mjs?v=0.9.8';
+import {createWaterScaffold} from './water-scaffold.mjs?v=0.9.8';
+import {neighbors,cellAt} from './planet.mjs?v=0.9.8';
 import {sampleRiverEdge} from './river-profiles.mjs?v=0.7.4';
-import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.9.7';
+import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.9.8';
 
 const RAD=Math.PI/180,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
