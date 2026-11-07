@@ -1,9 +1,9 @@
-import {createTerrainChunkBuilder} from './terrain-chunks.mjs?v=0.9.3';
-import {createTerrainStream} from './terrain-stream.mjs?v=0.9.3';
-import {buildChannelConstraints} from './channel-constraints.mjs?v=0.9.3';
-import {createSurfaceSampler} from './surface-sampler.mjs?v=0.9.3';
-import {extractShorelines,packShorelines} from './shorelines.mjs?v=0.9.3';
-import {solvePlanet,transferBuffers} from './planet.mjs?v=0.9.3';
+import {createTerrainChunkBuilder} from './terrain-chunks.mjs?v=0.9.4';
+import {createTerrainStream} from './terrain-stream.mjs?v=0.9.4';
+import {buildChannelConstraints} from './channel-constraints.mjs?v=0.9.4';
+import {createSurfaceSampler} from './surface-sampler.mjs?v=0.9.4';
+import {extractShorelines,packShorelines} from './shorelines.mjs?v=0.9.4';
+import {solvePlanet,transferBuffers} from './planet.mjs?v=0.9.4';
 let terrainBuilder=null,terrainStream=null;
 self.onmessage=({data})=>{
   try{

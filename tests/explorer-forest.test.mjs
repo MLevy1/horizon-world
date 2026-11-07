@@ -13,3 +13,11 @@ test('distant forests continue beyond detailed trees and share identities and di
 test('distant forests remain visible directly underneath high flight and exclude open habitats and water',()=>{
  const field=createForestField(),a=field.build({...options,rangeM:400,detailed:false});assert.ok(a.placements.some(p=>p.distanceM<80));for(const change of [{aridity:.55},{depthM:1},{glacier:1},{elevationM:3000}])assert.equal(field.build({...options,seed:'excluded'+JSON.stringify(change),rangeM:400,environment:()=>({...environment(),...change})}).placements.length,0);
 });
+
+test('distant thinning preserves crown coverage instead of exposing most of the forest floor',()=>{
+ const a=createForestField().build({...options,rangeM:900,detailed:false});
+ const area=(lo,hi)=>a.placements.filter(p=>p.distanceM>=lo&&p.distanceM<hi).reduce((sum,p)=>sum+p.crownWidthM**2,0)/(hi*hi-lo*lo);
+ assert.ok(area(300,900)>area(0,300)*.65,'outer canopy must retain comparable projected crown area');
+ assert.ok(a.placements.filter(p=>p.distanceM>700).length>500,'distant stands must retain many overlapping crowns');
+ assert.ok(a.indices.length/3<150000);assert.ok(a.stats.habitatEntries<=8000);
+});

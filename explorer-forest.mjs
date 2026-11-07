@@ -1,24 +1,24 @@
-import {plantAddress,plantGrove,plantShape,plantHabitat} from './explorer-plants.mjs?v=0.9.3';
-import {coordinateTile,terrainVertex,tileNeighbor,tileKey,EDGES} from './terrain-chunks.mjs?v=0.9.3';
-import {direction,coordinates,frame,createGroundCollider} from './explorer-world.mjs?v=0.9.3';
-import {rockBlocks} from './explorer-rocks.mjs?v=0.9.3';
+import {plantAddress,plantGrove,plantShape,plantHabitat} from './explorer-plants.mjs?v=0.9.4';
+import {coordinateTile,terrainVertex,tileNeighbor,tileKey,EDGES} from './terrain-chunks.mjs?v=0.9.4';
+import {direction,coordinates,frame,createGroundCollider} from './explorer-world.mjs?v=0.9.4';
+import {rockBlocks} from './explorer-rocks.mjs?v=0.9.4';
 const rank=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return (h>>>0)/4294967296;};
 /** Ring traversal has no fixed tile radius, including across cube-face seams. */
 function forestTiles(anchor,lon,lat,R,range){const first=coordinateTile(lon,lat,11),queue=[first],seen=new Set([tileKey(first)]),result=[];for(let i=0;i<queue.length;i++){const tile=queue[i],c=terrainVertex(tile,4,2,2).direction,bound=Math.max(...[[0,0],[4,0],[4,4],[0,4]].map(([x,y])=>Math.hypot(...terrainVertex(tile,4,x,y).direction.map((v,k)=>v-c[k]))))*R;if(Math.hypot(...c.map((v,k)=>v-anchor[k]))*R-bound>range)continue;result.push(tile);for(const edge of EDGES){const t=tileNeighbor(tile,edge),key=tileKey(t);if(!seen.has(key)){seen.add(key);queue.push(t);}}}return result;}
 /** Bounded, seed-specific placement cache. Repeated streaming reuses immutable records. */
 export function createForestField({limit=32000}={}){
- const cache=new Map();let worldSeed;
+ const cache=new Map(),habitats=new Map();let worldSeed;
  return {build({seed,lon,lat,radiusM,mesh,environment,rangeM=1800,detailed=true}){
-  if(seed!==worldSeed){cache.clear();worldSeed=seed;}const anchor=direction(lon,lat),ground=createGroundCollider(mesh.ground,anchor,radiusM,{rangeM:rangeM+100,binSize:40}),positions=[],normals=[],colors=[],foliage=[],shade=[],indices=[],placements=[];let sampled=0;
+  if(seed!==worldSeed){cache.clear();habitats.clear();worldSeed=seed;}const anchor=direction(lon,lat),ground=createGroundCollider(mesh.ground,anchor,radiusM,{rangeM:rangeM+100,binSize:40}),positions=[],normals=[],colors=[],foliage=[],shade=[],indices=[],placements=[];let sampled=0;
   function card(corners,uv,flag,color,d){for(const face of [[0,1,2],[0,2,3]]){const at=positions.length/3;for(const i of face){positions.push(...corners[i]);normals.push(...d);colors.push(...color);foliage.push(...uv[i],flag);shade.push(.95);}indices.push(at,at+1,at+2);}}
   for(const tile of forestTiles(anchor,lon,lat,radiusM,rangeM))for(let candidate=0;candidate<32;candidate++){
-   const a=plantAddress(seed,tile,candidate),d=a.direction,dist=Math.hypot(...d.map((v,k)=>v-anchor[k]))*radiusM;if(dist>rangeM||detailed&&dist<80)continue;const probability=dist<300?1:dist<700?.2:.06;if(rank(a.id+':forest-lod')>probability)continue;
-   let record=cache.get(a.id);if(record===undefined){sampled++;const ll=coordinates(d),e=environment(ll.lon,ll.lat),habitat=plantHabitat(e);record=habitat.kind==='bare'||habitat.kind==='shrub'||a.roll>habitat.density*(.15+plantGrove(seed,d,radiusM)*.95)?null:{id:a.id,direction:d,kind:habitat.kind,...plantShape(seed,a.id,habitat.kind)};if(cache.size>=limit)cache.delete(cache.keys().next().value);cache.set(a.id,record);}if(!record)continue;
-   const h=ground(d);if(h===null||dist<170&&rockBlocks(mesh.rocks?.placements,d,h,radiusM))continue;const f=frame(d,record.yaw),height=record.height*1.08,w=record.width*2.5*(dist>700?1.3:1),origin=d.map(v=>v*(radiusM+h-.15)),world=p=>origin.map((v,k)=>v+f.right[k]*p[0]+d[k]*p[1]+f.forward[k]*p[2]),type=record.pine?1:0,uv=[[type/2,1],[(type+1)/2,1],[(type+1)/2,0],[type/2,0]];
-   for(const angle of [0,Math.PI/2]){const x=Math.cos(angle)*w/2,z=Math.sin(angle)*w/2;card([[-x,0,-z],[x,0,z],[x,height,z],[-x,height,-z]].map(world),uv,4,[1,1,1],d);}
+   const a=plantAddress(seed,tile,candidate),d=a.direction,dist=Math.hypot(...d.map((v,k)=>v-anchor[k]))*radiusM;if(dist>rangeM||detailed&&dist<80)continue;const probability=dist<300?1:.5;if(rank(a.id+':forest-lod')>probability)continue;
+   const cacheKey=a.id+(dist<300?':exact':':regional');let record=cache.get(cacheKey);if(record===undefined){let habitat;if(dist<300){sampled++;const ll=coordinates(d);habitat=plantHabitat(environment(ll.lon,ll.lat));}else{const key=tileKey(tile);habitat=habitats.get(key);if(!habitat){sampled++;const ll=coordinates(terrainVertex(tile,4,2,2).direction);habitat=plantHabitat(environment(ll.lon,ll.lat));for(const [x,y] of [[0,0],[4,0],[4,4],[0,4]]){const corner=coordinates(terrainVertex(tile,4,x,y).direction),edge=plantHabitat(environment(corner.lon,corner.lat));sampled++;if(edge.kind!==habitat.kind){habitat={kind:'edge'};break;}}if(habitats.size>=8000)habitats.delete(habitats.keys().next().value);habitats.set(key,habitat);}}if(habitat.kind==='edge'){sampled++;const ll=coordinates(d);habitat=plantHabitat(environment(ll.lon,ll.lat));}record=habitat.kind==='bare'||habitat.kind==='shrub'||a.roll>habitat.density*(.15+plantGrove(seed,d,radiusM)*.95)?null:{id:a.id,direction:d,kind:habitat.kind,...plantShape(seed,a.id,habitat.kind)};if(dist<300||record){if(cache.size>=limit)cache.delete(cache.keys().next().value);cache.set(cacheKey,record);}}if(!record)continue;
+   const h=ground(d);if(h===null||dist<170&&rockBlocks(mesh.rocks?.placements,d,h,radiusM))continue;const f=frame(d,record.yaw),height=record.height*1.08,w=record.width*2.5/Math.sqrt(probability)*(1+.9*Math.max(0,Math.min(1,(dist-140)/160))),origin=d.map(v=>v*(radiusM+h-.15)),world=p=>origin.map((v,k)=>v+f.right[k]*p[0]+d[k]*p[1]+f.forward[k]*p[2]),type=record.pine?1:0,uv=[[type/2,1],[(type+1)/2,1],[(type+1)/2,0],[type/2,0]];
+   for(const angle of [0,Math.PI/2]){const x=Math.cos(angle)*w/2,z=Math.sin(angle)*w/2;card([[-x,0,-z],[x,0,z],[x,height,z],[-x,height,-z]].map(world),uv,4,[.86+record.tone*.14,.84+record.tone*.16,.8+record.tone*.2],d);}
    const r=w*.42,y=record.height*.76;card([[-r,y,-r],[r,y,-r],[r,y,r],[-r,y,r]].map(world),record.pine?[[.75,1],[1,1],[1,0],[.75,0]]:[[0,1],[1,1],[1,0],[0,0]],record.pine?3:1,record.pine?[.8,.9,.75]:[.7,.8,.6],d);
-   placements.push({id:a.id,direction:d,groundM:h,heightM:record.height,widthM:record.width,kind:record.kind,distanceM:dist});
+   placements.push({id:a.id,direction:d,groundM:h,heightM:record.height,widthM:record.width,crownWidthM:w,kind:record.kind,distanceM:dist});
   }
-  return {positions:Float64Array.from(positions),normals:Float32Array.from(normals),colors:Float32Array.from(colors),foliage:Float32Array.from(foliage),shade:Float32Array.from(shade),indices:Uint32Array.from(indices),placements,plants:true,distantPlants:true,shadowCaster:false,stats:{sampled,cacheEntries:cache.size,cacheLimit:limit,rangeM}};
+  return {positions:Float64Array.from(positions),normals:Float32Array.from(normals),colors:Float32Array.from(colors),foliage:Float32Array.from(foliage),shade:Float32Array.from(shade),indices:Uint32Array.from(indices),placements,plants:true,distantPlants:true,shadowCaster:false,stats:{sampled,cacheEntries:cache.size,cacheLimit:limit,habitatEntries:habitats.size,rangeM}};
  }};
 }

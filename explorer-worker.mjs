@@ -1,15 +1,15 @@
-import {createForestField} from './explorer-forest.mjs?v=0.9.3';
-import {buildCoastalFields,ecologyHabitat} from './explorer-ecology.mjs?v=0.9.3';
-import {scenicTiles} from './explorer-visibility.mjs?v=0.9.3';
-import {describeLocation,findLakefront,findMountain,findGlacier} from './explorer-info.mjs?v=0.9.3';
-import {buildGroundField} from './explorer-ground.mjs?v=0.9.3';
-import {buildPlantField,applyCanopyLighting,plantHabitat} from './explorer-plants.mjs?v=0.9.3';
-import {buildRockField} from './explorer-rocks.mjs?v=0.9.3';
-import {terrainMaterialWeights,smooth} from './terrain-materials.mjs?v=0.9.3';
-import {solvePlanet,lonLat,cellAt,neighbors,transferBuffers} from './planet.mjs?v=0.9.3';
-import {createSurfaceSampler} from './surface-sampler.mjs?v=0.9.3';
-import {createTerrainChunkBuilder,tileKey} from './terrain-chunks.mjs?v=0.9.3';
-import {direction,coordinates,frame,dot,unit} from './explorer-world.mjs?v=0.9.3';
+import {createForestField} from './explorer-forest.mjs?v=0.9.4';
+import {buildCoastalFields,ecologyHabitat} from './explorer-ecology.mjs?v=0.9.4';
+import {scenicTiles} from './explorer-visibility.mjs?v=0.9.4';
+import {describeLocation,findLakefront,findMountain,findGlacier} from './explorer-info.mjs?v=0.9.4';
+import {buildGroundField} from './explorer-ground.mjs?v=0.9.4';
+import {buildPlantField,applyCanopyLighting,plantHabitat} from './explorer-plants.mjs?v=0.9.4';
+import {buildRockField} from './explorer-rocks.mjs?v=0.9.4';
+import {terrainMaterialWeights,smooth} from './terrain-materials.mjs?v=0.9.4';
+import {solvePlanet,lonLat,cellAt,neighbors,transferBuffers} from './planet.mjs?v=0.9.4';
+import {createSurfaceSampler} from './surface-sampler.mjs?v=0.9.4';
+import {createTerrainChunkBuilder,tileKey} from './terrain-chunks.mjs?v=0.9.4';
+import {direction,coordinates,frame,dot,unit} from './explorer-world.mjs?v=0.9.4';
 let model,surface,builder,cache=new Map(),bytes=0;const forestField=createForestField();
 function color(i){const m=model;if(m.geology.lava[i])return [.24,.22,.20];if(m.cryosphere.glacier[i]||m.cryosphere.snowMonths[i]>7)return [.79,.84,.85];if(m.climate.zone[i]===1)return [.59,.48,.31];if(m.climate.zone[i]===2)return [.48,.45,.31];if(m.climate.zone[i]===0)return [.44,.47,.44];return [.37,.43,.31];}
 function spawn(lon,lat){const d=direction(lon,lat),f=frame(d);let best=null;search:for(const offset of [8,16,32,64,0])for(const sign of [-1,1]){const v=unit(d.map((x,k)=>x+f.east[k]*offset*sign/(model.grid.radiusKm*1000))),c=coordinates(v),q=surface.sample(c.lon,c.lat);if(q.fitted.waterM===null){best={...c,groundM:q.fitted.groundM};break search;}if(best)break;}return best||{lon,lat,groundM:surface.sample(lon,lat).fitted.groundM};}

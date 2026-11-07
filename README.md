@@ -1,6 +1,6 @@
-# Horizon 0.9.3 — Walk the world
+# Horizon 0.9.4 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.3).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.4).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -684,4 +684,4 @@ travelled to volcanic ground, opened the full-world map, and selected another
 location whose submerged terrain correctly enabled underwater viewing.
 Essential movement/collision/join and request-queue checks pass.
 
-Distant forests now retain simplified crowns and trunks out to 1.8 km, including during flight. They share seeded tree positions and dimensions with nearby trees, with a gradual WebGL handoff. Coverage becomes progressively thinner at longer ranges; beyond that range, regional terrain color remains the approximation.
+Distant forests now retain simplified crowns and trunks out to 1.8 km, including during flight. They share seeded tree positions and dimensions with nearby trees, with a gradual WebGL handoff. Distant crowns preserve projected canopy coverage as geometry is simplified, with varied tones and overlapping silhouettes. Beyond that range, regional terrain color remains the approximation.
