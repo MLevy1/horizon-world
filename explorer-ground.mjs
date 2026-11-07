@@ -1,13 +1,14 @@
-import {landHabitat} from './explorer-ecology.mjs?v=0.9.8';
-import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.8';
-import {direction,coordinates,frame,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.8';
-import {rockBlocks} from './explorer-rocks.mjs?v=0.9.8';
+import {landHabitat} from './explorer-ecology.mjs?v=0.9.9';
+import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.9';
+import {direction,coordinates,frame,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.9';
+import {rockBlocks} from './explorer-rocks.mjs?v=0.9.9';
 const hash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;};
 const random=seed=>()=>{seed=(seed+0x6d2b79f5)|0;let t=Math.imul(seed^(seed>>>15),1|seed);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 /** Bare climates retain mineral structure; living cover follows moisture and thaw. */
 export function groundHabitat(e){
  if(e.depthM>.03)return {kind:'water',density:0};
+ if(e.talus>.2)return {kind:'scree',density:.85};
  const habitat=landHabitat(e);return {kind:habitat.ground,density:habitat.density};
 }
 /** Stable addresses, one merged draw batch, bounded geometry and no new collision obstacles.

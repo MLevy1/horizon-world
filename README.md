@@ -1,6 +1,6 @@
-# Horizon 0.9.8 — Walk the world
+# Horizon 0.9.9 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.8).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.9).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -693,3 +693,5 @@ Ground detail streams independently as reusable tiles with motion-predicted buff
 The first alpine pass adds bounded, seeded rock incisions at 600/180/45 m scales and patchy seasonal snow on cold high terrain. Water-support regions, river corridors, glaciers and volcanic terrain retain their prior surface. This improves local relief; it does not rebuild mountain ranges or simulate glacial erosion.
 
 Mountain readouts distinguish Dry alpine, Snowy alpine and Glaciated terrain. Dry/Snowy alpine travel targets are discovered only where the current seed supports them, with Glacier retained separately. Alpine snow material coverage uses precipitation supply as well as temperature and cold-season duration. This is a visual climate proxy, not simulated snow depth.
+
+Rockfall-source terrain now produces bounded talus fans beneath steep highland faces. Deposits share the ground/collision surface, select rock/gravel and rubble detail, and suppress vegetation. Existing water contours and river corridors are protected; some cliffs can still meet water directly. This is a depositional landform proxy, not a time-evolving erosion simulation.

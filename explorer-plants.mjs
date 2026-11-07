@@ -1,13 +1,13 @@
-import {landHabitat} from './explorer-ecology.mjs?v=0.9.8';
-import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.8';
-import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.8';
-import {rockBlocks} from './explorer-rocks.mjs?v=0.9.8';
+import {landHabitat} from './explorer-ecology.mjs?v=0.9.9';
+import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.9';
+import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.9';
+import {rockBlocks} from './explorer-rocks.mjs?v=0.9.9';
 const hash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;};
 const random=seed=>()=>{seed=(seed+0x6d2b79f5)|0;let t=Math.imul(seed^(seed>>>15),1|seed);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const clamp=x=>Math.max(0,Math.min(1,x));
 export function plantHabitat(e){
- if(e.depthM>.02||e.glacier>.2||e.lava>.3||e.slope>.3||e.temperature< -5||e.elevationM>2600)return {density:0,kind:'bare'};
+ if(e.talus>.2||e.depthM>.02||e.glacier>.2||e.lava>.3||e.slope>.3||e.temperature< -5||e.elevationM>2600)return {density:0,kind:'bare'};
  const eco=landHabitat(e);if(eco.trees==='bare')return {density:0,kind:'bare'};if(eco.trees==='mangrove')return {density:.48,kind:'mangrove'};if(eco.trees==='shrub')return {density:eco.treeFactor,kind:'shrub'};
  const warmth=clamp((e.temperature+3)/9),moisture=clamp((e.aridity-.15)/.7),slope=1-clamp(e.slope/.3),snow=1-clamp((e.snow-.55)/.4),trees=warmth*moisture*slope*snow*eco.treeFactor;
  return trees>.18?{density:trees*(.78+.15*e.shore),kind:eco.trees}:{density:.08*warmth*slope*snow,kind:'shrub'};

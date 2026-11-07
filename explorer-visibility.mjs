@@ -1,5 +1,5 @@
-import {terrainVertex,tileKey,tileNeighbor,EDGES} from './terrain-chunks.mjs?v=0.9.8';
-import {coveringTile} from './terrain-lod.mjs?v=0.9.8';
+import {terrainVertex,tileKey,tileNeighbor,EDGES} from './terrain-chunks.mjs?v=0.9.9';
+import {coveringTile} from './terrain-lod.mjs?v=0.9.9';
 /** Six complete cube faces remain present. Refinement changes detail, never coverage. */
 export function scenicTiles(lon,lat,R,{clearance=0,resolution=8}={}){
  const l=lon*Math.PI/180,p=lat*Math.PI/180,focus=[Math.cos(p)*Math.cos(l),Math.sin(p),Math.cos(p)*Math.sin(l)],leaves=new Map(),children=t=>[0,1,2,3].map(k=>({face:t.face,level:t.level+1,x:t.x*2+k%2,y:t.y*2+(k>>1)}));

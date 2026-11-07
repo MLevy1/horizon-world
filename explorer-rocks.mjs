@@ -1,5 +1,5 @@
-import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.8';
-import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.8';
+import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.9';
+import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.9';
 const hash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;};
 const random=seed=>()=>{seed=(seed+0x6d2b79f5)|0;let t=Math.imul(seed^(seed>>>15),1|seed);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
@@ -16,7 +16,7 @@ export function buildRockField({seed,lon,lat,radiusM,mesh,environment,rangeM=155
   const id=tileKey(tile)+':'+candidate,rnd=random(hash(seed+':rocks:'+id)),center=terrainVertex(tile,256,1+Math.floor(rnd()*254),1+Math.floor(rnd()*254)).direction;
   if(Math.hypot(...center.map((v,k)=>v-anchor[k]))*radiusM>rangeM+10)continue;
   const ll=coordinates(center),env=environment(ll.lon,ll.lat);if(env.depthM>.12||env.glacier>.8)continue;
-  const density=Math.min(.92,.30+env.slope*.75+env.shore*.55+env.lava*.28)*(1-env.snow*.35);if(rnd()>density)continue;
+  const density=Math.min(.92,.30+(env.talus||0)*.45+env.slope*.75+env.shore*.55+env.lava*.28)*(1-env.snow*.35);if(rnd()>density)continue;
   const count=2+Math.floor(rnd()*5),base=.45+rnd()**3*2.9,clusterFrame=frame(center);
   for(let member=0;member<count;member++){
    const rockRandom=random(hash(seed+':shape:'+id+':'+member)),angle=rockRandom()*Math.PI*2,spread=member?base*(1.8+rockRandom()*3):0,d=unit(center.map((v,k)=>v+(clusterFrame.east[k]*Math.cos(angle)+clusterFrame.north[k]*Math.sin(angle))*spread/radiusM));if(Math.hypot(...d.map((v,k)=>v-anchor[k]))*radiusM>rangeM)continue;

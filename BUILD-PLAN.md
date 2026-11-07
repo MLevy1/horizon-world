@@ -710,3 +710,12 @@ Added a shared alpine classification and snow-supply proxy based on elevation, a
 The HUD setting displays the variant alongside the existing biome. Separate Dry alpine and Snowy alpine destinations replace the generic Mountains entry when supported by the seed. Candidates exclude water, volcanoes and glaciers, then verify the final spawn against interpolated climate and fitted surface; unsupported variants are omitted. Glacier travel remains available separately. Alpine material snow coverage now scales with available moisture while preserving the glacier mask and the existing non-alpine material rules. The dry mountain at 24.0231 S, 63.1639 W remains predominantly exposed rock.
 
 Validation: dry/wet/cold/warm/glacier classification, dry-versus-wet material coverage, normalized blends and glacier retention, existing destination and ecology checks, actual HORIZON-01 destination discovery and original-mountain readout, full regression suite and build. Native iPhone visual review remains outstanding.
+
+
+## 0.9.9 — Terrain-derived talus aprons
+
+Mapped highland rockfall sources from contributing terrain: non-water nodes above 1,000 m with more than 140 m of relief toward a neighbor and slope greater than 0.75 rise/run. Each source defines a bounded downslope fan, with distance-dependent spread, edge/toe taper, a 0.62 rise/run depositional profile and up to 110 m of fill. Sources are indexed in world-space buckets; overlapping deposits use their maximum rather than stacking. Glacier and lava source regions are excluded.
+
+The shared surface sampler applies deposits before contact composition, keeping geometry, normals, collision and botanical grounding consistent. Deposits fade continuously to zero at existing water contours; solved wet beds remain unchanged. River corridors, glaciers and lava query regions are excluded, with an 80 m transition outside river-bank support. This preserves water connectivity and avoids a uniform shore berm. The talus mask selects rock/gravel materials, rubble ground detail and increased boulder occurrence while excluding tall vegetation and meadow cover.
+
+Validation: downslope contribution, fan footprint/taper, fill bound, absence without a cliff, shoreline continuity and underwater depth, river/ice/lava exclusions and vegetation policies; actual seed/source and supplied mountain-lake region inspection; full terrain, hydrology, collision and streaming regressions; production build. This is a bounded landform proxy, not sediment transport or a geological-timescale simulation.

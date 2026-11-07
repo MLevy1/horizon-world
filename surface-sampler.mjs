@@ -1,9 +1,10 @@
-import {createAlpineRelief} from './alpine-surface.mjs?v=0.9.8';
-import {createRiverCourse} from './river-course.mjs?v=0.9.8';
-import {createWaterScaffold} from './water-scaffold.mjs?v=0.9.8';
-import {neighbors,cellAt} from './planet.mjs?v=0.9.8';
+import {createTalusField} from './talus-surface.mjs?v=0.9.9';
+import {createAlpineRelief} from './alpine-surface.mjs?v=0.9.9';
+import {createRiverCourse} from './river-course.mjs?v=0.9.9';
+import {createWaterScaffold} from './water-scaffold.mjs?v=0.9.9';
+import {neighbors,cellAt} from './planet.mjs?v=0.9.9';
 import {sampleRiverEdge} from './river-profiles.mjs?v=0.7.4';
-import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.9.8';
+import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.9.9';
 
 const RAD=Math.PI/180,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
@@ -91,14 +92,16 @@ export function createSurfaceSampler(m){
     return found;
   }
   function nearest(rivers){return rivers.sort((a,b)=>Math.abs(a.distanceM-b.distanceM)>1e-7?a.distanceM-b.distanceM:Number(b.wet)-Number(a.wet)||a.edge-b.edge)[0]||null;}
-  const alpineRelief=createAlpineRelief(m.seed);
+  const alpineRelief=createAlpineRelief(m.seed),talusField=createTalusField(m,mesh);
   function sample(lon,lat){
     const q=mesh.locate(lon,lat),geometry=waterScaffold.interpolate(q),planes=geometry.planes;let standingWater=null;
     for(const p of planes.values())if(geometry.terrainM<p.waterM&&(!standingWater||p.waterM>standingWater.waterM))standingWater={kind:p.kind,id:p.id,waterM:p.waterM,depthM:p.waterM-geometry.terrainM};
     const rivers=riverCandidates(q.direction),plane=standingWater?planes.get(standingWater.id):[...planes.values()].sort((a,b)=>b.support-a.support)[0]||null;
     const blend=values=>values?q.cells.reduce((s,i,k)=>s+values[i]*q.weights[k],0):0,relief=alpineRelief({direction:q.direction,radiusM:R,elevationM:geometry.terrainM,temperature:m.climate?blend(m.climate.temperature):20,glacier:m.cryosphere?blend(m.cryosphere.glacier):0,lava:m.geology?blend(m.geology.lava):0,protectedWater:!!plane||rivers.length>0});
-    const fitted=composeWaterSurface(geometry.terrainM+relief,plane,rivers.map(contacts.fit));
-    return {lon:q.lon,lat:q.lat,terrainM:q.terrainM,triangle:{cells:q.cells,weights:q.weights},standingWater,waterPlane:plane?{id:plane.id,waterM:plane.waterM,kind:plane.kind}:null,river:nearest(rivers),fitted};
+    const talus=talusField.sample(q.direction,geometry.terrainM+relief,{waterM:plane?.waterM??null,protectedRiver:rivers.length>0,glacier:m.cryosphere?blend(m.cryosphere.glacier):0,lava:m.geology?blend(m.geology.lava):0});
+    if(talus.depositM>0){const nearby=riverCandidates(q.direction,undefined,true);let margin=Infinity;for(const r of nearby)margin=Math.min(margin,r.distanceM-(r.signedDistanceM>=0?r.leftHalfM:r.rightHalfM)-(r.signedDistanceM>=0?r.leftBankM:r.rightBankM));const t=clamp(margin/80,0,1),fade=t*t*(3-2*t);talus.depositM*=fade;talus.cover*=fade;}
+    const fitted=composeWaterSurface(geometry.terrainM+relief+talus.depositM,plane,rivers.map(contacts.fit));
+    return {talus:talus.cover,talusDepositM:talus.depositM,lon:q.lon,lat:q.lat,terrainM:q.terrainM,triangle:{cells:q.cells,weights:q.weights},standingWater,waterPlane:plane?{id:plane.id,waterM:plane.waterM,kind:plane.kind}:null,river:nearest(rivers),fitted};
   }
   // Conservative index query for a complete minor arc, including corridor support.
   function shoreArc(a,b){
@@ -117,5 +120,5 @@ export function createSurfaceSampler(m){
     }};
   }
   return {sample,mesh,grid:g,contacts,course,shoreArc,waterScaffold,channelsAtDirection(direction){return riverCandidates(normalize(direction));},riverAtDirection(direction){return nearest(riverCandidates(normalize(direction)));},
-    stats:{globalEdges:E,buckets:buckets.size,indexResolution:B,scaffoldCells:g.count,...contacts.stats,...waterScaffold.stats}};
+    stats:{globalEdges:E,buckets:buckets.size,indexResolution:B,scaffoldCells:g.count,talusSources:talusField.stats.sources,...contacts.stats,...waterScaffold.stats}};
 }

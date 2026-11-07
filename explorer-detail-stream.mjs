@@ -1,5 +1,5 @@
-import {direction,coordinates,moveDirection} from './explorer-world.mjs?v=0.9.8';
-import {coordinateTile,terrainVertex,tileNeighbor,tileKey,EDGES} from './terrain-chunks.mjs?v=0.9.8';
+import {direction,coordinates,moveDirection} from './explorer-world.mjs?v=0.9.9';
+import {coordinateTile,terrainVertex,tileNeighbor,tileKey,EDGES} from './terrain-chunks.mjs?v=0.9.9';
 export const DETAIL_FADE_SECONDS=.7,DETAIL_CACHE_BYTES=16*1048576;
 export const detailVisibility=(distance,age,clearance=0)=>{const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};return smooth(0,DETAIL_FADE_SECONDS,age)*(1-smooth(64,96,distance))*(1-smooth(60,140,clearance));};
 /** Full tiles cover the current view and a bounded motion-predicted buffer. */

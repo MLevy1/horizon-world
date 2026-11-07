@@ -1,4 +1,4 @@
-import {moveDirection,frame,dot} from './explorer-world.mjs?v=0.9.8';
+import {moveDirection,frame,dot} from './explorer-world.mjs?v=0.9.9';
 export const WALK_SPEEDS=[.5,1,3,6,12],FLY_SPEEDS=[3,10,30,100,300,1000];
 export function flightStep({direction,yaw,pitch,height,forward=0,right=0,vertical=0,speed=10,dt,radiusM}){
  const horizontal=forward*Math.cos(pitch),up=vertical+forward*Math.sin(pitch),length=Math.max(1,Math.hypot(horizontal,right,up)),distance=speed*Math.min(.1,Math.max(0,dt))/length,oldForward=frame(direction,yaw).forward;
