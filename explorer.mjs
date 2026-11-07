@@ -1,12 +1,12 @@
-import {planGroundDetail} from './explorer-detail-stream.mjs?v=0.9.9';
-import {scenicFog} from './explorer-visibility.mjs?v=0.9.9';
-import {rockBlocks} from './explorer-rocks.mjs?v=0.9.9';
-import {waterState} from './explorer-water.mjs?v=0.9.9';
-import {direction,coordinates,frame,moveDirection,createGroundCollider,dot} from './explorer-world.mjs?v=0.9.9';
-import {createExplorerRenderer} from './explorer-render.mjs?v=0.9.9';
-import {createTerrainViewQueue} from './terrain-stream.mjs?v=0.9.9';
-import {WALK_SPEEDS,FLY_SPEEDS,flightStep} from './explorer-navigation.mjs?v=0.9.9';
-import {createExplorerMap} from './explorer-map.mjs?v=0.9.9';
+import {planGroundDetail} from './explorer-detail-stream.mjs?v=0.9.10';
+import {scenicFog} from './explorer-visibility.mjs?v=0.9.10';
+import {rockBlocks} from './explorer-rocks.mjs?v=0.9.10';
+import {waterState} from './explorer-water.mjs?v=0.9.10';
+import {direction,coordinates,frame,moveDirection,createGroundCollider,dot} from './explorer-world.mjs?v=0.9.10';
+import {createExplorerRenderer} from './explorer-render.mjs?v=0.9.10';
+import {createTerrainViewQueue} from './terrain-stream.mjs?v=0.9.10';
+import {WALK_SPEEDS,FLY_SPEEDS,flightStep} from './explorer-navigation.mjs?v=0.9.10';
+import {createExplorerMap} from './explorer-map.mjs?v=0.9.10';
 const $=id=>document.getElementById(id),canvas=$('world'),keys=new Set();
 let renderer,worker,ground,water,mesh,position=null,yaw=0,pitch=-.1,foot=0,R=64000,auto=false,dirty=true,streamOrigin=null,travelling=false,drag=null,last=0,lastHud=0,steps=0,queue,crouched=false,lastWaterFrame=0,flying=false,flightHeight=0,speed=3,walkSpeed=3,flySpeed=30,viewPending=false,viewId=0,requestedClearance=0,requestedFlying=false,requestedSpeed=3,infoPending=false,infoId=0,lastInspect=0,lastInfo=null;
 let detailId=0,detailPending=false,detailDesired=new Map(),detailOrigin=null,detailAhead=null,detailAnimateUntil=0,streamLatency=1,viewStarted=0,lastForward=0,lastSide=0,lastVelocity=0;
@@ -38,10 +38,10 @@ function updateSpeeds(){const list=flying?FLY_SPEEDS:WALK_SPEEDS;speed=flying?fl
 function toggleFlight(){if(!position||travelling)return;stop();if(!flying){flightHeight=Math.max(foot+9.7,(water?.(position)??-Infinity)+4);flying=true;}else{const h=ground?.(position);if(h===null||h===undefined){$('stream-state').textContent='Wait for the terrain to load before landing';return;}flying=false;foot=h;}
  updateSpeeds();streamOrigin=null;dirty=true;requestView();}
 function generate(seed){stop();resetDetails();steps=0;lastHud=0;lastInspect=0;pitch=-.1;yaw=0;flying=false;updateSpeeds();lastInfo=null;infoPending=false;viewPending=false;$('environment-state').textContent='Preparing terrain';$('climate-state').textContent='';$('location').textContent='';$('movement-state').textContent='Ground-level exploration';worker?.terminate();queue?.reset();ground=null;water=null;mesh=null;position=null;streamOrigin=null;travelling=false;for(const id of ['destination','auto-walk','reset-look','fly'])$(id).disabled=true;$('welcome').hidden=false;$('retry').hidden=true;$('generate').disabled=true;$('loading').textContent='Building the complete world…';$('progress').value=0;
- const active=new Worker(new URL('./explorer-worker.mjs?v=0.9.9',import.meta.url),{type:'module'});worker=active;queue=createTerrainViewQueue(message=>active.postMessage(message),data=>install(data.mesh));
+ const active=new Worker(new URL('./explorer-worker.mjs?v=0.9.10',import.meta.url),{type:'module'});worker=active;queue=createTerrainViewQueue(message=>active.postMessage(message),data=>install(data.mesh));
  active.onmessage=({data})=>{if(worker!==active)return;
   if(data.type==='progress'){$('loading').textContent=data.stage;$('progress').value=data.fraction;}
-  else if(data.type==='ready'){R=data.radiusM;position=direction(data.start.lon,data.start.lat);yaw=data.start.yaw;foot=data.start.groundM;const image=new ImageData(data.map.data,data.map.width,data.map.height);map.setWorld(image,data.places);$('destination').replaceChildren(...data.places.map(p=>{const option=new Option(p.name,p.name);option.dataset.lon=p.lon;option.dataset.lat=p.lat;option.dataset.yaw=p.yaw??0;return option;}));$('map-places').replaceChildren(new Option('Find destination…',''),...data.places.map(p=>{const o=new Option(p.name,p.name);o.dataset.lon=p.lon;o.dataset.lat=p.lat;o.dataset.yaw=p.yaw??0;return o;}));$('destination').disabled=false;$('generate').disabled=false;$('atlas-link').href='./atlas.html?seed='+encodeURIComponent(data.seed);const url=new URL(location.href);url.searchParams.set('seed',data.seed);url.searchParams.set('v','0.9.9');history.replaceState(null,'',url);requestView();}
+  else if(data.type==='ready'){R=data.radiusM;position=direction(data.start.lon,data.start.lat);yaw=data.start.yaw;foot=data.start.groundM;const image=new ImageData(data.map.data,data.map.width,data.map.height);map.setWorld(image,data.places);$('destination').replaceChildren(...data.places.map(p=>{const option=new Option(p.name,p.name);option.dataset.lon=p.lon;option.dataset.lat=p.lat;option.dataset.yaw=p.yaw??0;return option;}));$('map-places').replaceChildren(new Option('Find destination…',''),...data.places.map(p=>{const o=new Option(p.name,p.name);o.dataset.lon=p.lon;o.dataset.lat=p.lat;o.dataset.yaw=p.yaw??0;return o;}));$('destination').disabled=false;$('generate').disabled=false;$('atlas-link').href='./atlas.html?seed='+encodeURIComponent(data.seed);const url=new URL(location.href);url.searchParams.set('seed',data.seed);url.searchParams.set('v','0.9.10');history.replaceState(null,'',url);requestView();}
   else if(data.type==='view'){if(data.requestId===viewId)viewPending=false;queue.finish(data);}
   else if(data.type==='detail-chunk'){if(data.streamId===detailId&&detailDesired.has(data.id)){renderer.setGroundChunk(data.id,data.revision,data.chunk,performance.now()/1000,detailDesired.get(data.id).priority);detailAnimateUntil=performance.now()+800;dirty=true;}}
   else if(data.type==='detail-done'||data.type==='detail-error'){if(data.streamId===detailId){detailPending=false;if(data.type==='detail-error')$('stream-state').textContent='Ground cover will retry';}}

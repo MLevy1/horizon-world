@@ -1,6 +1,6 @@
-# Horizon 0.9.9 — Walk the world
+# Horizon 0.9.10 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.9).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.10).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -690,8 +690,10 @@ Grassland now retains climate-colored herb cover across the scenic terrain, beyo
 
 Ground detail streams independently as reusable tiles with motion-predicted buffering, bounded CPU/GPU caches, and a 0.7-second reveal. Existing ground tiles survive terrain updates; detail fades over 64–96 m and with high flight clearance.
 
-The first alpine pass adds bounded, seeded rock incisions at 600/180/45 m scales and patchy seasonal snow on cold high terrain. Water-support regions, river corridors, glaciers and volcanic terrain retain their prior surface. This improves local relief; it does not rebuild mountain ranges or simulate glacial erosion.
+Alpine terrain uses climate-led seasonal snow on cold high terrain. Experimental rock incisions are disabled in the stability hotfix. Water-support regions, river corridors, glaciers and volcanic terrain retain their prior surface. This improves local relief; it does not rebuild mountain ranges or simulate glacial erosion.
 
 Mountain readouts distinguish Dry alpine, Snowy alpine and Glaciated terrain. Dry/Snowy alpine travel targets are discovered only where the current seed supports them, with Glacier retained separately. Alpine snow material coverage uses precipitation supply as well as temperature and cold-season duration. This is a visual climate proxy, not simulated snow depth.
 
-Rockfall-source terrain now produces bounded talus fans beneath steep highland faces. Deposits share the ground/collision surface, select rock/gravel and rubble detail, and suppress vegetation. Existing water contours and river corridors are protected; some cliffs can still meet water directly. This is a depositional landform proxy, not a time-evolving erosion simulation.
+Experimental talus deformation is currently disabled after the 0.9.9 visual regression.
+
+The 0.9.10 hotfix disables the experimental talus deformation after reported cliff-like discontinuities and floating detail. Both talus uplift and alpine incisions are disabled; the shared sampler uses the pre-deformation 0.9.6 geometry; climate-led alpine variants and snow appearance remain. Talus shaping requires further continuity and visual validation before re-enabling.

@@ -1,4 +1,4 @@
-import {clipChunkWater} from './chunk-water.mjs?v=0.9.9';
+import {clipChunkWater} from './chunk-water.mjs?v=0.9.10';
 /** Globally addressed cube-sphere ground chunks. Hydrology is queried from the
  * existing global surface; chunks neither solve nor invent independent water.
  * Integer direction keys are identical across face seams and dyadic LODs.

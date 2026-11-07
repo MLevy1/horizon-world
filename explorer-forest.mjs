@@ -1,7 +1,7 @@
-import {plantAddress,plantGrove,plantShape,plantHabitat} from './explorer-plants.mjs?v=0.9.9';
-import {coordinateTile,terrainVertex,tileNeighbor,tileKey,EDGES} from './terrain-chunks.mjs?v=0.9.9';
-import {direction,coordinates,frame,createGroundCollider} from './explorer-world.mjs?v=0.9.9';
-import {rockBlocks} from './explorer-rocks.mjs?v=0.9.9';
+import {plantAddress,plantGrove,plantShape,plantHabitat} from './explorer-plants.mjs?v=0.9.10';
+import {coordinateTile,terrainVertex,tileNeighbor,tileKey,EDGES} from './terrain-chunks.mjs?v=0.9.10';
+import {direction,coordinates,frame,createGroundCollider} from './explorer-world.mjs?v=0.9.10';
+import {rockBlocks} from './explorer-rocks.mjs?v=0.9.10';
 const rank=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return (h>>>0)/4294967296;};
 /** Ring traversal has no fixed tile radius, including across cube-face seams. */
 function forestTiles(anchor,lon,lat,R,range){const first=coordinateTile(lon,lat,11),queue=[first],seen=new Set([tileKey(first)]),result=[];for(let i=0;i<queue.length;i++){const tile=queue[i],c=terrainVertex(tile,4,2,2).direction,bound=Math.max(...[[0,0],[4,0],[4,4],[0,4]].map(([x,y])=>Math.hypot(...terrainVertex(tile,4,x,y).direction.map((v,k)=>v-c[k]))))*R;if(Math.hypot(...c.map((v,k)=>v-anchor[k]))*R-bound>range)continue;result.push(tile);for(const edge of EDGES){const t=tileNeighbor(tile,edge),key=tileKey(t);if(!seen.has(key)){seen.add(key);queue.push(t);}}}return result;}

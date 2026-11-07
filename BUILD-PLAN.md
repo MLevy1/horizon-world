@@ -719,3 +719,12 @@ Mapped highland rockfall sources from contributing terrain: non-water nodes abov
 The shared surface sampler applies deposits before contact composition, keeping geometry, normals, collision and botanical grounding consistent. Deposits fade continuously to zero at existing water contours; solved wet beds remain unchanged. River corridors, glaciers and lava query regions are excluded, with an 80 m transition outside river-bank support. This preserves water connectivity and avoids a uniform shore berm. The talus mask selects rock/gravel materials, rubble ground detail and increased boulder occurrence while excluding tall vegetation and meadow cover.
 
 Validation: downslope contribution, fan footprint/taper, fill bound, absence without a cliff, shoreline continuity and underwater depth, river/ice/lava exclusions and vegetation policies; actual seed/source and supplied mountain-lake region inspection; full terrain, hydrology, collision and streaming regressions; production build. This is a bounded landform proxy, not sediment transport or a geological-timescale simulation.
+
+
+## 0.9.10 — Disable unstable talus deformation
+
+User images from 38.8124–38.8370 S, 171.0173–171.4302 E show artificial vertical terrain boundaries and floating rock/detail after 0.9.9. The depositional fan field can contribute up to 110 m of uplift, with conditional masking and spatial indexing that were not adequately validated for surface continuity across every boundary. Passing hydrology and bounded-fill tests did not establish acceptable geometry.
+
+Restored the production surface sampler to the pre-deformation 0.9.6 implementation, retaining current module versions. The earlier alpine incision layer also had hard protection cutoffs and is disabled in this hotfix. No talus field is constructed or sampled in production, so no fan uplift or talus material/vegetation mask is emitted. The experimental module remains isolated for further development. Climate-led alpine variants, snow rules and independent detail streaming remain enabled. Both experimental terrain deformation layers are disabled. Existing cached geometry is discarded when the newly versioned page initializes its worker.
+
+Validation: exact source comparison to the pre-deformation 0.9.6 surface sampler after normalizing import version strings, full terrain/hydrology/collision/streaming tests, actual HORIZON-01 samples at the three reported coordinates confirming no talus output, and production build. This is a stability rollback, not a completed talus implementation.
