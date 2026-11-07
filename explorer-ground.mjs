@@ -1,7 +1,7 @@
-import {landHabitat} from './explorer-ecology.mjs?v=0.9.5';
-import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.5';
-import {direction,coordinates,frame,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.5';
-import {rockBlocks} from './explorer-rocks.mjs?v=0.9.5';
+import {landHabitat} from './explorer-ecology.mjs?v=0.9.6';
+import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.6';
+import {direction,coordinates,frame,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.6';
+import {rockBlocks} from './explorer-rocks.mjs?v=0.9.6';
 const hash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;};
 const random=seed=>()=>{seed=(seed+0x6d2b79f5)|0;let t=Math.imul(seed^(seed>>>15),1|seed);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
@@ -12,14 +12,14 @@ export function groundHabitat(e){
 }
 /** Stable addresses, one merged draw batch, bounded geometry and no new collision obstacles.
  * Ground hits use the displayed terrain, so details sit on its actual triangles. */
-export function buildGroundField({seed,lon,lat,radiusM,mesh,environment,rangeM=72}){
- const anchor=direction(lon,lat),ground=createGroundCollider(mesh.ground,anchor,radiusM),positions=[],normals=[],colors=[],indices=[],foliage=[],shade=[],placements=[],roots=[{tile:coordinateTile(lon,lat,11),distance:0}],seen=new Set([tileKey(roots[0].tile)]);
+export function buildGroundField({seed,lon,lat,radiusM,mesh,environment,rangeM=72,tiles=null,collider=null}){
+ const anchor=direction(lon,lat),ground=collider||createGroundCollider(mesh.ground,anchor,radiusM),positions=[],normals=[],colors=[],indices=[],foliage=[],shade=[],placements=[],roots=tiles?tiles.map(tile=>({tile,distance:5})):[{tile:coordinateTile(lon,lat,11),distance:0}],seen=new Set(roots.map(r=>tileKey(r.tile)));
  for(let i=0;i<roots.length;i++){const item=roots[i];if(item.distance===5)continue;for(const edge of EDGES){const tile=tileNeighbor(item.tile,edge),key=tileKey(tile);if(!seen.has(key)){seen.add(key);roots.push({tile,distance:item.distance+1});}}}
  const habitats=new Map();
  for(const {tile} of roots){
   // Climate samples are shared within ~8 m subcells; each placement still checks water.
   for(let candidate=0;candidate<460;candidate++){
-   const id=tileKey(tile)+':'+candidate,r=random(hash(seed+':ground:'+id)),ix=1+Math.floor(r()*254),iy=1+Math.floor(r()*254),d=terrainVertex(tile,256,ix,iy).direction,dist=Math.hypot(...d.map((v,k)=>v-anchor[k]))*radiusM;if(dist>rangeM)continue;
+   const id=tileKey(tile)+':'+candidate,r=random(hash(seed+':ground:'+id)),ix=1+Math.floor(r()*254),iy=1+Math.floor(r()*254),d=terrainVertex(tile,256,ix,iy).direction,dist=Math.hypot(...d.map((v,k)=>v-anchor[k]))*radiusM;if(!tiles&&dist>rangeM)continue;
    const key=tileKey(tile)+':'+(ix>>6)+':'+(iy>>6);let e=habitats.get(key);if(!e){const ll=coordinates(terrainVertex(tile,256,(ix>>6)*64+32,(iy>>6)*64+32).direction);e=environment(ll.lon,ll.lat);habitats.set(key,e);}
    const habitat=groundHabitat(e),patch=.5+.25*Math.sin(d[0]*radiusM/7+d[2]*radiusM/11)+.25*Math.cos(d[1]*radiusM/9-d[2]*radiusM/13);if(r()>habitat.density*(.18+.82*patch))continue;
    const ll=coordinates(d),local=environment(ll.lon,ll.lat);if(local.depthM>.03||groundHabitat(local).kind!==habitat.kind)continue;

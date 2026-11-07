@@ -1,4 +1,4 @@
-import {dot,frame,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.5';
+import {dot,frame,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.6';
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 export function sunlight(d){const f=frame(d);return unit(d.map((x,k)=>x*.8+f.east[k]*.35+f.north[k]*.5));}
 /** Coordinates are relative to the current terrain anchor, never planet-sized floats. */
