@@ -1,8 +1,9 @@
-import {createRiverCourse} from './river-course.mjs?v=0.9.6';
-import {createWaterScaffold} from './water-scaffold.mjs?v=0.9.6';
-import {neighbors,cellAt} from './planet.mjs?v=0.9.6';
+import {createAlpineRelief} from './alpine-surface.mjs?v=0.9.7';
+import {createRiverCourse} from './river-course.mjs?v=0.9.7';
+import {createWaterScaffold} from './water-scaffold.mjs?v=0.9.7';
+import {neighbors,cellAt} from './planet.mjs?v=0.9.7';
 import {sampleRiverEdge} from './river-profiles.mjs?v=0.7.4';
-import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.9.6';
+import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.9.7';
 
 const RAD=Math.PI/180,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
@@ -90,11 +91,13 @@ export function createSurfaceSampler(m){
     return found;
   }
   function nearest(rivers){return rivers.sort((a,b)=>Math.abs(a.distanceM-b.distanceM)>1e-7?a.distanceM-b.distanceM:Number(b.wet)-Number(a.wet)||a.edge-b.edge)[0]||null;}
+  const alpineRelief=createAlpineRelief(m.seed);
   function sample(lon,lat){
     const q=mesh.locate(lon,lat),geometry=waterScaffold.interpolate(q),planes=geometry.planes;let standingWater=null;
     for(const p of planes.values())if(geometry.terrainM<p.waterM&&(!standingWater||p.waterM>standingWater.waterM))standingWater={kind:p.kind,id:p.id,waterM:p.waterM,depthM:p.waterM-geometry.terrainM};
     const rivers=riverCandidates(q.direction),plane=standingWater?planes.get(standingWater.id):[...planes.values()].sort((a,b)=>b.support-a.support)[0]||null;
-    const fitted=composeWaterSurface(geometry.terrainM,plane,rivers.map(contacts.fit));
+    const blend=values=>values?q.cells.reduce((s,i,k)=>s+values[i]*q.weights[k],0):0,relief=alpineRelief({direction:q.direction,radiusM:R,elevationM:geometry.terrainM,temperature:m.climate?blend(m.climate.temperature):20,glacier:m.cryosphere?blend(m.cryosphere.glacier):0,lava:m.geology?blend(m.geology.lava):0,protectedWater:!!plane||rivers.length>0});
+    const fitted=composeWaterSurface(geometry.terrainM+relief,plane,rivers.map(contacts.fit));
     return {lon:q.lon,lat:q.lat,terrainM:q.terrainM,triangle:{cells:q.cells,weights:q.weights},standingWater,waterPlane:plane?{id:plane.id,waterM:plane.waterM,kind:plane.kind}:null,river:nearest(rivers),fitted};
   }
   // Conservative index query for a complete minor arc, including corridor support.

@@ -1,6 +1,6 @@
-# Horizon 0.9.6 — Walk the world
+# Horizon 0.9.7 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.6).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.7).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -689,3 +689,5 @@ Distant forests now retain simplified crowns and trunks out to 1.8 km, including
 Grassland now retains climate-colored herb cover across the scenic terrain, beyond the nearby plant radius. Dry coastal slopes retain scrub and grass instead of an artificial strip of tall woodland. Rock, wet banks, deserts, snow and underwater terrain keep their own material policies.
 
 Ground detail streams independently as reusable tiles with motion-predicted buffering, bounded CPU/GPU caches, and a 0.7-second reveal. Existing ground tiles survive terrain updates; detail fades over 64–96 m and with high flight clearance.
+
+The first alpine pass adds bounded, seeded rock incisions at 600/180/45 m scales and patchy seasonal snow on cold high terrain. Water-support regions, river corridors, glaciers and volcanic terrain retain their prior surface. This improves local relief; it does not rebuild mountain ranges or simulate glacial erosion.
