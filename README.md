@@ -1,6 +1,6 @@
-# Horizon 0.9.11 — Walk the world
+# Horizon 0.9.12 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.11).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.12).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -699,3 +699,16 @@ Experimental talus deformation is currently disabled after the 0.9.9 visual regr
 The 0.9.10 hotfix disables the experimental talus deformation after reported cliff-like discontinuities and floating detail. Both talus uplift and alpine incisions are disabled; the shared sampler uses the pre-deformation 0.9.6 geometry; climate-led alpine variants and snow appearance remain. Talus shaping requires further continuity and visual validation before re-enabling.
 
 View options includes Recover view. Frame errors cannot terminate future frames; graphics-context restoration rebuilds the renderer. Lake-edge wet gravel is blended per pixel from height above water rather than being stretched across shoreline triangles.
+
+
+## Diagnostics and reproducible review (0.9.12)
+
+Open **View options → Diagnostics & viewpoints**. Copy diagnostic report includes the last input event, frame/render ages, context state, request state/age, collider availability, scene counts, cache bytes and stage timings when available, and a bounded recent-event log. The panel refreshes independently of the animation loop; navigation pauses while the dialog is open. Cache bytes are tracked geometry estimates, not total browser/GPU memory.
+
+Save this view retains up to 20 views on the current device. Copy viewpoint link captures the seed, coordinates, actual camera orientation/height, movement settings, viewport and material/shadow settings, app and generator identifiers. Loading respects generator compatibility and adjusts height if terrain collision requires it. Viewport/DPR are recorded for comparison, not forced on the device. Reference headings are chosen starting points, not reconstructed photo headings. Geometry only hides objects/water and displays terrain normals in WebGL (neutral shading in compatibility mode).
+
+`npm run release -- --version 0.9.13` updates the app version and synchronizes module caches and both page badges. `npm run check:release` and the production build reject stale references. `package.json` is authoritative; `release-meta.mjs` is generated. `worldGenerationVersion` is a separately managed identity for the current geography algorithm, not an implementation of older generators. The disabled talus and alpine deformation remain off.
+
+The worker pipeline exposes buildTerrain → assignGroundMaterials → placeLandscapeObjects, with timing per stage. Current refresh thresholds are 48 m walking and at least 64 m flying, adjusted by speed and clearance; older historical notes above describe earlier releases.
+
+See [VALIDATION.md](VALIDATION.md) for release and visual acceptance checks.

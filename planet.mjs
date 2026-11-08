@@ -1,17 +1,18 @@
-import {makeVolcanicGeography,linkVolcanoWater} from './geology.mjs?v=0.7.0';
-import {solveCryosphere} from './cryosphere.mjs?v=0.7.0';
-import {makeClimate,flowRegime} from './climate.mjs?v=0.7.0';
-import {buildBasinInventory} from './basins.mjs?v=0.7.1';
-import {solvePoolBalances} from './pools.mjs?v=0.7.2';
-import {installPoolRouting} from './lake-routing.mjs?v=0.7.3';
-import {buildRiverProfiles} from './river-profiles.mjs?v=0.7.4';
+import {GENERATOR_VERSION} from './release-meta.mjs?v=0.9.12';
+import {makeVolcanicGeography,linkVolcanoWater} from './geology.mjs?v=0.9.12';
+import {solveCryosphere} from './cryosphere.mjs?v=0.9.12';
+import {makeClimate,flowRegime} from './climate.mjs?v=0.9.12';
+import {buildBasinInventory} from './basins.mjs?v=0.9.12';
+import {solvePoolBalances} from './pools.mjs?v=0.9.12';
+import {installPoolRouting} from './lake-routing.mjs?v=0.9.12';
+import {buildRiverProfiles} from './river-profiles.mjs?v=0.9.12';
 
 /** Horizon 0.7: one closed, deterministic planet. Distances km, elevations m.
  * No rendering, terrain tiles, scene, camera or vegetation dependencies.
  * Depression filling follows Priority-Flood (Barnes, Lehman & Mulla, 2014).
  * The grid is a staggered triangular mesh, closed by two unique polar nodes.
  */
-export const VERSION = '0.9.11';
+export const VERSION = GENERATOR_VERSION;
 export const DEFAULT_WORLD = Object.freeze({width:1536, height:768, radiusKm:64});
 const TAU = Math.PI * 2;
 const YEAR_SECONDS = 365.25 * 86400;

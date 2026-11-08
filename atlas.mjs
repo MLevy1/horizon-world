@@ -1,11 +1,12 @@
-import {panTerrainView} from './terrain-lod.mjs?v=0.9.11';
-import {createTerrainViewQueue} from './terrain-stream.mjs?v=0.9.11';
-import {sampleConstraintSection} from './channel-constraints.mjs?v=0.9.11';
-import {constraintSectionSvg} from './constraint-view.mjs?v=0.9.11';
-import {VERSION,lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.9.11';
-import {ZONES,flowRegime} from './climate.mjs?v=0.9.11';
-import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.9.11';
-import {createSurfaceSampler} from './surface-sampler.mjs?v=0.9.11';
+import {APP_VERSION as VERSION} from './release-meta.mjs?v=0.9.12';
+import {panTerrainView} from './terrain-lod.mjs?v=0.9.12';
+import {createTerrainViewQueue} from './terrain-stream.mjs?v=0.9.12';
+import {sampleConstraintSection} from './channel-constraints.mjs?v=0.9.12';
+import {constraintSectionSvg} from './constraint-view.mjs?v=0.9.12';
+import {lonLat,cellAt,traceActive,catchmentMask,distanceKm} from './planet.mjs?v=0.9.12';
+import {ZONES,flowRegime} from './climate.mjs?v=0.9.12';
+import {inspectionRoute,inspectionStation,longitudinalSvg,sectionSvg} from './profile-view.mjs?v=0.9.12';
+import {createSurfaceSampler} from './surface-sampler.mjs?v=0.9.12';
 
 const $=id=>document.getElementById(id);
 const canvas=$('map'),ctx=canvas.getContext('2d'),stage=$('map-stage');
@@ -575,7 +576,7 @@ async function displayChunkMesh(patch){
   $('mesh-counts').textContent=number(patch.stats.chunks,0)+' chunks · LOD '+patch.stats.minLevel+'–'+patch.stats.maxLevel+' · '+number(patch.stats.triangles,0)+' ground / '+number(patch.stats.waterTriangles,0)+' water triangles · '+number(patch.stats.bytes/1048576,1)+' MiB';
   $('chunk-cache').textContent=number(patch.stream.reused,0)+' reused · '+number(patch.stream.built,0)+' built · cache '+number(patch.stream.cacheBytes/1048576,1)+' / '+number(patch.stream.cacheLimitBytes/1048576,0)+' MiB';
   $('mesh-summary').textContent='Streaming terrain · '+number(patch.stats.chunks,0)+' chunks in the current view';$('mesh-error').textContent=patch.stats.ambiguousWaterTriangles?'Some water boundaries need a finer view.':'';
-  try{const {createMeshPreview}=await import('./mesh-preview.mjs?v=0.9.11');if(chunkMesh!==patch)return;meshPreview=createMeshPreview($('mesh-canvas'),patch);drawMeshPreview();}catch(error){$('mesh-error').textContent=error.message;}
+  try{const {createMeshPreview}=await import('./mesh-preview.mjs?v=0.9.12');if(chunkMesh!==patch)return;meshPreview=createMeshPreview($('mesh-canvas'),patch);drawMeshPreview();}catch(error){$('mesh-error').textContent=error.message;}
 }
 function terrainWorkerFailure(message){$('mesh-error').textContent=message;chunkWorker?.terminate();chunkWorker=null;chunkQueue.reset();}
 function sendTerrainView(view){

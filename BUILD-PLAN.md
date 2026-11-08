@@ -737,3 +737,14 @@ The reported lake-edge triangles are consistent with a thin wet-gravel mask eval
 The animation loop previously scheduled its successor only after movement/rendering completed, so any uncaught frame error could stop the loop permanently. Added a resilient frame scheduler, throttled renderer recovery after frame failures, WebGL context loss/restoration handling and a Recover view button. Lost-focus/input resets now clear stale look drags as well as movement keys. This addresses identified failure paths; the exact cause of the user's intermittent iPhone freeze has not been reproduced on-device.
 
 Validation: injected frame failure followed by continued movement/render callbacks and cancellation; existing rendering/streaming regressions; shader compile/link, worker and production build checks. Native iPhone interruption and shoreline appearance still require device review.
+
+
+## 0.9.12 — Observability, fixed views and release discipline
+
+Added a diagnostics dialog with a bounded event log, copy/fallback text, independent refresh, input/context/frame/render signals, terrain request age, collider state, available scene counts/cache estimates and stage timings. View capture, local saved views and URL restore record seed, pose, modes, rendering flags and viewport plus app/generator identities. Nine initial reference views use reported coordinates with chosen headings; saved links record actual headings. Geometry isolation affects drawing only. Disabled terrain experiments remain disabled.
+
+Extracted existing worker operations into buildTerrain, assignGroundMaterials and placeLandscapeObjects without changing calculations. An actual HORIZON-01 alpine-lake scene matched the previous worker's SHA-256 digest across ground/water/object positions, indices, material and color arrays.
+
+Introduced package-owned release stamping and build-time consistency checks. Generator identity is explicit and independent of application releases; no legacy generator implementation is implied. Documentation distinguishes tracked cache estimates from total memory and diagnostic frame frequency from rendering throughput. Added validation and landform reactivation gates.
+
+Validation for 0.9.12: 173 tests passed in the full suite, followed by targeted diagnostics/DOM/geometry tests after final UI refinements. Actual diagnostic shader compiled/linked in an offscreen graphics context. Browser installation returned a truncated download, so no real browser interaction test was completed; the DOM smoke test uses injected browser/renderer doubles and is labelled accordingly. The actual worker scene hash matched its pre-refactor baseline. Release check and production build passed. iPhone validation remains pending.

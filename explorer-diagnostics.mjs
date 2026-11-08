@@ -1,0 +1,4 @@
+export function createDiagnostics({limit=30,clock=()=>performance.now()}={}){
+ const events=[];let lastFrame=0,lastRender=0,lastInput=null,context='active',frames=0,windowStart=clock(),fps=0;
+ return {event(type,detail=''){events.push({ms:Math.round(clock()),type,detail:String(detail).slice(0,500)});if(events.length>limit)events.shift();if(type==='input')lastInput=events.at(-1);if(type==='context')context=detail;},frame(){const t=clock();lastFrame=t;frames++;if(t-windowStart>=1000){fps=frames*1000/(t-windowStart);frames=0;windowStart=t;}},render(){lastRender=clock();},snapshot(state={}){const t=clock();return {recordedAt:new Date().toISOString(),frameAgeMs:Math.round(t-lastFrame),renderAgeMs:Math.round(t-lastRender),fps:Math.round(fps),context,lastInput,...state,events:events.slice()};}};
+}
