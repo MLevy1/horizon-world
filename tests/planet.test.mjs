@@ -238,7 +238,7 @@ test('standing water queries preserve actual pool planes and sea level without f
       const body=m.waterbodies[m.waterbody[i]];if(m.height[i]>=body.waterLevelM-1e-7)continue;
       const q=surface.sample(...lonLat(m.grid,i));assert.ok(q.standingWater);assert.equal(q.standingWater.waterM,body.waterLevelM);
       assert.equal(q.standingWater.id,body.id);assert.ok(q.standingWater.depthM>0);
-      assert.equal(q.fitted.waterM,body.waterLevelM);assert.ok(q.fitted.groundM<=m.height[i]+42+1e-8);assert.ok(q.fitted.groundM<body.waterLevelM);
+      assert.equal(q.fitted.waterM,body.waterLevelM);assert.ok(q.fitted.groundM<=m.height[i]+1e-8);assert.ok(q.fitted.groundM<body.waterLevelM);
     }else if((m.basinId[i]>=0||m.ocean[i])&&i%97===0){
       const q=surface.sample(...lonLat(m.grid,i));
       if(m.ocean[i]&&m.height[i]<0){assert.equal(q.standingWater.kind,'ocean');assert.equal(q.standingWater.waterM,0);}
@@ -499,13 +499,13 @@ test('the entire planet is re-solved around actual volcanic elevation changes',(
   const original=solvePlanet({volcanism:false}),m=planet;let modified=0,rerouted=0;
   for(let i=0;i<m.grid.count;i++){
     const difference=m.height[i]-original.height[i];
-    assert.ok(Math.abs(difference-m.geology.change[i])<.001);
+    assert.ok(Math.abs(difference-m.geology.change[i]-m.sediment.changeM[i]+original.sediment.changeM[i])<.005);
     if(difference!==0)modified++;
     else if(m.geology.ids[i]<0)assert.equal(m.height[i],original.height[i]);
     if(m.receiver[i]!==original.receiver[i])rerouted++;
   }
   assert.ok(modified>1000&&rerouted>100);
-  assert.equal(modified,m.geology.stats.affectedCells);
+  assert.equal(m.geology.change.reduce((n,v)=>n+Number(v!==0),0),m.geology.stats.affectedCells);
   assert.equal(m.validation.ok,true);assert.equal(m.grid.count,original.grid.count);
 });
 

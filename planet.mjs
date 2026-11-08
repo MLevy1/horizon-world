@@ -1,11 +1,12 @@
-import {GENERATOR_VERSION} from './release-meta.mjs?v=0.9.15';
-import {makeVolcanicGeography,linkVolcanoWater} from './geology.mjs?v=0.9.15';
-import {solveCryosphere} from './cryosphere.mjs?v=0.9.15';
-import {makeClimate,flowRegime} from './climate.mjs?v=0.9.15';
-import {buildBasinInventory} from './basins.mjs?v=0.9.15';
-import {solvePoolBalances} from './pools.mjs?v=0.9.15';
-import {installPoolRouting} from './lake-routing.mjs?v=0.9.15';
-import {buildRiverProfiles} from './river-profiles.mjs?v=0.9.15';
+import {generateSediment} from './sediment.mjs?v=0.9.16';
+import {GENERATOR_VERSION} from './release-meta.mjs?v=0.9.16';
+import {makeVolcanicGeography,linkVolcanoWater} from './geology.mjs?v=0.9.16';
+import {solveCryosphere} from './cryosphere.mjs?v=0.9.16';
+import {makeClimate,flowRegime} from './climate.mjs?v=0.9.16';
+import {buildBasinInventory} from './basins.mjs?v=0.9.16';
+import {solvePoolBalances} from './pools.mjs?v=0.9.16';
+import {installPoolRouting} from './lake-routing.mjs?v=0.9.16';
+import {buildRiverProfiles} from './river-profiles.mjs?v=0.9.16';
 
 /** Horizon 0.7: one closed, deterministic planet. Distances km, elevations m.
  * No rendering, terrain tiles, scene, camera or vegetation dependencies.
@@ -156,6 +157,8 @@ export function solvePlanet({seed='HORIZON-01',world=DEFAULT_WORLD,progress=()=>
   }
   progress('Building volcanic landforms and cooled lava deposits',.24);
   const geology=makeVolcanicGeography({grid,height,seed,neighbors,cellAt,lonLat,enabled:volcanism&&!heightAt});
+  progress('Weathering bedrock and transporting loose sediment',.245);
+  const sediment=heightAt?null:generateSediment({grid,height,neighbors,distanceKm:neighborDistance,lava:geology.lava});
   progress('Connecting the planetary ocean',.25);
   // Only the largest CONNECTED sea is an ocean. Enclosed low areas become lakes.
   const seen=new Uint8Array(N),queue=new Int32Array(N);
@@ -304,7 +307,7 @@ export function solvePlanet({seed='HORIZON-01',world=DEFAULT_WORLD,progress=()=>
     let i=wb.outletReceiver;
     while(i>=0&&!ocean[i]&&waterbody[i]<0&&!channel[i]){channel[i]=classify(i);i=receiver[i];}
   }
-  const model={version:VERSION,seed,grid,height,level,rainfall,ocean,receiver,waterbody,waterbodies,catchment,discharge,outlet,channel,longest,trunk,climate,wetness,activeTerminal,cryosphere,geology,
+  const model={version:VERSION,seed,grid,height,level,rainfall,ocean,receiver,waterbody,waterbodies,catchment,discharge,outlet,channel,longest,trunk,climate,wetness,activeTerminal,cryosphere,geology,sediment,
     basinId,basins,potentialReceiver,potentialLevel,potentialOutlet,basinStructure,poolBalances,cellPool,potentialSpills};
   linkVolcanoWater(model);
   const network=buildNetwork(model);
@@ -382,6 +385,7 @@ function buildNetwork(m) {
 export function validatePlanet(m) {
   const {grid:g,receiver:r,ocean,level,waterbody,waterbodies,catchment,outlet,discharge}=m,N=g.count;
   const errors=[],near=new Int32Array(g.width),degree=new Uint16Array(N),queue=new Int32Array(N);
+  if(m.sediment&&(!Number.isFinite(m.sediment.stats.relativeVolumeError)||m.sediment.stats.relativeVolumeError>1e-6))errors.push('Loose sediment volume is not conserved');
   if(!m.basinStructure.validation.ok)errors.push(...m.basinStructure.validation.errors);
   if(!m.poolBalances.validation.ok)errors.push(...m.poolBalances.validation.errors);
   if(!m.riverProfiles.validation.ok)errors.push(...m.riverProfiles.validation.errors);

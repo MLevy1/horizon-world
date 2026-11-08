@@ -1,7 +1,7 @@
-import {plantAddress,plantGrove,plantShape,plantHabitat} from './explorer-plants.mjs?v=0.9.15';
-import {coordinateTile,terrainVertex,tileNeighbor,tileKey,EDGES} from './terrain-chunks.mjs?v=0.9.15';
-import {direction,coordinates,frame,createGroundCollider} from './explorer-world.mjs?v=0.9.15';
-import {rockBlocks} from './explorer-rocks.mjs?v=0.9.15';
+import {plantAddress,plantGrove,plantShape,plantHabitat} from './explorer-plants.mjs?v=0.9.16';
+import {coordinateTile,terrainVertex,tileNeighbor,tileKey,EDGES} from './terrain-chunks.mjs?v=0.9.16';
+import {direction,coordinates,frame,createGroundCollider} from './explorer-world.mjs?v=0.9.16';
+import {rockBlocks} from './explorer-rocks.mjs?v=0.9.16';
 const rank=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return (h>>>0)/4294967296;};
 /** Ring traversal has no fixed tile radius, including across cube-face seams. */
 function forestTiles(anchor,lon,lat,R,range){const first=coordinateTile(lon,lat,11),queue=[first],seen=new Set([tileKey(first)]),result=[];for(let i=0;i<queue.length;i++){const tile=queue[i],c=terrainVertex(tile,4,2,2).direction,bound=Math.max(...[[0,0],[4,0],[4,4],[0,4]].map(([x,y])=>Math.hypot(...terrainVertex(tile,4,x,y).direction.map((v,k)=>v-c[k]))))*R;if(Math.hypot(...c.map((v,k)=>v-anchor[k]))*R-bound>range)continue;result.push(tile);for(const edge of EDGES){const t=tileNeighbor(tile,edge),key=tileKey(t);if(!seen.has(key)){seen.add(key);queue.push(t);}}}return result;}
@@ -9,7 +9,7 @@ function forestTiles(anchor,lon,lat,R,range){const first=coordinateTile(lon,lat,
 export function createForestField({limit=32000}={}){
  const cache=new Map(),habitats=new Map();let worldSeed;
  return {build({seed,lon,lat,radiusM,mesh,environment,rangeM=1800,detailed=true}){
-  if(seed!==worldSeed){cache.clear();habitats.clear();worldSeed=seed;}const anchor=direction(lon,lat),ground=createGroundCollider(mesh.ground,anchor,radiusM,{rangeM:rangeM+100,binSize:40}),positions=[],normals=[],colors=[],foliage=[],shade=[],indices=[],placements=[];let sampled=0;
+  if(seed!==worldSeed){cache.clear();habitats.clear();worldSeed=seed;}let cachedGround=null;const anchor=direction(lon,lat),ground=d=>{cachedGround ||= createGroundCollider(mesh.ground,anchor,radiusM,{rangeM:rangeM+100,binSize:40});return cachedGround(d);},positions=[],normals=[],colors=[],foliage=[],shade=[],indices=[],placements=[];let sampled=0;
   function card(corners,uv,flag,color,d){for(const face of [[0,1,2],[0,2,3]]){const at=positions.length/3;for(const i of face){positions.push(...corners[i]);normals.push(...d);colors.push(...color);foliage.push(...uv[i],flag);shade.push(.95);}indices.push(at,at+1,at+2);}}
   for(const tile of forestTiles(anchor,lon,lat,radiusM,rangeM))for(let candidate=0;candidate<32;candidate++){
    const a=plantAddress(seed,tile,candidate),d=a.direction,dist=Math.hypot(...d.map((v,k)=>v-anchor[k]))*radiusM;if(dist>rangeM||detailed&&dist<80)continue;const probability=dist<300?1:.5;if(rank(a.id+':forest-lod')>probability)continue;

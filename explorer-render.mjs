@@ -1,12 +1,12 @@
-import {DETAIL_CACHE_BYTES,detailVisibility} from './explorer-detail-stream.mjs?v=0.9.15';
-import {makeForestTexture} from './forest-texture.mjs?v=0.9.15';
-import {cameraClip} from './explorer-camera.mjs?v=0.9.15';
-import {sunlight,shadowFrame,createSunShadows} from './explorer-shadows.mjs?v=0.9.15';
-import {makeGroundTexture} from './ground-texture.mjs?v=0.9.15';
-import {loadFoliage,sampleFoliage} from './foliage-texture.mjs?v=0.9.15';
-import {meshWaterDepths,waterOpacity} from './explorer-water.mjs?v=0.9.15';
-import {makeTerrainTextures,sampleTerrainTextureLevel,MATERIALS} from './terrain-materials.mjs?v=0.9.15';
-import {dot,frame} from './explorer-world.mjs?v=0.9.15';
+import {DETAIL_CACHE_BYTES,detailVisibility} from './explorer-detail-stream.mjs?v=0.9.16';
+import {makeForestTexture} from './forest-texture.mjs?v=0.9.16';
+import {cameraClip} from './explorer-camera.mjs?v=0.9.16';
+import {sunlight,shadowFrame,createSunShadows} from './explorer-shadows.mjs?v=0.9.16';
+import {makeGroundTexture} from './ground-texture.mjs?v=0.9.16';
+import {loadFoliage,sampleFoliage} from './foliage-texture.mjs?v=0.9.16';
+import {meshWaterDepths,waterOpacity} from './explorer-water.mjs?v=0.9.16';
+import {makeTerrainTextures,sampleTerrainTextureLevel,MATERIALS} from './terrain-materials.mjs?v=0.9.16';
+import {dot,frame} from './explorer-world.mjs?v=0.9.16';
 const SKY=[.56,.71,.78],NEAR=.08,FAR=160000,FOV=1/Math.tan(70*Math.PI/360);
 export async function createExplorerRenderer(canvas){
  const foliageImage=await loadFoliage(),groundImage=makeGroundTexture(),forestImage=makeForestTexture();
@@ -42,6 +42,16 @@ export async function createExplorerRenderer(canvas){
       float dryDebris=smoothstep(.03,.7,debrisCover)*(1.-clamp(weightsB.x+weightsB.y,0.,1.));
       albedo*=1.+mineral*(1.-dryDebris)*(.32*(fragments-.5));
       vec3 gravel=mix(vec3(.49,.475,.425),vec3(.64,.62,.56),coarse)*(.83+.34*fragments);
+      if(dryDebris>.01){
+        vec3 projection=pow(abs(n),vec3(4.));projection/=max(.00001,projection.x+projection.y+projection.z);
+        vec4 clasts=texture(terrainTextures,vec3(world.yz/12.,5.))*projection.x+texture(terrainTextures,vec3(world.xz/12.,5.))*projection.y+texture(terrainTextures,vec3(world.xy/12.,5.))*projection.z;
+        gravel*=.73+.54*clasts.a;
+        // Mip-filtered block relief replaces unresolved individual clasts.
+        // Unlike close grain, it fades with projected footprint, not distance.
+        float aggregateHeight=clasts.a*.22*dryDebris;
+        vec3 dp1=dFdx(world),dp2=dFdy(world),r1=cross(dp2,n),r2=cross(n,dp1);float det=dot(dp1,r1);
+        if(abs(det)>.00000001){vec3 gradient=sign(det)*(dFdx(aggregateHeight)*r1+dFdy(aggregateHeight)*r2);n=normalize(abs(det)*n-gradient);}
+      }
       albedo=mix(albedo,gravel,dryDebris);
     }
     if(!plants&&!water&&abs(bankM)<2.5){float bank=1.-smoothstep(.3,2.5,abs(bankM));albedo=mix(albedo,materialMean(5)*(.84+.32*broadNoise),bank*.65);}
@@ -84,7 +94,7 @@ setDetail(value){detail=value;},setMesh(value){mesh=value;const origin=mesh.anch
     // Attributes: camera XYZ, world UV, light, flat RGB, six masks, water depth and view cosine.
     function triangle(a,b,c,active,isWater,detailAlpha=1,isDetail=false){const p=[a,b,c].map(v=>[w/2+v[0]/v[2]*scale,h/2-v[1]/v[2]*scale]),area=(p[1][0]-p[0][0])*(p[2][1]-p[0][1])-(p[1][1]-p[0][1])*(p[2][0]-p[0][0]);if(Math.abs(area)<1e-8)return;const x0=Math.max(0,Math.floor(Math.min(...p.map(v=>v[0])))),x1=Math.min(w-1,Math.ceil(Math.max(...p.map(v=>v[0])))),y0=Math.max(0,Math.floor(Math.min(...p.map(v=>v[1])))),y1=Math.min(h-1,Math.ceil(Math.max(...p.map(v=>v[1])))),leafCard=a[19]>.5,leafLod=Math.max(0,Math.floor(Math.log2(foliageImage.image.width/Math.max(1,Math.sqrt(Math.abs(area)))))),footprint=Math.max(NEAR,(a[2]+b[2]+c[2])/3)/scale,lods=active.map(id=>Math.min(textures.levels.length-1,Math.floor(Math.log2(Math.max(1,footprint*textures.size/MATERIALS[id].scale)))));
       for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const wb=((x+.5-p[0][0])*(p[2][1]-p[0][1])-(y+.5-p[0][1])*(p[2][0]-p[0][0]))/area,wc=((p[1][0]-p[0][0])*(y+.5-p[0][1])-(p[1][1]-p[0][1])*(x+.5-p[0][0]))/area,wa=1-wb-wc;if(Math.min(wa,wb,wc)<-1e-7)continue;const ia=wa/a[2],ib=wb/b[2],ic=wc/c[2],inv=ia+ib+ic,z=1/inv,id=y*w+x;if(z>FAR||z>depth[id])continue;if(isDetail&&((x*17+y*131)%256)/256>=detailAlpha*(1-Math.max(0,Math.min(1,(z-64)/32))))continue;if(leafCard){sampleFoliage(a[19]>3.5?forestImage:a[19]>1.5?groundImage:foliageImage,(ia*a[17]+ib*b[17]+ic*c[17])*z,(ia*a[18]+ib*b[18]+ic*c[18])*z,leafLod,leafSample);if(leafSample[3]<.45)continue;}depth[id]=z;const fog=1-Math.exp(-((z*(camera.submerged?.07:(camera.fogDensity??.000085)))**2));const microDetail=1-Math.min(1,Math.max(0,(z-25)/125));let red,green,blue;
-        if(active.length){const u=(ia*a[3]+ib*b[3]+ic*c[3])*z,v=(ia*a[4]+ib*b[4]+ic*c[4])*z,light=(ia*a[5]+ib*b[5]+ic*c[5])*z;red=green=blue=0;let total=0;for(let j=0;j<active.length;j++){const m=active[j],weight=(ia*a[9+m]+ib*b[9+m]+ic*c[9+m])*z;sampleTerrainTextureLevel(textures,m,u,v,Math.max(lods[j],Math.floor((1-microDetail)*7)),sample);red+=sample[0]*weight;green+=sample[1]*weight;blue+=sample[2]*weight;total+=weight;}const gain=light/Math.max(total,.0001);red*=gain;green*=gain;blue*=gain;const debris=(ia*a[24]+ib*b[24]+ic*c[24])*z,freeze=(ia*(a[12]+a[13])+ib*(b[12]+b[13])+ic*(c[12]+c[13]))*z,t=Math.max(0,Math.min(1,(debris-.03)/.67)),cover=t*t*(3-2*t)*(1-Math.min(1,freeze));if(cover>0){const tone=.9+.16*Math.sin(u*Math.PI/32)*Math.sin(v*Math.PI/64);red=red*(1-cover)+.565*tone*light*cover;green=green*(1-cover)+.548*tone*light*cover;blue=blue*(1-cover)+.492*tone*light*cover;}
+        if(active.length){const u=(ia*a[3]+ib*b[3]+ic*c[3])*z,v=(ia*a[4]+ib*b[4]+ic*c[4])*z,light=(ia*a[5]+ib*b[5]+ic*c[5])*z;red=green=blue=0;let total=0;for(let j=0;j<active.length;j++){const m=active[j],weight=(ia*a[9+m]+ib*b[9+m]+ic*c[9+m])*z;sampleTerrainTextureLevel(textures,m,u,v,Math.max(lods[j],Math.floor((1-microDetail)*7)),sample);red+=sample[0]*weight;green+=sample[1]*weight;blue+=sample[2]*weight;total+=weight;}const gain=light/Math.max(total,.0001);red*=gain;green*=gain;blue*=gain;const debris=(ia*a[24]+ib*b[24]+ic*c[24])*z,freeze=(ia*(a[12]+a[13])+ib*(b[12]+b[13])+ic*(c[12]+c[13]))*z,t=Math.max(0,Math.min(1,(debris-.03)/.67)),cover=t*t*(3-2*t)*(1-Math.min(1,freeze));if(cover>0){let tone=.9+.16*Math.sin(u*Math.PI/32)*Math.sin(v*Math.PI/64);sampleTerrainTextureLevel(textures,5,u/6,v/6,Math.max(0,Math.floor(Math.log2(Math.max(1,footprint*textures.size/12)))),sample);tone*=.7+sample[0]*1.2;red=red*(1-cover)+.565*tone*light*cover;green=green*(1-cover)+.548*tone*light*cover;blue=blue*(1-cover)+.492*tone*light*cover;}
         }else{red=(ia*a[6]+ib*b[6]+ic*c[6])*z;green=(ia*a[7]+ib*b[7]+ic*c[7])*z;blue=(ia*a[8]+ib*b[8]+ic*c[8])*z;}
         const bankM=(ia*a[23]+ib*b[23]+ic*c[23])*z;if(!isWater&&Math.abs(bankM)<2.5){const t=Math.max(0,Math.min(1,(Math.abs(bankM)-.3)/2.2)),bank=(1-t*t*(3-2*t))*.65,light=(ia*a[5]+ib*b[5]+ic*c[5])*z;red=red*(1-bank)+.26*light*bank;green=green*(1-bank)+.255*light*bank;blue=blue*(1-bank)+.22*light*bank;}
         const herbs=(ia*a[22]+ib*b[22]+ic*c[22])*z;if(herbs>.001){red=red*(1-herbs)+(ia*a[6]+ib*b[6]+ic*c[6])*z*herbs;green=green*(1-herbs)+(ia*a[7]+ib*b[7]+ic*c[7])*z*herbs;blue=blue*(1-herbs)+(ia*a[8]+ib*b[8]+ic*c[8])*z*herbs;}

@@ -37,3 +37,13 @@ Fixed-camera compatibility-render comparisons use HORIZON-01, 171.2338° E / 39.
 ## 0.9.15 rendering validation
 
 An offscreen Mesa/llvmpipe graphics context compiled and rendered the explorer vertex/fragment shader logic, adapted from GLSL ES 300 to desktop GLSL 330. Before/after images use the same 0.9.14 mesh and camera at the alpine lake reference (390 × 700). The baseline reproduces the smooth material appearance; the updated shader distinguishes the lower gravel field from exposed rock. This bypasses browser integration, browser texture upload and iPhone GPU behaviour, so it does not certify those paths or mobile frame time. The compatibility regression fixture also checks that gravel differs at 200–1000 m and that snow conceals it. One additional low-frequency noise evaluation is used per textured terrain fragment; nearby grain retains its existing distance fade.
+
+## 0.9.16 sediment and surface integration
+
+A default HORIZON-01 formative pass moved material in 200,262 global cells; its final grain inventory differs from its initial weathered inventory by 2.72 × 10⁻⁹ relative volume. The eight-pass stage took 0.59–0.80 seconds in local runs and retains 23,593,000 bytes. These are local observations, not mobile budgets. Global hydrology validation now also checks the sediment volume error.
+
+Comparing 2,601 points around 171.2338° E / 39.0583° S with the preceding geographic generator found 2,598 ground changes above 0.1 m and 36 wet/dry boundary changes. Sampled ground differences ranged from −82.62 to +46.14 m. The largest adjacent 0.000001° longitude step was 0.00149 m. The resulting full planet passes water-budget, routing and fitted-shoreline checks; basin and outlet locations are allowed to change.
+
+Offscreen Mesa/llvmpipe rendering of the actual shader logic and generated meshes at the saved lake camera shows a continuous mineral field with substantially more clasts. Desktop shader compilation is adapted from ES 300 to GLSL 330; browser integration and iPhone frame rates are not established by this check. A local sequential view-generation comparison observed 4.03 seconds / 89 rocks for 0.9.15 and 3.38 seconds / 1,759 rocks / 47,960 rock triangles after collider reuse. This is one scenario, not a general performance claim. Collision tests also exclude clasts below the displayed water surface.
+
+The volume model uses equivalent solid-layer thicknesses and a bounded formative episode. It does not resolve individual particle transport histories, porosity, hydraulic sediment transport or coupled glacial erosion.

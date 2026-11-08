@@ -1,13 +1,13 @@
-import {landHabitat} from './explorer-ecology.mjs?v=0.9.15';
-import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.15';
-import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.15';
-import {rockBlocks} from './explorer-rocks.mjs?v=0.9.15';
+import {landHabitat} from './explorer-ecology.mjs?v=0.9.16';
+import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.16';
+import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.16';
+import {rockBlocks} from './explorer-rocks.mjs?v=0.9.16';
 const hash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;};
 const random=seed=>()=>{seed=(seed+0x6d2b79f5)|0;let t=Math.imul(seed^(seed>>>15),1|seed);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const clamp=x=>Math.max(0,Math.min(1,x));
 export function plantHabitat(e){
- if(e.talus>.2||e.depthM>.02||e.glacier>.2||e.lava>.3||e.slope>.3||e.temperature< -5||e.elevationM>2600)return {density:0,kind:'bare'};
+ if(e.soilDepthM<.06||e.talus>.2||e.depthM>.02||e.glacier>.2||e.lava>.3||e.slope>.3||e.temperature< -5||e.elevationM>2600)return {density:0,kind:'bare'};
  const eco=landHabitat(e);if(eco.trees==='bare')return {density:0,kind:'bare'};if(eco.trees==='mangrove')return {density:.48,kind:'mangrove'};if(eco.trees==='shrub')return {density:eco.treeFactor,kind:'shrub'};
  const warmth=clamp((e.temperature+3)/9),moisture=clamp((e.aridity-.15)/.7),slope=1-clamp(e.slope/.3),snow=1-clamp((e.snow-.55)/.4),trees=warmth*moisture*slope*snow*eco.treeFactor;
  return trees>.18?{density:trees*(.78+.15*e.shore),kind:eco.trees}:{density:.08*warmth*slope*snow,kind:'shrub'};
@@ -17,8 +17,8 @@ export function plantAddress(seed,tile,candidate){const id=tileKey(tile)+':'+can
 export function plantGrove(seed,d,R){const phase=hash(seed+':groves')/4294967296*6.28;return .5+.25*Math.sin((d[0]*.8+d[2]*.6)*R/85+phase)+.25*Math.sin((d[1]*.7-d[2]*.4)*R/43-phase);}
 export function plantShape(seed,id,kind){const shape=random(hash(seed+':plant-shape:'+id)),mangrove=kind==='mangrove',tropical=kind==='tropical',shrub=kind==='shrub',pine=kind==='conifer',height=mangrove?3+shape()*4:shrub?.6+shape()*1.2:tropical?20+shape()*12:pine?12+shape()*12:14+shape()*12,width=height*(mangrove?.65:shrub?.9:pine?.26:.42),yaw=shape()*6.28,leanX=(shape()-.5)*height*.14,leanZ=(shape()-.5)*height*.14,trunk=shrub?.055:.18+height*.018,tone=.8+shape()*.3;return {mangrove,tropical,shrub,pine,height,width,yaw,leanX,leanZ,trunk,tone};}
 /** Seeded plant addresses and per-plant shape seeds survive streaming and LOD. */
-export function buildPlantField({seed,lon,lat,radiusM,mesh,environment,rangeM=140}){
- const anchor=direction(lon,lat),ground=createGroundCollider(mesh.ground,anchor,radiusM),positions=[],normals=[],colors=[],indices=[],placements=[],foliage=[],shade=[],canopies=[],roots=[{tile:coordinateTile(lon,lat,11),distance:0}],seen=new Set([tileKey(roots[0].tile)]),phase=hash(seed+':groves')/4294967296*6.28;
+export function buildPlantField({seed,lon,lat,radiusM,mesh,environment,rangeM=140,collider=null}){
+ let cachedGround=null;const anchor=direction(lon,lat),ground=collider||((d)=>{cachedGround ||= createGroundCollider(mesh.ground,anchor,radiusM);return cachedGround(d);}),positions=[],normals=[],colors=[],indices=[],placements=[],foliage=[],shade=[],canopies=[],roots=[{tile:coordinateTile(lon,lat,11),distance:0}],seen=new Set([tileKey(roots[0].tile)]),phase=hash(seed+':groves')/4294967296*6.28;
  for(let i=0;i<roots.length;i++){const item=roots[i];if(item.distance===8)continue;for(const edge of EDGES){const tile=tileNeighbor(item.tile,edge),key=tileKey(tile);if(!seen.has(key)){seen.add(key);roots.push({tile,distance:item.distance+1});}}}
  function triangle(a,b,c,color,normal){const offset=positions.length/3,n=normal||unit(cross(b.map((v,k)=>v-a[k]),c.map((v,k)=>v-a[k])));for(const p of [a,b,c]){positions.push(...p);normals.push(...n);colors.push(...color);foliage.push(0,0,0);shade.push(.8);}indices.push(offset,offset+1,offset+2);}
  for(const {tile} of roots)for(let candidate=0;candidate<48;candidate++){

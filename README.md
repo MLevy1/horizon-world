@@ -1,6 +1,6 @@
-# Horizon 0.9.15 — Walk the world
+# Horizon 0.9.16 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.15).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.16).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -724,3 +724,11 @@ The earlier 0.9.13 opt-in prototype is superseded. All normal world views use th
 ### 0.9.15 — visible mineral transitions at landscape distances
 
 The WebGL close-detail mask reaches zero at 150 m, reducing both rock and deposited gravel to similar average colours. The worker now sends the shared lake-foot coverage to the renderer independently of material weights. Dry debris receives a lighter, varied gravel appearance that survives the close-detail fade, while snow and lava retain priority. Exposed rock retains metre-scale mineral variation. The compatibility renderer also preserves the gravel distinction. Geometry, water levels, shoreline positions and object placement are unchanged from 0.9.14.
+
+### 0.9.16 — shared bedrock and sediment inventories
+
+World generation now weathers bedrock into coarse fragments, gravel and fines, then performs eight bounded gravity-transport passes. Transport uses spherical cell areas and tracks volume; it is a formative approximation, not a geologic timescale or full soil/erosion simulation. A latitude/elevation temperature proxy modulates formative weathering. Ocean connectivity, drainage, climate, snow, pool balances and river profiles are solved from the resulting terrain, so deposits may move shorelines and change outlets. The generation identity is now `horizon-geography-0.9.16`: an existing seed regenerates a revised landscape. Saved coordinates remain usable.
+
+The shared substrate query supplies loose thickness, net accumulation, grain proportions, stone cover and an approximate fine-material soil depth. Terrain materials, rocks, ground cover and tree eligibility consume these fields. Large clasts are drawn to 450 m with lower-complexity distant shapes and projected-size rejection; unresolved clasts use mip-filtered aggregate relief. The earlier lake-edge grading no longer modifies the sampler. This stage does not yet implement river sediment sorting, glacier-carried debris, soil chemistry or organic horizons.
+
+The new global fields retain about 23.6 MB at the default resolution. Generation runs once per world. The explorer shares nearby collision geometry between rocks, plants and detail generation, builds forest collision data lazily, keeps ground-detail caches through terrain swaps, and avoids per-rock vector allocations in movement collision checks. Diagnostics report sediment budgets and generation time, retained bytes and rock-field geometry counts.

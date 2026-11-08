@@ -1,6 +1,6 @@
 {
   "name": "horizon-world",
-  "version": "0.9.15",
+  "version": "0.9.16",
   "private": true,
   "type": "module",
   "description": "Explore a complete seeded planet shaped by water, climate and volcanoes.",
@@ -10,5 +10,5 @@
     "release": "node scripts/release.mjs",
     "check:release": "node scripts/release.mjs --check"
   },
-  "worldGenerationVersion": "horizon-geography-0.9.11"
+  "worldGenerationVersion": "horizon-geography-0.9.16"
 }
