@@ -18,7 +18,7 @@ The panel refreshes on a separate timer. Compare input timestamp, frame age, ren
 
 Keep baseline device, viewport and settings fixed. Compare frame cadence, render heartbeat, terrain/material/object stage times, request round-trip age and tracked cache bytes. Stage times measure worker CPU elapsed time; request elapsed time also includes queue/message/main-thread delay. Neither metric measures GPU execution. Main-thread install/upload timings measure CPU elapsed time and upload submission; resource triangle counts are submitted geometry, not the number of visible triangles after GPU clipping. Cache estimates are not total browser or GPU residency. Do not enable automatic quality changes until these measurements establish useful budgets.
 
-## Before re-enabling a landform experiment
+## Landform changes
 
 - Define a reproducible scene and one visible success criterion.
 - Check surface continuity across spatial buckets, mask boundaries, water support edges, glacier/lava cutoffs and cube/LOD seams.
@@ -28,4 +28,8 @@ Keep baseline device, viewport and settings fixed. Compare frame cadence, render
 - Validate terrain collision and cached object re-grounding through multiple LOD updates and return travel.
 - Compare both controlled fixtures and several actual world sites in a browser before publishing.
 
-Talus and alpine displacement remain disabled. This document does not certify their prior tests as sufficient.
+The earlier general talus uplift and alpine incision remain disabled. Regular-world lake-foot grading uses a separate continuous profile with zero displacement at the mapped shoreline. No user-managed experimental mode is required.
+
+## 0.9.14 local validation
+
+Fixed-camera compatibility-render comparisons use HORIZON-01, 171.2338° E / 39.0583° S, height 2838 m, yaw 0, pitch -0.1. They show the changed lower slope; these renders do not establish WebGL/iPhone appearance or performance. A 625-point region probe changed 121 ground samples (−58.67 to +31.92 m), preserved all sampled water-plane elevations and shoreline wet/dry classifications, and left sampled wet river cores unchanged. The largest adjacent 0.000001° longitude step was 0.00324 m. A grounded-card probe checked 2,016 roots against the adjusted rendered mesh. These are targeted checks, not exhaustive planetary guarantees.

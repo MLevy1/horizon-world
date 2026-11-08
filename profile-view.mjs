@@ -1,4 +1,4 @@
-import {sampleRiverEdge} from './river-profiles.mjs?v=0.9.13';
+import {sampleRiverEdge} from './river-profiles.mjs?v=0.9.14';
 
 /** Inspection only. Follow existing profile edges to the next fixed water
  * plane; never bridge an unprofiled lake interior or generate new drainage.

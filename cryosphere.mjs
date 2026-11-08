@@ -1,6 +1,6 @@
 /** Snow and glacier storage in water-equivalent units. An annual budget model,
  * with monthly temperature-index snowmelt, not a glacier-motion simulator. */
-import {annualPartition,YEAR_SECONDS} from './climate.mjs?v=0.9.13';
+import {annualPartition,YEAR_SECONDS} from './climate.mjs?v=0.9.14';
 const DAYS=[31,28.25,31,30,31,30,31,31,30,31,30,31];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 

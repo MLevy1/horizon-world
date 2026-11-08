@@ -1,5 +1,5 @@
 export const REFERENCE_VIEWS=[
- {name:'Alpine lake',seed:'HORIZON-01',lon:171.2338,lat:-39.0583,height:2838,yaw:1.57,pitch:-.1,flying:true,speed:30,expect:'Check lake-edge material wedges and water alignment'},
+ {name:'Alpine lake',seed:'HORIZON-01',lon:171.2338,lat:-39.0583,height:2838,yaw:0,pitch:-.1,flying:true,speed:30,expect:'Check lake-edge material wedges and water alignment'},
  {name:'Mountain corridor',seed:'HORIZON-01',lon:171.067,lat:-38.837,height:3020,yaw:0,pitch:-.1,flying:true,speed:30,expect:'Check for artificial walls and floating detail'},
  {name:'Coastal forest',seed:'HORIZON-01',lon:-51.5197,lat:43.5931,height:89,yaw:1.57,pitch:0,flying:true,speed:100,expect:'Compare distant canopy coverage'},
  {name:'Dry grassland',seed:'HORIZON-01',lon:-32.8166,lat:35.7151,height:94,yaw:0,pitch:-.1,flying:true,speed:30,expect:'Compare ground cover and hillside bands'},

@@ -1,6 +1,6 @@
-# Horizon 0.9.13 — Walk the world
+# Horizon 0.9.14 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.13).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.14).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -714,3 +714,9 @@ The worker pipeline exposes buildTerrain → assignGroundMaterials → placeLand
 See [VALIDATION.md](VALIDATION.md) for release and visual acceptance checks.
 
 The diagnostics dialog contains an **Experimental lake-edge talus** checkbox. It reloads the current view in an explicitly opt-in prototype with bounded 12 m deposition beside mapped lakes. Saved/copied views and reports record this experimental setting. The default view remains the stable surface; the earlier general talus and alpine incision experiments remain disabled. This prototype still requires browser/iPhone visual acceptance before promotion.
+
+### 0.9.14 — regular-world lake-foot grading
+
+Removed the experimental terrain checkbox, banner and reload behavior. Steep highland lake margins now share a continuous graded-foot field for geometry, gravel materials and object placement. The lower slope is gentler, with up to 60 m of grading above water and 42 m of submerged fill. The profile joins at the existing shoreline; lake elevations, mapped shoreline boundaries, climate and drainage stay aligned. Ice, lava and channel corridors suppress grading. This is a local visual landform proxy, not a mass-conserving erosion model.
+
+The earlier 0.9.13 opt-in prototype is superseded. All normal world views use the new surface. Old experimental URL parameters are ignored and removed.

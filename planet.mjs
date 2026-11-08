@@ -1,11 +1,11 @@
-import {GENERATOR_VERSION} from './release-meta.mjs?v=0.9.13';
-import {makeVolcanicGeography,linkVolcanoWater} from './geology.mjs?v=0.9.13';
-import {solveCryosphere} from './cryosphere.mjs?v=0.9.13';
-import {makeClimate,flowRegime} from './climate.mjs?v=0.9.13';
-import {buildBasinInventory} from './basins.mjs?v=0.9.13';
-import {solvePoolBalances} from './pools.mjs?v=0.9.13';
-import {installPoolRouting} from './lake-routing.mjs?v=0.9.13';
-import {buildRiverProfiles} from './river-profiles.mjs?v=0.9.13';
+import {GENERATOR_VERSION} from './release-meta.mjs?v=0.9.14';
+import {makeVolcanicGeography,linkVolcanoWater} from './geology.mjs?v=0.9.14';
+import {solveCryosphere} from './cryosphere.mjs?v=0.9.14';
+import {makeClimate,flowRegime} from './climate.mjs?v=0.9.14';
+import {buildBasinInventory} from './basins.mjs?v=0.9.14';
+import {solvePoolBalances} from './pools.mjs?v=0.9.14';
+import {installPoolRouting} from './lake-routing.mjs?v=0.9.14';
+import {buildRiverProfiles} from './river-profiles.mjs?v=0.9.14';
 
 /** Horizon 0.7: one closed, deterministic planet. Distances km, elevations m.
  * No rendering, terrain tiles, scene, camera or vegetation dependencies.

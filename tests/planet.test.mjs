@@ -238,7 +238,7 @@ test('standing water queries preserve actual pool planes and sea level without f
       const body=m.waterbodies[m.waterbody[i]];if(m.height[i]>=body.waterLevelM-1e-7)continue;
       const q=surface.sample(...lonLat(m.grid,i));assert.ok(q.standingWater);assert.equal(q.standingWater.waterM,body.waterLevelM);
       assert.equal(q.standingWater.id,body.id);assert.ok(q.standingWater.depthM>0);
-      assert.equal(q.fitted.waterM,body.waterLevelM);assert.ok(q.fitted.groundM<=m.height[i]+1e-8);
+      assert.equal(q.fitted.waterM,body.waterLevelM);assert.ok(q.fitted.groundM<=m.height[i]+42+1e-8);assert.ok(q.fitted.groundM<body.waterLevelM);
     }else if((m.basinId[i]>=0||m.ocean[i])&&i%97===0){
       const q=surface.sample(...lonLat(m.grid,i));
       if(m.ocean[i]&&m.height[i]<0){assert.equal(q.standingWater.kind,'ocean');assert.equal(q.standingWater.waterM,0);}

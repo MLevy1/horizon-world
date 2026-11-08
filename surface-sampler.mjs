@@ -1,9 +1,9 @@
-import {createExperimentalLakeTalus} from './experimental-lake-talus.mjs?v=0.9.13';
-import {createRiverCourse} from './river-course.mjs?v=0.9.13';
-import {createWaterScaffold} from './water-scaffold.mjs?v=0.9.13';
-import {neighbors,cellAt} from './planet.mjs?v=0.9.13';
-import {sampleRiverEdge} from './river-profiles.mjs?v=0.9.13';
-import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.9.13';
+import {createLakeApron,smooth} from './lake-apron.mjs?v=0.9.14';
+import {createRiverCourse} from './river-course.mjs?v=0.9.14';
+import {createWaterScaffold} from './water-scaffold.mjs?v=0.9.14';
+import {neighbors,cellAt} from './planet.mjs?v=0.9.14';
+import {sampleRiverEdge} from './river-profiles.mjs?v=0.9.14';
+import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.9.14';
 
 const RAD=Math.PI/180,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
@@ -61,7 +61,7 @@ export function createSphereSampler(grid,height){
  * remain explicit fields, with a separate composed `fitted` surface result.
  * The 3D bucket index has no special longitude edge or polar search limit.
  */
-export function createSurfaceSampler(m,{experimentalTalus=false}={}){
+export function createSurfaceSampler(m){
   const {grid:g,riverProfiles:p}=m,mesh=createSphereSampler(g,m.height),E=p.from.length,R=g.radiusKm*1000;
   const contacts=createContactFitter(m),waterScaffold=createWaterScaffold(m,mesh),near=new Int32Array(g.width),protection=new Int8Array(g.count).fill(-1);
   const protectedNode=i=>{if(protection[i]>=0)return !!protection[i];const n=neighbors(g,i,near);protection[i]=Number(waterScaffold.owner[i]!==-2||[...near.subarray(0,n)].some(j=>waterScaffold.owner[j]!==-2));return !!protection[i];};
@@ -91,14 +91,20 @@ export function createSurfaceSampler(m,{experimentalTalus=false}={}){
     return found;
   }
   function nearest(rivers){return rivers.sort((a,b)=>Math.abs(a.distanceM-b.distanceM)>1e-7?a.distanceM-b.distanceM:Number(b.wet)-Number(a.wet)||a.edge-b.edge)[0]||null;}
-  const talus=experimentalTalus?createExperimentalLakeTalus(m,mesh):null;
+  const apronField=createLakeApron(m,mesh);
   function sample(lon,lat){
     const q=mesh.locate(lon,lat),geometry=waterScaffold.interpolate(q),planes=geometry.planes;let standingWater=null;
     for(const p of planes.values())if(geometry.terrainM<p.waterM&&(!standingWater||p.waterM>standingWater.waterM))standingWater={kind:p.kind,id:p.id,waterM:p.waterM,depthM:p.waterM-geometry.terrainM};
     const rivers=riverCandidates(q.direction),plane=standingWater?planes.get(standingWater.id):[...planes.values()].sort((a,b)=>b.support-a.support)[0]||null;
-    let depositM=0;if(talus){const blend=a=>a?q.cells.reduce((sum,i,k)=>sum+a[i]*q.weights[k],0):0;let margin=Infinity;for(const r of riverCandidates(q.direction,undefined,true))margin=Math.min(margin,r.distanceM-(r.signedDistanceM>=0?r.leftHalfM:r.rightHalfM)-(r.signedDistanceM>=0?r.leftBankM:r.rightBankM));depositM=talus.sample(q.direction,geometry.terrainM,{glacier:blend(m.cryosphere?.glacier),lava:blend(m.geology?.lava),riverMarginM:margin,waterPlanes:[...planes.values()]});}
+    let apron={deltaM:0,cover:0};
+    if(plane?.kind==='pool'){
+      const blend=a=>a?q.cells.reduce((sum,i,k)=>sum+a[i]*q.weights[k],0):0;
+      apron=apronField.sample(q,geometry.terrainM,planes,{glacier:blend(m.cryosphere?.glacier),lava:blend(m.geology?.lava)});
+      if(apron.deltaM||apron.cover){let margin=Infinity;for(const r of riverCandidates(q.direction,undefined,true))margin=Math.min(margin,r.distanceM-(r.signedDistanceM>=0?r.leftHalfM:r.rightHalfM)-(r.signedDistanceM>=0?r.leftBankM:r.rightBankM));const protection=smooth(0,150,margin);apron.deltaM*=protection;apron.cover*=protection;}
+    }
+    const depositM=apron.deltaM;
     const fitted=composeWaterSurface(geometry.terrainM+depositM,plane,rivers.map(contacts.fit));
-    return {talusDepositM:depositM,talus:depositM/12,lon:q.lon,lat:q.lat,terrainM:q.terrainM,triangle:{cells:q.cells,weights:q.weights},standingWater,waterPlane:plane?{id:plane.id,waterM:plane.waterM,kind:plane.kind}:null,river:nearest(rivers),fitted};
+    return {talusDepositM:depositM,talus:apron.cover,lon:q.lon,lat:q.lat,terrainM:q.terrainM,triangle:{cells:q.cells,weights:q.weights},standingWater,waterPlane:plane?{id:plane.id,waterM:plane.waterM,kind:plane.kind}:null,river:nearest(rivers),fitted};
   }
   // Conservative index query for a complete minor arc, including corridor support.
   function shoreArc(a,b){
