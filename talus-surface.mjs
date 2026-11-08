@@ -1,4 +1,4 @@
-import {neighbors} from './planet.mjs?v=0.9.14';
+import {neighbors} from './planet.mjs?v=0.9.15';
 const dot=(a,b)=>a.reduce((s,v,k)=>s+v*b[k],0),unit=a=>{const n=Math.hypot(...a);return a.map(v=>v/n);},smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
 /** A bounded depositional fan below a mapped rockfall source. Heights remain metres. */
 export function talusDeposit({along,across,sourceM,groundM,length=700,width=180}){

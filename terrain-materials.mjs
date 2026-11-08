@@ -1,4 +1,4 @@
-import {alpineClimate} from './alpine-climate.mjs?v=0.9.14';
+import {alpineClimate} from './alpine-climate.mjs?v=0.9.15';
 /** Shared, seamless material images generated once per viewer. No additional
  * terrain vertices or external texture downloads. Scales are metres per tile. */
 export const MATERIALS=[{name:'Soil',scale:2,relief:.008},{name:'Sand',scale:2,relief:.004},{name:'Rock',scale:4,relief:.025},{name:'Snow',scale:2,relief:.006},{name:'Cooled lava',scale:4,relief:.035},{name:'Wet gravel',scale:2,relief:.008}];

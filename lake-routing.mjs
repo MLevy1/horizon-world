@@ -1,4 +1,4 @@
-import {poolWetFraction} from './pools.mjs?v=0.9.14';
+import {poolWetFraction} from './pools.mjs?v=0.9.15';
 
 /** Install the solved pools in the authoritative cell graph. Dry margins
  * remain land. Only a pool's wet footprint (including its zero-depth contact

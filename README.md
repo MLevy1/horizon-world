@@ -1,6 +1,6 @@
-# Horizon 0.9.14 — Walk the world
+# Horizon 0.9.15 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.14).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.15).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -720,3 +720,7 @@ The diagnostics dialog contains an **Experimental lake-edge talus** checkbox. It
 Removed the experimental terrain checkbox, banner and reload behavior. Steep highland lake margins now share a continuous graded-foot field for geometry, gravel materials and object placement. The lower slope is gentler, with up to 60 m of grading above water and 42 m of submerged fill. The profile joins at the existing shoreline; lake elevations, mapped shoreline boundaries, climate and drainage stay aligned. Ice, lava and channel corridors suppress grading. This is a local visual landform proxy, not a mass-conserving erosion model.
 
 The earlier 0.9.13 opt-in prototype is superseded. All normal world views use the new surface. Old experimental URL parameters are ignored and removed.
+
+### 0.9.15 — visible mineral transitions at landscape distances
+
+The WebGL close-detail mask reaches zero at 150 m, reducing both rock and deposited gravel to similar average colours. The worker now sends the shared lake-foot coverage to the renderer independently of material weights. Dry debris receives a lighter, varied gravel appearance that survives the close-detail fade, while snow and lava retain priority. Exposed rock retains metre-scale mineral variation. The compatibility renderer also preserves the gravel distinction. Geometry, water levels, shoreline positions and object placement are unchanged from 0.9.14.

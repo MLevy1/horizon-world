@@ -33,3 +33,7 @@ The earlier general talus uplift and alpine incision remain disabled. Regular-wo
 ## 0.9.14 local validation
 
 Fixed-camera compatibility-render comparisons use HORIZON-01, 171.2338° E / 39.0583° S, height 2838 m, yaw 0, pitch -0.1. They show the changed lower slope; these renders do not establish WebGL/iPhone appearance or performance. A 625-point region probe changed 121 ground samples (−58.67 to +31.92 m), preserved all sampled water-plane elevations and shoreline wet/dry classifications, and left sampled wet river cores unchanged. The largest adjacent 0.000001° longitude step was 0.00324 m. A grounded-card probe checked 2,016 roots against the adjusted rendered mesh. These are targeted checks, not exhaustive planetary guarantees.
+
+## 0.9.15 rendering validation
+
+An offscreen Mesa/llvmpipe graphics context compiled and rendered the explorer vertex/fragment shader logic, adapted from GLSL ES 300 to desktop GLSL 330. Before/after images use the same 0.9.14 mesh and camera at the alpine lake reference (390 × 700). The baseline reproduces the smooth material appearance; the updated shader distinguishes the lower gravel field from exposed rock. This bypasses browser integration, browser texture upload and iPhone GPU behaviour, so it does not certify those paths or mobile frame time. The compatibility regression fixture also checks that gravel differs at 200–1000 m and that snow conceals it. One additional low-frequency noise evaluation is used per textured terrain fragment; nearby grain retains its existing distance fade.
