@@ -1,6 +1,6 @@
-# Horizon 0.9.16 — Walk the world
+# Horizon 0.9.17 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.16).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.17).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -732,3 +732,11 @@ World generation now weathers bedrock into coarse fragments, gravel and fines, t
 The shared substrate query supplies loose thickness, net accumulation, grain proportions, stone cover and an approximate fine-material soil depth. Terrain materials, rocks, ground cover and tree eligibility consume these fields. Large clasts are drawn to 450 m with lower-complexity distant shapes and projected-size rejection; unresolved clasts use mip-filtered aggregate relief. The earlier lake-edge grading no longer modifies the sampler. This stage does not yet implement river sediment sorting, glacier-carried debris, soil chemistry or organic horizons.
 
 The new global fields retain about 23.6 MB at the default resolution. Generation runs once per world. The explorer shares nearby collision geometry between rocks, plants and detail generation, builds forest collision data lazily, keeps ground-detail caches through terrain swaps, and avoids per-rock vector allocations in movement collision checks. Diagnostics report sediment budgets and generation time, retained bytes and rock-field geometry counts.
+
+### 0.9.17 — persistent canopy and gradual tree detail
+
+Canopy foliage now persists into the foreground while woody branch detail appears over a broad, per-tree staggered distance band. Clustered crowns blend to whole-tree cutouts over approximately 150–440 m, using live camera distance at each tree root. Tree sizes and population no longer change at 300 m. Crowns and cutout silhouettes share species templates; tropical trees use taller umbrella crowns and a separate tropical atlas, alongside broadleaf, conifer and mangrove forms. This is an initial species distinction, not a botanical species library.
+
+`forest-structure.mjs` defines shared crown footprints and transition curves. `explorer-forest.mjs` provides persistent crowns and lightweight trunk proxies; `explorer-plants.mjs` now supplies woody detail and nearby shrubs. Pair these systems when constructing a scene. Both use the same cached stand decisions. Compact rejection bitsets avoid filling the placement cache with absent trees. Indexed quads and Float32 crown positions constrain the extra canopy data. The shader keeps unresolved distant foliage visible with a lower alpha cutoff.
+
+Terrain generation, sediment and hydrology retain the 0.9.16 generation identity.

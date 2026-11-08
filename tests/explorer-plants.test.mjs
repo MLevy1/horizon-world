@@ -12,7 +12,7 @@ test('plant identities, dimensions and trunk positions persist across streamed v
  for(const p of a.placements)if(byId.has(p.id)){shared++;assert.deepEqual(p,byId.get(p.id));}assert.ok(shared>5);assert.ok(a.positions.every(Number.isFinite));assert.ok(a.normals.every(Number.isFinite));assert.equal(a.foliage.length,a.positions.length);assert.ok(a.foliage.some((v,i)=>i%3===2&&v===1));assert.ok(a.placements.some(p=>p.heightM>14));assert.ok(a.indices.length/3<60000);assert.equal(buildPlantField({...options,environment:()=>({...habitat,depthM:1})}).placements.length,0);
 });
 
-test('dry grassland produces only small shrubs and conifers use needle cutouts',()=>{
+test('dry grassland produces small shrubs and conifer wood carries per-tree transition data',()=>{
  const b=createTerrainChunkBuilder({grid:{radiusKm:64},sample:()=>({fitted:{groundM:100,waterM:null}})}),mesh=b.combine(neighborhood(coordinateTile(0,0,8),2).map(t=>b.build(t,{resolution:16}))),options={seed:'habitat-consistency',lon:0,lat:0,radiusM:64000,mesh},grass=buildPlantField({...options,environment:()=>({...habitat,shore:0,aridity:.55})}),pine=buildPlantField({...options,environment:()=>({...habitat,shore:0,temperature:6})});
- assert.ok(grass.placements.length>0);assert.ok(grass.placements.every(p=>p.kind==='shrub'&&p.heightM<1.81));assert.ok(pine.placements.some(p=>p.kind==='conifer'));assert.ok(pine.foliage.some((v,i)=>i%3===2&&v===3));assert.ok(pine.positions.every(Number.isFinite));
+ assert.ok(grass.placements.length>0);assert.ok(grass.placements.every(p=>p.kind==='shrub'&&p.heightM<1.81));assert.ok(pine.placements.some(p=>p.kind==='conifer'));assert.equal(pine.treeLOD.length,pine.positions.length/3*4);assert.ok(pine.positions.every(Number.isFinite));
 });

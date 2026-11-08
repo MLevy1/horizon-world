@@ -1,9 +1,9 @@
-import {sampleSediment} from './sediment.mjs?v=0.9.16';
-import {createRiverCourse} from './river-course.mjs?v=0.9.16';
-import {createWaterScaffold} from './water-scaffold.mjs?v=0.9.16';
-import {neighbors,cellAt} from './planet.mjs?v=0.9.16';
-import {sampleRiverEdge} from './river-profiles.mjs?v=0.9.16';
-import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.9.16';
+import {sampleSediment} from './sediment.mjs?v=0.9.17';
+import {createRiverCourse} from './river-course.mjs?v=0.9.17';
+import {createWaterScaffold} from './water-scaffold.mjs?v=0.9.17';
+import {neighbors,cellAt} from './planet.mjs?v=0.9.17';
+import {sampleRiverEdge} from './river-profiles.mjs?v=0.9.17';
+import {createContactFitter,composeWaterSurface} from './water-contact.mjs?v=0.9.17';
 
 const RAD=Math.PI/180,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];

@@ -8,6 +8,8 @@ export const REFERENCE_VIEWS=[
  {"name":"Desert","seed":"HORIZON-01","lon":42.29474035080539,"lat":43.94531206856015,"height":695.7264713162075,"yaw":0,"pitch":-0.1,"flying":true,"speed":30,"expect":"Compare surface, object grounding and streaming through return travel"},
  {"name":"Woodland","seed":"HORIZON-01","lon":-73.25109072796643,"lat":36.44531216943691,"height":140.64624593022896,"yaw":0,"pitch":-0.1,"flying":true,"speed":30,"expect":"Compare surface, object grounding and streaming through return travel"},
  {"name":"Glacier","seed":"HORIZON-01","lon":-111.6796875,"lat":-59.6484375,"height":398.49017333984375,"yaw":0,"pitch":-0.1,"flying":true,"speed":30,"expect":"Compare surface, object grounding and streaming through return travel"}
+,
+ {name:'Tropical lake',seed:'HORIZON-01',lon:120.1327,lat:.6075,height:270,yaw:0,pitch:-.05,flying:true,speed:30,expect:'Compare continuous canopy, crown shapes and emerging tree detail along the shore'}
 ].map(v=>({...v,generatorVersion:'horizon-geography-0.9.16',textures:true,shadows:true,geometryOnly:false}));
 export function validateView(v){return !!v&&typeof v.seed==='string'&&v.seed.length>0&&v.seed.length<=100&&['lon','lat','height','yaw','pitch','speed'].every(k=>Number.isFinite(v[k]))&&Math.abs(v.lat)<=90&&Math.abs(v.lon)<=180&&v.height>=-12000&&v.height<=200000&&v.speed>0&&v.speed<=2000&&Math.abs(v.pitch)<=1.4&&typeof v.flying==='boolean';}
 export function encodeView(v){if(!validateView(v))throw Error('Invalid viewpoint');return JSON.stringify(v);}

@@ -1,5 +1,5 @@
-import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.16';
-import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.16';
+import {terrainVertex,coordinateTile,tileNeighbor,EDGES,tileKey} from './terrain-chunks.mjs?v=0.9.17';
+import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.17';
 const hash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;};
 const random=seed=>()=>{seed=(seed+0x6d2b79f5)|0;let t=Math.imul(seed^(seed>>>15),1|seed);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
@@ -9,8 +9,8 @@ function topology(levels=2){if(topologies.has(levels))return topologies.get(leve
 }
 /** Permanent cube-sphere addresses determine clusters, independent of view/LOD.
  * The caller supplies global environmental fields; only nearby geometry exists. */
-export function buildRockField({seed,lon,lat,radiusM,mesh,environment,rangeM=155,clearance=0,collider=null}){
- const start=performance.now();const anchor=direction(lon,lat),ground=collider||createGroundCollider(mesh.ground,anchor,radiusM,{rangeM:rangeM+20,binSize:rangeM>200?32:12}),water=mesh.water?createGroundCollider(mesh.water,anchor,radiusM,{rangeM:rangeM+20,binSize:32}):()=>null,positions=[],normals=[],colors=[],materials=[],indices=[],placements=[];
+export function buildRockField({seed,lon,lat,radiusM,mesh,environment,rangeM=155,clearance=0,collider=null,waterCollider=null}){
+ const start=performance.now();const anchor=direction(lon,lat),ground=collider||createGroundCollider(mesh.ground,anchor,radiusM,{rangeM:rangeM+20,binSize:rangeM>200?32:12}),water=waterCollider||(mesh.water?createGroundCollider(mesh.water,anchor,radiusM,{rangeM:rangeM+20,binSize:32}):()=>null),positions=[],normals=[],colors=[],materials=[],indices=[],placements=[];
  const roots=[{tile:coordinateTile(lon,lat,11),distance:0}],seen=new Set([tileKey(roots[0].tile)]);for(let i=0;i<roots.length;i++){const item=roots[i];if(item.distance>=Math.ceil(rangeM/25)+2)continue;const center=terrainVertex(item.tile,4,2,2).direction;if(Math.hypot(...center.map((v,k)=>v-anchor[k]))*radiusM>rangeM+150)continue;for(const edge of EDGES){const tile=tileNeighbor(item.tile,edge),key=tileKey(tile);if(!seen.has(key)){seen.add(key);roots.push({tile,distance:item.distance+1});}}}
  const prepared=performance.now();let envCalls=0;const envRead=(lon,lat)=>{envCalls++;return environment(lon,lat);};
  for(const {tile} of roots)for(let candidate=0;candidate<10;candidate++){

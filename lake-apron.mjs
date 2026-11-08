@@ -1,4 +1,4 @@
-import {neighbors} from './planet.mjs?v=0.9.16';
+import {neighbors} from './planet.mjs?v=0.9.17';
 export const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
 
 /** Grade the foot of a steep lake margin while keeping its mapped waterline.
