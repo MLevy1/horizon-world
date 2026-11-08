@@ -1,17 +1,17 @@
-import {planGroundDetail,createGroundDetailCache,detailRevision,copyGroundDetail} from './explorer-detail-stream.mjs?v=0.9.12';
-import {createForestField} from './explorer-forest.mjs?v=0.9.12';
-import {buildCoastalFields,ecologyHabitat,meadowAppearance} from './explorer-ecology.mjs?v=0.9.12';
-import {scenicTiles} from './explorer-visibility.mjs?v=0.9.12';
-import {describeLocation,findLakefront,findMountain,findGlacier,findAlpineVariants} from './explorer-info.mjs?v=0.9.12';
-import {buildGroundField} from './explorer-ground.mjs?v=0.9.12';
-import {buildPlantField,applyCanopyLighting,plantHabitat} from './explorer-plants.mjs?v=0.9.12';
-import {buildRockField} from './explorer-rocks.mjs?v=0.9.12';
-import {terrainMaterialWeights,smooth} from './terrain-materials.mjs?v=0.9.12';
-import {solvePlanet,lonLat,cellAt,neighbors,transferBuffers} from './planet.mjs?v=0.9.12';
-import {createSurfaceSampler} from './surface-sampler.mjs?v=0.9.12';
-import {createTerrainChunkBuilder,tileKey} from './terrain-chunks.mjs?v=0.9.12';
-import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.12';
-let model,surface,builder,cache=new Map(),bytes=0;const forestField=createForestField(),detailCache=createGroundDetailCache();let detailGround=null,detailMesh=null,detailJob=0;
+import {planGroundDetail,createGroundDetailCache,detailRevision,copyGroundDetail} from './explorer-detail-stream.mjs?v=0.9.13';
+import {createForestField} from './explorer-forest.mjs?v=0.9.13';
+import {buildCoastalFields,ecologyHabitat,meadowAppearance} from './explorer-ecology.mjs?v=0.9.13';
+import {scenicTiles} from './explorer-visibility.mjs?v=0.9.13';
+import {describeLocation,findLakefront,findMountain,findGlacier,findAlpineVariants} from './explorer-info.mjs?v=0.9.13';
+import {buildGroundField} from './explorer-ground.mjs?v=0.9.13';
+import {buildPlantField,applyCanopyLighting,plantHabitat} from './explorer-plants.mjs?v=0.9.13';
+import {buildRockField} from './explorer-rocks.mjs?v=0.9.13';
+import {terrainMaterialWeights,smooth} from './terrain-materials.mjs?v=0.9.13';
+import {solvePlanet,lonLat,cellAt,neighbors,transferBuffers} from './planet.mjs?v=0.9.13';
+import {createSurfaceSampler} from './surface-sampler.mjs?v=0.9.13';
+import {createTerrainChunkBuilder,tileKey} from './terrain-chunks.mjs?v=0.9.13';
+import {direction,coordinates,frame,dot,unit,createGroundCollider} from './explorer-world.mjs?v=0.9.13';
+let model,surface,builder,cache=new Map(),bytes=0;const forestField=createForestField(),detailCache=createGroundDetailCache();let detailGround=null,detailMesh=null,detailJob=0,experimentalMode=false,detailTerrainVersion=0;
 function color(i){const m=model;if(m.geology.lava[i])return [.24,.22,.20];if(m.cryosphere.glacier[i]||m.cryosphere.snowMonths[i]>7)return [.79,.84,.85];if(m.climate.zone[i]===1)return [.59,.48,.31];if(m.climate.zone[i]===2)return [.48,.45,.31];if(m.climate.zone[i]===0)return [.44,.47,.44];return [.37,.43,.31];}
 function spawn(lon,lat){const d=direction(lon,lat),f=frame(d);let best=null;search:for(const offset of [8,16,32,64,0])for(const sign of [-1,1]){const v=unit(d.map((x,k)=>x+f.east[k]*offset*sign/(model.grid.radiusKm*1000))),c=coordinates(v),q=surface.sample(c.lon,c.lat);if(q.fitted.waterM===null){best={...c,groundM:q.fitted.groundM};break search;}if(best)break;}return best||{lon,lat,groundM:surface.sample(lon,lat).fitted.groundM};}
 function buildTerrain(lon,lat,clearance){const tiles=scenicTiles(lon,lat,model.grid.radiusKm*1000,{clearance});const chunks=tiles.map(({tile,coarseEdges})=>{const key=tileKey(tile)+':'+coarseEdges.join(','),old=cache.get(key);if(old){cache.delete(key);cache.set(key,old);return old.chunk;}const chunk=builder.build(tile,{resolution:8,coarseEdges}),size=Object.values(chunk).reduce((s,v)=>s+(v?.byteLength||0),0);while(cache.size&&bytes+size>24*1048576){const key=cache.keys().next().value;bytes-=cache.get(key).size;cache.delete(key);}cache.set(key,{chunk,size});bytes+=size;return chunk;});const mesh=builder.combine(chunks);return mesh;}
@@ -26,8 +26,8 @@ function patch(lon,lat,{flying=false,clearance=0,speed=3}={}){
  stage('objects',()=>placeLandscapeObjects(mesh,lon,lat,aerial));
  mesh.stats.stagesMs=timings;mesh.view={lon,lat,aerial,clearance,flying,speed};mesh.info=describeLocation(model,surface,lon,lat);mesh.stats.groundDetails=mesh.groundDetail?.placements.length||0;mesh.stats.plants=mesh.plants?.placements.length||0;mesh.stats.rocks=mesh.rocks?.placements.length||0;mesh.stats.cacheBytes=bytes;return mesh;}
 self.onmessage=({data})=>{try{
-  if(data.type==='init'){
-    model=solvePlanet({seed:data.seed,progress:(stage,fraction)=>postMessage({type:'progress',stage,fraction})});postMessage({type:'progress',stage:'Preparing terrain and water',fraction:.95});surface=createSurfaceSampler(model);model.coastalFields=buildCoastalFields(model);model.ecologySample=environment;builder=createTerrainChunkBuilder(surface,{sampleCacheLimit:32768});cache.clear();bytes=0;detailCache.clear();detailJob++;detailGround=null;detailMesh=null;
+  if(data.type==='init'){experimentalMode=data.experimentalTalus===true;
+    model=solvePlanet({seed:data.seed,progress:(stage,fraction)=>postMessage({type:'progress',stage,fraction})});postMessage({type:'progress',stage:'Preparing terrain and water',fraction:.95});surface=createSurfaceSampler(model,{experimentalTalus:data.experimentalTalus===true});model.coastalFields=buildCoastalFields(model);model.ecologySample=environment;builder=createTerrainChunkBuilder(surface,{sampleCacheLimit:32768});cache.clear();bytes=0;detailCache.clear();detailJob++;detailGround=null;detailMesh=null;
     const p=model.riverProfiles,c=surface.course,station=c.sample(c.stats.exampleEdge>=0?c.stats.exampleEdge:0,c.stats.exampleT),normal=station.normal,R=model.grid.radiusKm*1000;let start=null;
     for(const side of [-1,1]){const d=unit(station.direction.map((v,k)=>v+normal[k]*station.widthM*1.4*side/R)),ll=coordinates(d),q=surface.sample(ll.lon,ll.lat);if(q.fitted.waterM===null){start={...ll,groundM:q.fitted.groundM};break;}}
     start ||=spawn(...lonLat(model.grid,p.from[0]));const f=frame(direction(start.lon,start.lat)),toward=station.direction.map((v,k)=>v-direction(start.lon,start.lat)[k]);start.yaw=Math.atan2(dot(toward,f.east),dot(toward,f.north));
@@ -38,7 +38,7 @@ self.onmessage=({data})=>{try{
     const width=1536,height=768,map=new Uint8ClampedArray(width*height*4);for(let y=0;y<height;y++)for(let x=0;x<width;x++){const i=cellAt(model.grid,x/width*360-180,90-y/height*180),rgb=model.ocean[i]?[.09,.23,.32]:model.waterbody[i]>=0?[.21,.48,.57]:color(i);map.set([...rgb.map(v=>v*255),255],(y*width+x)*4);}
     postMessage({type:'ready',seed:model.seed,radiusM:R,start,places,map:{width,height,data:map},stats:model.stats},[map.buffer]);return;
   }
-  if(data.type==='view'){detailJob++;const mesh=patch(data.lon,data.lat,data);detailGround=createGroundCollider(mesh.ground,mesh.anchor,mesh.radiusM,{rangeM:700,binSize:24});detailMesh={rocks:mesh.rocks};postMessage({type:'view',requestId:data.requestId,mesh},transferBuffers(mesh));}
+  if(data.type==='view'){detailJob++;detailTerrainVersion++;const mesh=patch(data.lon,data.lat,data);detailGround=createGroundCollider(mesh.ground,mesh.anchor,mesh.radiusM,{rangeM:700,binSize:24});detailMesh={rocks:mesh.rocks};postMessage({type:'view',requestId:data.requestId,mesh},transferBuffers(mesh));}
   if(data.type==='detail'){streamDetails(data);}
   if(data.type==='inspect'){postMessage({type:'inspect',requestId:data.requestId,info:describeLocation(model,surface,data.lon,data.lat)});}
   if(data.type==='travel'){detailJob++;const point=spawn(data.lon,data.lat);postMessage({type:'travel',point});}
@@ -65,7 +65,7 @@ function streamDetails(data){
  const R=model.grid.radiusKm*1000,plan=planGroundDetail({...data,radiusM:R}),known=data.known||{},ground=detailGround,mesh=detailMesh;let index=0;
  function next(){if(token!==detailJob)return;try{
   const item=plan.tiles[index++];if(!item){postMessage({type:'detail-done',streamId:data.streamId,stats:detailCache.stats()});return;}
-  const revision=detailRevision(item.tile,ground);if(known[item.id]!==revision){const key=item.id+':'+revision;let value=detailCache.get(key);if(!value){value=buildGroundField({seed:model.seed,lon:data.lon,lat:data.lat,radiusM:R,mesh,environment,tiles:[item.tile],collider:ground});delete value.placements;value.shadowCaster=false;detailCache.put(key,value);}const chunk=copyGroundDetail(value);postMessage({type:'detail-chunk',streamId:data.streamId,id:item.id,revision,chunk},transferBuffers(chunk));}
+  const revision=detailRevision(item.tile,ground)+(experimentalMode?':trial'+detailTerrainVersion:'');if(known[item.id]!==revision){const key=item.id+':'+revision;let value=detailCache.get(key);if(!value){value=buildGroundField({seed:model.seed,lon:data.lon,lat:data.lat,radiusM:R,mesh,environment,tiles:[item.tile],collider:ground});delete value.placements;value.shadowCaster=false;detailCache.put(key,value);}const chunk=copyGroundDetail(value);postMessage({type:'detail-chunk',streamId:data.streamId,id:item.id,revision,chunk},transferBuffers(chunk));}
   setTimeout(next,0);
  }catch(error){postMessage({type:'detail-error',streamId:data.streamId,message:error.message});}}
  next();

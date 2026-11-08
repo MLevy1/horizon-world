@@ -1,4 +1,4 @@
-import {sphereFaces} from './shorelines.mjs?v=0.9.12';
+import {sphereFaces} from './shorelines.mjs?v=0.9.13';
 const normalize=a=>{const n=Math.hypot(...a);return a.map(v=>v/n);};
 const edgeKey=(a,b)=>a<b?a+':'+b:b+':'+a;
 class BufferBuilder{

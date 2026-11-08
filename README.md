@@ -1,6 +1,6 @@
-# Horizon 0.9.12 — Walk the world
+# Horizon 0.9.13 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.12).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.13).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the
@@ -712,3 +712,5 @@ Save this view retains up to 20 views on the current device. Copy viewpoint link
 The worker pipeline exposes buildTerrain → assignGroundMaterials → placeLandscapeObjects, with timing per stage. Current refresh thresholds are 48 m walking and at least 64 m flying, adjusted by speed and clearance; older historical notes above describe earlier releases.
 
 See [VALIDATION.md](VALIDATION.md) for release and visual acceptance checks.
+
+The diagnostics dialog contains an **Experimental lake-edge talus** checkbox. It reloads the current view in an explicitly opt-in prototype with bounded 12 m deposition beside mapped lakes. Saved/copied views and reports record this experimental setting. The default view remains the stable surface; the earlier general talus and alpine incision experiments remain disabled. This prototype still requires browser/iPhone visual acceptance before promotion.

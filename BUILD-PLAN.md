@@ -748,3 +748,14 @@ Extracted existing worker operations into buildTerrain, assignGroundMaterials an
 Introduced package-owned release stamping and build-time consistency checks. Generator identity is explicit and independent of application releases; no legacy generator implementation is implied. Documentation distinguishes tracked cache estimates from total memory and diagnostic frame frequency from rendering throughput. Added validation and landform reactivation gates.
 
 Validation for 0.9.12: 173 tests passed in the full suite, followed by targeted diagnostics/DOM/geometry tests after final UI refinements. Actual diagnostic shader compiled/linked in an offscreen graphics context. Browser installation returned a truncated download, so no real browser interaction test was completed; the DOM smoke test uses injected browser/renderer doubles and is labelled accordingly. The actual worker scene hash matched its pre-refactor baseline. Release check and production build passed. iPhone validation remains pending.
+
+
+## 0.9.13 — Opt-in constrained lake-edge experiment
+
+Added a separate experimental lake-talus implementation, disabled by default. Sources require a steep contributing land cell adjacent to a mapped retained lake. Fan surfaces use a 12 m fill cap, continuous foot/side/toe and climate masks, fixed source lake heads and conservative trapezoidal source bounds padded for spherical curvature. The spatial query can be compared with exhaustive evaluation. River-bank margins fade deposits out. Unrelated supported water bodies suppress fan influence with a support-dependent fade.
+
+The diagnostics checkbox reloads the captured camera/world with the experiment flag in the URL; copied/saved views and reports retain it. Normal references and the default URL use the stable surface. Experimental results are not promoted to the main world. The previous general talus and alpine incision layers remain disabled.
+
+Checks cover bounded and continuous profiles, spatial-index/exhaustive agreement, river exclusion, default regressions and DOM bindings. Actual seed probes compare baseline and experimental samples, including wet beds and small-step continuity. Native/browser visual and cached-object grounding acceptance remains required before promotion.
+
+0.9.13 development verification: 175 tests passed, with targeted tests repeated after final field/mode handling changes. A 625-point actual-region probe reported 20 changed samples, a 12 m maximum, zero changed wet beds and maximum tiny-step height difference about 0.0015 m in that probe. A compatibility before/after render was inspected; 2,016 generated card roots matched the experimental mesh collider. The prototype is visually modest and has not passed native/browser acceptance or full LOD-route validation. Experimental mode invalidates/refits ground detail on each terrain replacement and may therefore have more loading/fading than normal mode.

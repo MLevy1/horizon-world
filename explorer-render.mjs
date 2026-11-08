@@ -1,12 +1,12 @@
-import {DETAIL_CACHE_BYTES,detailVisibility} from './explorer-detail-stream.mjs?v=0.9.12';
-import {makeForestTexture} from './forest-texture.mjs?v=0.9.12';
-import {cameraClip} from './explorer-camera.mjs?v=0.9.12';
-import {sunlight,shadowFrame,createSunShadows} from './explorer-shadows.mjs?v=0.9.12';
-import {makeGroundTexture} from './ground-texture.mjs?v=0.9.12';
-import {loadFoliage,sampleFoliage} from './foliage-texture.mjs?v=0.9.12';
-import {meshWaterDepths,waterOpacity} from './explorer-water.mjs?v=0.9.12';
-import {makeTerrainTextures,sampleTerrainTextureLevel,MATERIALS} from './terrain-materials.mjs?v=0.9.12';
-import {dot,frame} from './explorer-world.mjs?v=0.9.12';
+import {DETAIL_CACHE_BYTES,detailVisibility} from './explorer-detail-stream.mjs?v=0.9.13';
+import {makeForestTexture} from './forest-texture.mjs?v=0.9.13';
+import {cameraClip} from './explorer-camera.mjs?v=0.9.13';
+import {sunlight,shadowFrame,createSunShadows} from './explorer-shadows.mjs?v=0.9.13';
+import {makeGroundTexture} from './ground-texture.mjs?v=0.9.13';
+import {loadFoliage,sampleFoliage} from './foliage-texture.mjs?v=0.9.13';
+import {meshWaterDepths,waterOpacity} from './explorer-water.mjs?v=0.9.13';
+import {makeTerrainTextures,sampleTerrainTextureLevel,MATERIALS} from './terrain-materials.mjs?v=0.9.13';
+import {dot,frame} from './explorer-world.mjs?v=0.9.13';
 const SKY=[.56,.71,.78],NEAR=.08,FAR=160000,FOV=1/Math.tan(70*Math.PI/360);
 export async function createExplorerRenderer(canvas){
  const foliageImage=await loadFoliage(),groundImage=makeGroundTexture(),forestImage=makeForestTexture();
