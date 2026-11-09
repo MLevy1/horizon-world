@@ -1,5 +1,5 @@
-import {meshCamera,inspectionZoom} from './mesh-camera.mjs?v=0.9.17';
-import {createSoftwareMeshPreview} from './mesh-raster.mjs?v=0.9.17';
+import {meshCamera,inspectionZoom} from './mesh-camera.mjs?v=0.9.18';
+import {createSoftwareMeshPreview} from './mesh-raster.mjs?v=0.9.18';
 /** Lightweight review of the real indexed buffers, not the atlas texture. */
 export function createMeshPreview(canvas,mesh){
   const gl=canvas.getContext('webgl2',{alpha:false,antialias:true});

@@ -1,4 +1,4 @@
-import {crownLobes} from './forest-structure.mjs?v=0.9.17';
+import {crownLobes} from './forest-structure.mjs?v=0.9.18';
 /** Three rows per species: whole tree, individual crown lobe, top canopy.
  * Whole-tree silhouettes are projected from the actual shared crown template. */
 export function makeForestTexture(){

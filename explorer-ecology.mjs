@@ -1,4 +1,4 @@
-import {neighbors} from './planet.mjs?v=0.9.17';
+import {neighbors} from './planet.mjs?v=0.9.18';
 const clamp=x=>Math.max(0,Math.min(1,x));
 /** A small coastal buffer on the existing planet grid; no new water or terrain. */
 export function buildCoastalFields(model){
@@ -44,6 +44,10 @@ export function landHabitat(e){
 /** Continuous herb cover survives the detail radius; bare mineral biomes retain their materials. */
 export function meadowAppearance(e){
  const h=landHabitat(e),open=h.ground==='grassland'||h.biome==='Coastal grassland';
+ if(h.biome==='Tropical forest'&&e.depthM<=.02&&e.talus<=.2&&!(e.soilDepthM<.06)){
+  const cover=.48*(1-clamp((e.slope-.10)/.23))*(1-.45*clamp(e.shore||0));
+  return {cover,tint:[.19,.27,.105]};
+ }
  if(!open||e.depthM>.02||e.talus>.2)return {cover:0,tint:[0,0,0]};
  const green=clamp((e.aridity-.45)/.5),exposed=clamp((e.slope-.12)/.28),wet=clamp(e.shore||0);
  return {cover:.94*(1-exposed)*(1-wet),tint:[.48-.25*green,.44-.08*green,.23-.11*green]};

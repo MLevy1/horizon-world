@@ -1,8 +1,8 @@
-import {crownLobes,forestUV,packedBuffer} from './forest-structure.mjs?v=0.9.17';
-import {plantAddress,plantGrove,plantShape,plantHabitat} from './explorer-plants.mjs?v=0.9.17';
-import {coordinateTile,terrainVertex,tileNeighbor,tileKey,EDGES} from './terrain-chunks.mjs?v=0.9.17';
-import {direction,coordinates,frame,createGroundCollider} from './explorer-world.mjs?v=0.9.17';
-import {rockBlocks} from './explorer-rocks.mjs?v=0.9.17';
+import {crownLobes,forestUV,packedBuffer} from './forest-structure.mjs?v=0.9.18';
+import {plantAddress,plantGrove,plantShape,plantHabitat} from './explorer-plants.mjs?v=0.9.18';
+import {coordinateTile,terrainVertex,tileNeighbor,tileKey,EDGES} from './terrain-chunks.mjs?v=0.9.18';
+import {direction,coordinates,frame,createGroundCollider} from './explorer-world.mjs?v=0.9.18';
+import {rockBlocks} from './explorer-rocks.mjs?v=0.9.18';
 const rank=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return (h>>>0)/4294967296;};
 /** Ring traversal has no fixed tile radius, including across cube-face seams. */
 function forestTiles(anchor,lon,lat,R,range){const first=coordinateTile(lon,lat,11),queue=[first],seen=new Set([tileKey(first)]),result=[];for(let i=0;i<queue.length;i++){const tile=queue[i],c=terrainVertex(tile,4,2,2).direction,bound=Math.max(...[[0,0],[4,0],[4,4],[0,4]].map(([x,y])=>Math.hypot(...terrainVertex(tile,4,x,y).direction.map((v,k)=>v-c[k]))))*R;if(Math.hypot(...c.map((v,k)=>v-anchor[k]))*R-bound>range)continue;result.push(tile);for(const edge of EDGES){const t=tileNeighbor(tile,edge),key=tileKey(t);if(!seen.has(key)){seen.add(key);queue.push(t);}}}return result;}
@@ -25,7 +25,7 @@ export function createForestField({limit=48000}={}){
     const a=plantAddress(seed,tile,candidate),d=a.direction,dist=Math.hypot(...d.map((v,k)=>v-anchor[k]))*radiusM;if(dist>rangeM)continue;
     const record=resolve({seed,address:a,environment,radiusM});if(!record)continue;
     const h=ground(d);if(h===null||(water(d)??-Infinity)>h+.03||dist<320&&rockBlocks(mesh.rocks?.placements,d,h,radiusM))continue;
-    const f=frame(d,record.yaw),height=record.height,w=record.width,origin=d.map(v=>v*(radiusM+h-.12)),world=p=>origin.map((v,k)=>v+f.right[k]*p[0]+d[k]*p[1]+f.forward[k]*p[2]),seedRoll=rank(a.id+':lod'),tint=[.84+record.tone*.12,.86+record.tone*.12,.80+record.tone*.12];
+    const f=frame(d,record.yaw),height=record.height,w=record.width,origin=d.map(v=>v*(radiusM+h-.12)),world=p=>origin.map((v,k)=>v+f.right[k]*p[0]+d[k]*p[1]+f.forward[k]*p[2]),seedRoll=rank(a.id+':lod'),tint=record.tropical?[.86+record.tone*.25,.70+record.tone*.31,.70+record.tone*.19]:[.84+record.tone*.12,.86+record.tone*.12,.80+record.tone*.12];
     if(dist<490){
      const meta=[...origin,2+seedRoll];
      for(const c of crownLobes(record.kind)){

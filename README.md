@@ -1,6 +1,6 @@
-# Horizon 0.9.17 — Walk the world
+# Horizon 0.9.18 — Walk the world
 
-[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.17).
+[Walk the world on GitHub Pages](https://mlevy1.github.io/horizon-world/?v=0.9.18).
 
 The main page is a first-person terrain explorer with walking, flight, adjustable speed and keyboard/touch movement,
 ground collision, streamed nearby geometry and world-map travel. It uses the

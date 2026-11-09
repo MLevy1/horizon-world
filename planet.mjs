@@ -1,12 +1,12 @@
-import {generateSediment} from './sediment.mjs?v=0.9.17';
-import {GENERATOR_VERSION} from './release-meta.mjs?v=0.9.17';
-import {makeVolcanicGeography,linkVolcanoWater} from './geology.mjs?v=0.9.17';
-import {solveCryosphere} from './cryosphere.mjs?v=0.9.17';
-import {makeClimate,flowRegime} from './climate.mjs?v=0.9.17';
-import {buildBasinInventory} from './basins.mjs?v=0.9.17';
-import {solvePoolBalances} from './pools.mjs?v=0.9.17';
-import {installPoolRouting} from './lake-routing.mjs?v=0.9.17';
-import {buildRiverProfiles} from './river-profiles.mjs?v=0.9.17';
+import {generateSediment} from './sediment.mjs?v=0.9.18';
+import {GENERATOR_VERSION} from './release-meta.mjs?v=0.9.18';
+import {makeVolcanicGeography,linkVolcanoWater} from './geology.mjs?v=0.9.18';
+import {solveCryosphere} from './cryosphere.mjs?v=0.9.18';
+import {makeClimate,flowRegime} from './climate.mjs?v=0.9.18';
+import {buildBasinInventory} from './basins.mjs?v=0.9.18';
+import {solvePoolBalances} from './pools.mjs?v=0.9.18';
+import {installPoolRouting} from './lake-routing.mjs?v=0.9.18';
+import {buildRiverProfiles} from './river-profiles.mjs?v=0.9.18';
 
 /** Horizon 0.7: one closed, deterministic planet. Distances km, elevations m.
  * No rendering, terrain tiles, scene, camera or vegetation dependencies.

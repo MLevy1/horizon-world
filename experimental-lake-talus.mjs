@@ -1,4 +1,4 @@
-import {neighbors} from './planet.mjs?v=0.9.17';
+import {neighbors} from './planet.mjs?v=0.9.18';
 const dot=(a,b)=>a.reduce((s,v,k)=>s+v*b[k],0),unit=a=>{const n=Math.hypot(...a);return a.map(v=>v/n);};
 export const smoothMask=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
 export function evaluateLakeFan(s,d,groundM,R){
